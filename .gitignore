@@ -1,11 +1,12 @@
 # Never commit data dumps — they contain member emails/names.
-*.dump
 *-data*.json
 *-data*.sql
-/backups/
-node_modules/
-dist/
+*.dump
+*.tsbuildinfo
 .env
 .env.*
 .venv/
+/backups/
 __pycache__/
+dist/
+node_modules/

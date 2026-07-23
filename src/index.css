@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+
+/* Theme seam (task T031): the Claude Design template will redefine these tokens.
+   Everything else consumes the tokens, never raw colors — so reskinning is a
+   one-file change. Neutral placeholder palette until the template arrives. */
+@theme {
+  --color-brand-900: #0a1a3a; /* navy — nav/hero (matches current site) */
+  --color-brand-700: #14306a;
+  --color-brand-500: #29b6d8; /* cyan accent / primary action */
+  --color-ink: #101828;
+  --color-muted: #667085;
+}
