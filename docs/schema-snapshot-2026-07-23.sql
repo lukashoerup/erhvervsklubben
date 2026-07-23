@@ -46,7 +46,7 @@ CREATE TRIGGER on_auth_user_created
 -- attendance_records(id serial PK, meeting_number int, lead text, pre_location, main_location, post_location, timestamps)
 -- attendances(id serial PK, record_id -> attendance_records.id, member_name text, attended bool default false)
 -- event_evaluations(id uuid PK, user_id -> auth.users.id, record_id -> attendance_records.id,
---   8x {aspect}_rating int CHECK 1..5 + {aspect}_comment text, timestamps)
+--   9x {aspect}_rating int CHECK 1..5 + {aspect}_comment text, timestamps)
 -- user_member_mapping(id uuid PK, user_id -> profiles.id UNIQUE, member_name text, created_at)
 -- ALTER TABLE ... ENABLE ROW LEVEL SECURITY;  -- on ALL 7 tables
 

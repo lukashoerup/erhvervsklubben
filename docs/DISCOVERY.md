@@ -47,7 +47,7 @@ user_member_mapping 8.
   member_name text, attended bool)` — one row per (meeting, member). 235 rows =
   the ✓/✗ matrix cells.
 - **event_evaluations** `(id uuid PK, user_id → auth.users, record_id →
-  attendance_records, 8× {aspect}_rating int 1..5 + _comment, timestamps)` —
+  attendance_records, 9× {aspect}_rating int 1..5 + _comment, timestamps)` —
   post-meeting feedback across pre/location/post/lead aspects. Only 1 row so far.
 - **user_member_mapping** `(id uuid PK, user_id → profiles.id UNIQUE,
   member_name text)` — links a login to a display name used in the matrix.

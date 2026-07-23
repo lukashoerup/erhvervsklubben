@@ -95,7 +95,7 @@ attendance_records: AR1 anon SELECT 0 rows · AR2 member SELECT all (incl both #
 attendances: A1 anon SELECT 0 · A2 member SELECT all · A3 anon INSERT 42501 · A4 member INSERT own cell 42501 · A5 member UPDATE 0 · A6 member DELETE 0 · A7 admin CRUD/toggle ok
 profiles:  P1 anon SELECT 0 · P2 member SELECT own(1) · P3 member SELECT other → per snapshot (own-only) · P4 self-escalation role=admin denied + no effect · P5 member UPDATE other 0 · P6 member INSERT 42501 · P7 member DELETE 0 · P8 admin UPDATE role both ways ok · P9 anon UPDATE 0
 user_member_mapping: M1 anon SELECT 0 · M2 member SELECT own · M3 member INSERT (spoof) 42501 · M4 member UPDATE own 0 · M5 member DELETE own 0 · M6 admin CRUD ok, dup user_id UNIQUE fails
-event_evaluations: EV1 anon SELECT 0 · EV2 member SELECT → only own, no error · EV3 member SELECT other.eq 0 · EV4 member INSERT own ok (8 ratings persist) · EV5 member INSERT user_id=other 42501 · EV6 member UPDATE other 0 · EV7 member DELETE other 0 (+ NO delete policy exists → own delete also denied, assert) · EV8 member UPDATE own ok
+event_evaluations: EV1 anon SELECT 0 · EV2 member SELECT → only own, no error · EV3 member SELECT other.eq 0 · EV4 member INSERT own ok (9 ratings persist) · EV5 member INSERT user_id=other 42501 · EV6 member UPDATE other 0 · EV7 member DELETE other 0 (+ NO delete policy exists → own delete also denied, assert) · EV8 member UPDATE own ok
 trigger:   T1 signUp → profiles row role='user' · T2 new user writes denied · T3 new user no mapping (0 rows) · T4 after admin sets role, get_user_role reflects immediately · T5 both policy styles allow/deny consistently
 
 ## C. Unit — seniority pivot (pure)
