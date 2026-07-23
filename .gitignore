@@ -10,3 +10,6 @@
 __pycache__/
 dist/
 node_modules/
+tests/rls/seed-ids.json
+.env.test
+supabase/.temp/

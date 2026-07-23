@@ -30,6 +30,14 @@ without losing data and without taking the old site down until an approved cutov
   policy was verified NOT to allow self-escalation (members can't update profiles
   at all), so verbatim == secure; no policy changes needed.
 
+## Local stack note
+- **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
+  is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
+  (`confirmation_token` NULL scan errors, createUser failing). The engine version
+  is irrelevant to what we test (our schema/RLS/policies), so we use the CLI's
+  known-good 17 locally and diff the PUBLIC schema against the prod snapshot for
+  parity — not the engine version.
+
 ## Backup
 Read-only prod snapshot taken 2026-07-23 before any work: identity/mapping/counts
 at `~/backups/erhvervsklubben/` (off-git, contains PII). A complete `pg_dump` is

@@ -9,6 +9,11 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:rls": "bash scripts/rls-test.sh",
+    "test:rls:reset": "bash scripts/rls-test.sh --reset",
+    "db:start": "sg docker -c 'supabase start'",
+    "db:reset": "sg docker -c 'supabase db reset'",
+    "db:stop": "sg docker -c 'supabase stop'",
     "preview": "vite preview"
   },
   "dependencies": {
