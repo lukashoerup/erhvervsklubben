@@ -47,7 +47,7 @@ test run, never a status summary.
 | The rebuild plan + phases | docs/PLAN.md |
 | Test spec + review findings | docs/PLAN-REVIEW.md |
 | Verbatim schema/RLS to reproduce | docs/schema-snapshot-2026-07-23.sql |
-| Cross-project patterns | ../../workbench-context/PATTERNS.md |
+| Cross-project patterns | `workbench` repo → context/PATTERNS.md |
 
 ## Stack
 React 19 + Vite + TS + Tailwind v4 + supabase-js + React Router + TanStack Query
@@ -59,4 +59,4 @@ tokens only, so Lukas's Claude Design template reskins in one file (task T031/T0
 
 ## Docs duty
 Any change that invalidates a docs statement fixes it in the same commit.
-New decisions → docs/PROJECT.md. Dated gotchas → ../../workbench-context/LEARNINGS.md.
+New decisions → docs/PROJECT.md. Dated gotchas → `workbench` repo → context/LEARNINGS.md.
