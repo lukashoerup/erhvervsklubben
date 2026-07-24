@@ -1,15 +1,18 @@
 # Setup
 
-How to run this project on the lenovo. Environment, commands, gotchas, and where
-things live. For dated war-stories see [LEARNINGS.md](LEARNINGS.md).
+How to run this project on any machine (Mac, cloud session, CI, or the lenovo).
+Environment, commands, gotchas, and where things live. For dated war-stories
+see [LEARNINGS.md](LEARNINGS.md).
 
-## Prerequisites (already installed on the lenovo, 2026-07-24)
-- Node 22, npm — `package.json` scripts.
-- Docker 29 — the local Supabase stack. The `lukashoerup` user is in the `docker`
-  group, **but group membership doesn't apply in non-login shells**, so scripts
-  wrap docker calls in `sg docker -c "..."` (see `scripts/rls-test.sh`). Ad-hoc:
-  `sg docker -c "docker ps"`.
-- Supabase CLI 2.109 — `supabase` (installed via .deb).
+## Prerequisites
+- Node 22+, npm — `package.json` scripts.
+- Docker — only for the local Supabase stack (RLS tests). Unit tests, lint and
+  build need no Docker and run anywhere.
+- Supabase CLI 2.x.
+
+**Lenovo quirk:** the `lukashoerup` user is in the `docker` group, but group
+membership doesn't apply in non-login shells, so scripts wrap docker calls in
+`sg docker -c "..."` (see `scripts/rls-test.sh`). Ad-hoc: `sg docker -c "docker ps"`.
 
 ## First-time / fresh clone
 ```
@@ -45,6 +48,10 @@ must be created via the GoTrue admin API (`scripts/seed-auth.mjs`) — raw
 ## Where things live (NOT in git)
 - **Prod data backup:** `~/backups/erhvervsklubben/` (mode 600 — contains member
   emails). A read-only snapshot taken before any work.
+- **Discovery screenshots of the old app:** `~/erhverv-review/shots/` on the
+  lenovo — kept out of git because they show member names. The capture script
+  and its PII-free output ARE in git: `scripts/discovery-capture.py`,
+  `docs/discovery-network-model.json`.
 - **Secrets:** `~/.secrets/` (never read or printed).
 - **Generated seed ids:** `tests/rls/seed-ids.json` (gitignored; regenerated each seed).
 - Prod Supabase project: `urlabzyihqrsdeasvrfe` (Supabase MCP for read-only inspection).

@@ -20,6 +20,16 @@ cutover; production data must never be lost.
 - Max 3 attempts on the same failing test → stop, note it in the task file, move on.
 - Done = tests green + affected docs updated + task file moved to `tasks/done/`.
 
+## Autonomy boundary (agreed with Lukas 2026-07-24)
+**Proceed without asking:** anything inside an approved plan/task file —
+expanding agreed test suites, building pages per the reviewed spec, fixing red
+tests, updating docs.
+**Always stop and ask first:** schema or RLS changes, new dependencies,
+deploys, cutover, anything touching prod data or secrets.
+**Blocked on a decision?** Park it: write the question into the task file,
+push, notify Lukas (Telegram if available), and continue with unblocked work.
+Lukas answers via the Claude app; the answer gets committed to the task file.
+
 ## Start here after a fresh session
 Read **docs/STATUS.md** — where we are, what's green, what's next. Then SETUP.md
 to bring the local stack up. The repo is the memory: trust `git log` + a green

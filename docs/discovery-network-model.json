@@ -1,0 +1,24 @@
+{
+  "backends": [
+    "urlabzyihqrsdeasvrfe.supabase.co"
+  ],
+  "rest_tables": [
+    "attendance_records",
+    "attendances",
+    "event_evaluations",
+    "events",
+    "news",
+    "profiles",
+    "user_member_mapping"
+  ],
+  "rpc_functions": [],
+  "routes": [
+    "01-landing: https://kobenhavn-forum-connect.lovable.app/",
+    "02-login-filled: https://kobenhavn-forum-connect.lovable.app/login",
+    "03-after-login: https://kobenhavn-forum-connect.lovable.app/",
+    "04-nyheder: https://kobenhavn-forum-connect.lovable.app/news",
+    "05-begivenheder: https://kobenhavn-forum-connect.lovable.app/events",
+    "06-anciennitet: https://kobenhavn-forum-connect.lovable.app/seniority",
+    "07-om-os: https://kobenhavn-forum-connect.lovable.app/about"
+  ]
+}
