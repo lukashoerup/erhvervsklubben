@@ -20,14 +20,23 @@ cutover; production data must never be lost.
 - Max 3 attempts on the same failing test → stop, note it in the task file, move on.
 - Done = tests green + affected docs updated + task file moved to `tasks/done/`.
 
+## Start here after a fresh session
+Read **docs/STATUS.md** — where we are, what's green, what's next. Then SETUP.md
+to bring the local stack up. The repo is the memory: trust `git log` + a green
+test run, never a status summary.
+
 ## Document routing (read ONLY when needed)
 | Working on... | Read first |
 |---|---|
+| Current status / what to do next | docs/STATUS.md |
+| Components, dataflow, interfaces | docs/ARCHITECTURE.md |
+| Running it, commands, gotchas | docs/SETUP.md |
+| Decisions + why + open questions | docs/PROJECT.md |
+| Dated gotchas / war-stories | docs/LEARNINGS.md |
 | What the old app is (schema, RLS, routes, design) | docs/DISCOVERY.md |
 | The rebuild plan + phases | docs/PLAN.md |
 | Test spec + review findings | docs/PLAN-REVIEW.md |
 | Verbatim schema/RLS to reproduce | docs/schema-snapshot-2026-07-23.sql |
-| Decisions + why | docs/PROJECT.md |
 | Cross-project patterns | ../../workbench-context/PATTERNS.md |
 
 ## Stack
