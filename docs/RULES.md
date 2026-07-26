@@ -57,14 +57,24 @@ per-member ledger and quarterly total automatically.
 
 ## Membership and money — `Vedtægter`
 
-**§4 Stk. 3 — kontingent.** The statutes as written say **100 kr. per month**,
-paid in advance, collected monthly.
+**§4 Stk. 3 — kontingent.** The statutes say **200 kr. per month**, paid in
+advance, collected monthly.
 
-> **Amended since:** Lukas confirmed 2026-07-26 that the club voted to double
-> the monthly fee. That is why the sheet's membership income steps from 800 to
-> 1,800 kr. in June 26. The arithmetic is consistent with **9 active members ×
-> 200 kr.**, where the earlier 800 kr. was 8 × 100 kr. The statutes on file
-> still say 100 kr., so the document is behind the vote — worth fixing there.
+> **Resolved 2026-07-26.** The Drive document was behind the vote and said
+> 100 kr.; it has since been amended and now states 200 kr., so the statutes,
+> this file and `rules.ts` agree. The rate stays dated rather than a single
+> constant, because historical months must reconcile to what was actually
+> charged then: 100 kr. before June 2026, 200 kr. from June 2026.
+>
+> **Do not read the annual report's "hævet fra 800 til 1.800 kr/md" as the
+> per-member rate.** Those are monthly totals across the club — 8 × 100 kr.
+> before, 9 × 200 kr. after. Taken as a per-member figure they imply a
+> nine-fold fee rise, and put the year's 11,500 kr. of membership income out
+> by roughly an order of magnitude.
+
+`vedtaegter.ts` carries §4 Stk. 3 verbatim and reads the figure back out of the
+sentence itself, and a test asserts it equals what `duesFor` charges — so the
+statute and the invoice cannot drift apart without the suite going red.
 
 **§3 — who actually pays.** This is the distinction the finance calculation
 turns on:

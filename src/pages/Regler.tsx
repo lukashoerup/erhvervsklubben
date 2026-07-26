@@ -1,4 +1,5 @@
 import { FINE_RULES, duesFor } from '../data/rules'
+import { VEDTAEGTER } from '../data/vedtaegter'
 
 /**
  * The rules, given a page of their own rather than a buried third tab.
@@ -47,6 +48,36 @@ export default function Regler() {
             Pr. måned, betalt forud. Optagelse kræver godkendelse fra mindst 2/3 af de
             aktive medlemmer — og man skal have deltaget som gæst mindst én gang først.
           </p>
+        </div>
+      </section>
+
+      {/* The statutes in full, each section folded away.
+          Fifteen sections open at once is a wall nobody reads, but a summary
+          would be a second version of rules members are actually held to — so
+          the text is verbatim and the folding does the shortening. */}
+      <section className="rounded-xl border border-line bg-surface p-3">
+        <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
+          Vedtægter
+        </h2>
+        <p className="mt-1 text-[0.68rem] text-faint">
+          Vedtaget på generalforsamlingen. Ændringer kræver 2/3 flertal, jf. §14.
+        </p>
+        <div className="mt-2">
+          {VEDTAEGTER.map((s) => (
+            <details key={s.n} className="border-b border-line last:border-0">
+              <summary className="cursor-pointer list-none py-2 text-xs">
+                <span className="tabular mr-2 font-semibold text-accent">§{s.n}</span>
+                <span className="text-ink">{s.title}</span>
+              </summary>
+              <div className="flex flex-col gap-1.5 pb-3">
+                {s.items.map((item, i) => (
+                  <p key={i} className="text-[0.7rem] leading-relaxed text-muted">
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </details>
+          ))}
         </div>
       </section>
     </div>
