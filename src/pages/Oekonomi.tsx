@@ -1,7 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { balancesByMember, quarterOf } from '../data/ledger'
 import { Loading, Problem } from '../components/State'
+import { FineCapture, type DraftFine } from '../components/FineCapture'
+import { useAttendance } from '../data/useClubData'
+import { useAuth } from '../auth/AuthContext'
 
 /**
  * The treasurer's screen. Reached only through RequireAccess access="admin",
@@ -37,6 +41,101 @@ function useFinance() {
 
 const kr = (n: number) => `${n.toLocaleString('da-DK')} kr.`
 
+/** Save a meeting's fines. One row per fine; the database enforces the cap. */
+function useRecordFines() {
+  const qc = useQueryClient()
+  const { userId } = useAuth()
+  return useMutation({
+    mutationFn: async ({ recordId, fines }: { recordId: number; fines: DraftFine[] }) => {
+      if (fines.length === 0) return
+      const { error } = await supabase()
+        .from('fines')
+        .upsert(
+          fines.map((f) => ({
+            record_id: recordId,
+            member_name: f.member,
+            rule_id: f.ruleId,
+            minutes: f.minutes,
+            amount_kr: f.kr,
+            noted_by: userId,
+          })),
+          // Re-recording a meeting corrects it rather than duplicating: the
+          // unique key is exactly the regulation's one-per-offence-per-meeting.
+          { onConflict: 'record_id,member_name,rule_id' },
+        )
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance'] }),
+  })
+}
+
+function RecordFines() {
+  const attendance = useAttendance()
+  const record = useRecordFines()
+  const [meetingId, setMeetingId] = useState<number | null>(null)
+  const [draft, setDraft] = useState<DraftFine[]>([])
+
+  if (!attendance.data || attendance.data.meetings.length === 0) return null
+  const meetings = attendance.data.meetings
+  const meeting = meetings.find((m) => m.id === meetingId)
+
+  return (
+    <section className="rounded-xl border border-line bg-surface p-3">
+      <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">Registrér bøder</h2>
+
+      <label className="mt-2 block text-xs text-muted">
+        Møde
+        <select
+          aria-label="Møde"
+          className="mt-1 block w-full rounded-lg border border-line bg-raised px-2 py-2 text-ink"
+          value={meetingId ?? ''}
+          onChange={(e) => {
+            setMeetingId(e.target.value ? Number(e.target.value) : null)
+            setDraft([])
+          }}
+        >
+          <option value="">Vælg møde…</option>
+          {meetings.map((m) => (
+            <option key={m.id} value={m.id}>
+              Nr. {m.number} — {m.lead}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {meeting && (
+        <div className="mt-3 flex flex-col gap-2">
+          <FineCapture
+            // Everyone who was at the meeting — you cannot be fined for
+            // toasting early at a meeting you did not attend.
+            members={meeting.present}
+            value={draft}
+            onChange={setDraft}
+          />
+          <button
+            type="button"
+            disabled={draft.length === 0 || record.isPending}
+            onClick={() => record.mutate({ recordId: meeting.id, fines: draft })}
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {record.isPending ? 'Gemmer…' : `Gem ${draft.length} bøde(r)`}
+          </button>
+          {record.isSuccess && (
+            <p role="status" className="text-xs text-present">
+              Gemt.
+            </p>
+          )}
+          {record.isError && (
+            <p role="alert" className="text-xs text-absent">
+              Kunne ikke gemme. Prøv igen.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function Oekonomi() {
   const { data, isPending, error } = useFinance()
 
@@ -58,6 +157,8 @@ export default function Oekonomi() {
           Indbetalt i alt. Udestående bøder: <span className="tabular">{kr(totalOwed)}</span>
         </p>
       </section>
+
+      <RecordFines />
 
       <section className="rounded-xl border border-line bg-surface p-3">
         <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">Bøder pr. medlem</h2>

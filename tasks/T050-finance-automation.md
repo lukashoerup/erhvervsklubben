@@ -133,8 +133,8 @@ Design consequences, already applied to the mockups:
 - [x] Fine amounts encoded from `docs/RULES.md`, including the two escape
       clauses (late arrival waived if the Lead is told within 24h; drinks fine
       waived with the Lead's consent) and the one-fine-per-offence-per-meeting cap
-- [ ] The Lead can record a meeting's fines in well under a minute, on a phone,
-      the moment it ends — **not built yet**, see working notes
+- [x] A meeting's fines can be recorded in well under a minute on a phone —
+      one tap per fine, minutes asked for only where the rule needs them
 - [x] Every sum, per-member ledger and quarterly total derived, never typed
 - [x] Membership fees computed from **active** member count × rate (§3 —
       inactive members pay nothing), with the rate change 100 → 200 kr dated
@@ -184,10 +184,31 @@ reconciliation, then the quarterly prompt.
 - Dues are dated rather than a single constant, so past months reconcile to what
   was actually charged then.
 
+### Capture is built — but for the treasurer, not the Lead
+The screen exists and works: pick a meeting, tap a chip per fine, save. Only
+members recorded as present are offered, since you cannot toast early at a
+meeting you did not attend. Re-recording a meeting corrects it rather than
+duplicating, because the upsert key is exactly the regulation's
+one-per-offence-per-meeting rule.
+
+**It sits behind the treasurer's login, and the regulation says otherwise.**
+Bødekasseregulativ Stk. 2 makes the *Lead* responsible for noting fines. But the
+`fines` table is admin-only, following Lukas's rule that the club's money is not
+everyone's business — so a Lead who is not an admin cannot write to it.
+
+Those two are not actually in conflict once separated: his stated concern was
+the **balance**, not the fine list, and the club already shares fines openly (the
+old grid was a shared spreadsheet everyone could read). Widening it is a small,
+well-understood change:
+- Leads may insert fines for the meeting they led.
+- Members may read their own fines.
+- The balance and payments stay admin-only.
+
+That is an access-rule change, which `SYSTEM.md` puts squarely in "stop and ask".
+**Needs Lukas's decision before it ships.** Until then the treasurer records
+them, which is still the current process minus the spreadsheet.
+
 ### Still to build
-- **The Lead's capture screen.** The schema, the rules and the arithmetic are
-  in; what is missing is the one-minute phone flow for recording a meeting's
-  fines. That is the product, and it is the next piece of work.
 - **The monthly ledger view.** Deliberately not shown: meetings carry no date,
   so a fine cannot be placed in a month. `buildLedger` is written and tested and
   will light up as soon as dates exist. Showing invented months would be worse
