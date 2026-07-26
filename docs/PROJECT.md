@@ -47,6 +47,19 @@ without losing data and without taking the old site down until an approved cutov
   `authenticated` full access to every table. The policies are not one layer
   among several — they are the entire lock.
 
+- **2026-07-26 — signed-out visitors see no member data, and pages are gated
+  too.** Lukas's requirement: attendance records, financials and similar must sit
+  behind login. The data half is already enforced and tested (anon gets zero rows
+  from every non-public table). The page half is T030. Both are needed and
+  neither replaces the other: a route guard is not security, since anyone can
+  bypass the JavaScript — the policies are the security, the guard is what makes
+  the site behave correctly.
+- **2026-07-26 — a new table must be classified before it ships.** The suite
+  fails if any table the API exposes is missing from `tests/rls/rules.ts`. A
+  table is reachable from the browser the moment it exists, so this turns "who
+  may read this?" into a decision rather than an oversight. Relevant to the
+  financials table when Q1 is resolved.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

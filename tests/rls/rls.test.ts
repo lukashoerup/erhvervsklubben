@@ -180,6 +180,31 @@ describe('nobody can promote themselves', () => {
     expect(check.data?.role).toBe('user')
   })
 
+  test('every table the API exposes has been classified in rules.ts', async () => {
+    // The guard that makes "signed-out visitors cannot read member data" hold
+    // for tables that do not exist yet. A new table — financials, say — is
+    // exposed to the browser the moment it is created, and every test above
+    // only covers tables someone remembered to list. This one fails instead,
+    // forcing a decision about who may read it.
+    const url = process.env.SUPABASE_URL!
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const spec = await fetch(`${url}/rest/v1/`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    }).then((r) => r.json() as Promise<{ paths?: Record<string, unknown> }>)
+
+    const exposed = Object.keys(spec.paths ?? {})
+      .map((p) => p.replace(/^\//, ''))
+      .filter((p) => p !== '' && !p.startsWith('rpc/'))
+
+    const unclassified = exposed.filter((t) => !ALL_TABLES.includes(t))
+    expect(
+      unclassified,
+      `unclassified table(s): ${unclassified.join(', ')}. Add each to ` +
+        'tests/rls/rules.ts — PUBLIC_TABLES, SHARED_TABLES or PERSONAL_TABLES — ' +
+        'so who can read it is a decision rather than an accident.',
+    ).toEqual([])
+  })
+
   test('no gated table is readable by the open internet', async () => {
     // The check that catches the worst possible mistake. A table added without
     // row level security is wide open to anyone who opens the browser console,
