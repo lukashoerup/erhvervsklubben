@@ -10,9 +10,9 @@ end of every working session._
 | 1 | Schema-as-migration, seed, local stack | ✅ **done** (T010, T012) |
 | 2 | RLS test suite | ✅ **done** (T020) — 40 assertions generated from the rule, green in CI |
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
-| 4 | Read-only screens (landing, about, news, events, seniority data layer) | ⬜ not started |
-| 5 | Anciennitet UI (matrix + charts) | ⬜ not started |
-| 6 | Admin write flows | ⬜ not started |
+| 4 | Read-only screens | 🟡 **mostly done** — Anciennitet, Nyheder, Regler live on real data; landing/about outstanding |
+| 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first |
+| 6 | Admin write flows | 🟡 **fine capture done** (T054); news/events editing outstanding |
 | 7 | Design | ✅ **agreed 2026-07-26** — corporate blue redesign + logo; tokens live in `src/index.css` |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
@@ -20,7 +20,7 @@ end of every working session._
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 23 component/routing tests (jsdom, fast, offline).
+- `npm test` — 61 component/derivation tests (jsdom, fast, offline).
 - `npm run build`, `npm run lint` — clean.
 - `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
@@ -34,12 +34,14 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
   prod at cutover.
 
 ## Immediate next tasks (resume here)
-1. **Phase 4 — the read-only screens**, starting with Anciennitet: it is the
-   page the club actually uses. One card per meeting rather than a 15-column
-   table (see the agreed design), with the full grid kept for desktop.
-2. **T050 — finance**, now unblocked: rules transcribed in `docs/RULES.md`, the
-   fee change explained, storage decided (club database, admin-only). The build
-   is fine *capture* by the Lead plus derived arithmetic — not derivation.
+1. **Decide whether Leads can record fines** — the one thing blocking the
+   finance flow from matching the regulation. See T050's "Capture is built"
+   note; it is an access-rule change, so it needs Lukas.
+2. **Meeting dates.** Nothing else can be placed in a month without them: the
+   monthly ledger is written and tested but shows nothing. Capture from the next
+   meeting (§9 plans two ahead) and backfill from the old events page.
+3. **Landing/about pages**, and news/events editing for the admin.
+4. **Import the sheet's history** once dates exist to hang it on.
 2. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,
    grants) against the prod snapshot. Currently fidelity is verified by hand.
