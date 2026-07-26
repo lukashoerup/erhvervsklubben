@@ -76,19 +76,21 @@ and who attended. So:
 - Drift between expected and actual is then a *reported number*, not something
   that quietly accumulates unnoticed — which is what happened here.
 
-## Open decision — where the numbers should live
-Not yet settled with Lukas. It changes the work materially:
+## Where the numbers live — decided 2026-07-26
+**The club database.** Lukas chose to replace the Sheets integration rather than
+continue it. The site already reads from the database, so the machine writes
+there directly.
 
-- **Club database** (recommended): the site already reads from it, so fines and
-  balances computed on the box are written straight there. No Google
-  credentials, no second source of truth, nothing to drift. The sheet becomes
-  optional — Lukas can keep it for his own use or drop it.
-- **Google Sheets stays the master**: matches "continue with that setup", but
-  scheduled updates cannot use the claude.ai Drive connector —
-  `workbench/context/STACK.md` restricts connectors to interactive sessions,
-  because runtime jobs must stay zero-cloud-token. That means a Google service
-  account, its credentials stored on the box, and a new dependency — all of
-  which need Lukas's explicit approval.
+Consequences worth stating, because they are the reason:
+- No Google service account, no credential on the box, no new dependency. The
+  claude.ai Drive connector used to *read* the sheet during this investigation
+  cannot be used by a scheduled job anyway — `workbench/context/STACK.md`
+  restricts connectors to interactive sessions so runtime jobs stay
+  zero-cloud-token.
+- One source of truth instead of two. The gap between them is exactly what
+  produced the 50 kr discrepancy and the two stale months.
+- The existing sheet is read once, to import history, and then nothing depends
+  on it. Lukas may keep it privately.
 
 ## Acceptance criteria (draft — firm up once unblocked)
 - [ ] Fine rules encoded from the published regulations, with the source quoted

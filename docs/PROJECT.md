@@ -67,6 +67,13 @@ without losing data and without taking the old site down until an approved cutov
   confirms the bank balance quarterly. No bank credentials and no aggregator
   subscription: his explicit choice, and it keeps the attack surface at zero.
   Blocked on the published fine rules — see T050.
+- **2026-07-26 — finance numbers live in the club database, not in Google
+  Sheets.** Lukas's call, replacing the Sheets integration rather than
+  continuing it. The site already reads from the database, so the machine writes
+  there directly: no Google service account or credential on the box, and one
+  source of truth instead of two. The drift between them is what produced both
+  the 50 kr discrepancy and two stale months. Lukas may keep his sheet privately;
+  nothing will depend on it.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
