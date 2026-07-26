@@ -43,3 +43,22 @@ PostgREST + RLS: a filtered SELECT/UPDATE/DELETE returns **success with 0 rows**
 Also: `profiles` SELECT is own-row-only *even for admins* (no admin-read-all
 policy), so tests must verify true DB state via a service-role client, not by
 reading as the admin user. Both facts are baked into `tests/rls/`.
+
+## 2026-07-26 — Tailwind v4 ignores what wraps an `@theme` block
+Every `@theme` block is collected into one `:root` regardless of the at-rules
+around it. A second `@theme` inside `@media (prefers-color-scheme: light)` is
+therefore **not** scoped to light mode — it overwrites the first set
+unconditionally, and one whole palette disappears from the build. That is what
+happened here: the shipped stylesheet contained only the light values, so the
+agreed dark ground never rendered anywhere. Nothing failed, nothing warned, and
+the result looked deliberate.
+
+Define the tokens once in `@theme`, then override the **variables** in a plain
+`:root` inside the media query — utilities compile to `var(--color-…)`, so that
+is all it takes. `src/theme.test.ts` now fails on an indented `@theme`.
+
+## 2026-07-26 — `100vh` puts a bottom tab bar below the fold on a phone
+`100vh` is the viewport measured with the browser chrome hidden, so a
+`min-h-screen` column with navigation at its end starts partly off-screen and
+only becomes reachable by scrolling. `dvh` is the honest unit. Neither the unit
+tests nor a desktop-sized browser show this; a 390×844 viewport does immediately.

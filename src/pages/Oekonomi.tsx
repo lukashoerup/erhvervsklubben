@@ -6,6 +6,7 @@ import { Loading, Problem } from '../components/State'
 import { FineCapture, type DraftFine } from '../components/FineCapture'
 import { useAttendance } from '../data/useClubData'
 import { useAuth } from '../auth/AuthContext'
+import { DEMO, demoFines, demoPayments } from '../data/demo'
 
 /**
  * The treasurer's screen. Reached only through RequireAccess access="admin",
@@ -27,6 +28,7 @@ function useFinance() {
   return useQuery({
     queryKey: ['finance'],
     queryFn: async () => {
+      if (DEMO) return { fines: demoFines, payments: demoPayments }
       const [fines, payments] = await Promise.all([
         supabase().from('fines').select('member_name, amount_kr, record_id'),
         supabase().from('payments').select('month, amount_kr'),

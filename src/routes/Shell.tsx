@@ -19,7 +19,11 @@ export function Shell() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col">
+    /* dvh, not vh: on a phone `100vh` is the viewport measured with the address
+       bar hidden, so the tab bar sits below the fold until you scroll. The
+       --demo-bar variable is set only by the demo build, which puts a banner
+       above this; everywhere else it falls back to 0px. */
+    <div className="mx-auto flex min-h-[calc(100dvh-var(--demo-bar,0px))] max-w-lg flex-col">
       <header className="flex items-center justify-between border-b border-line px-4 py-3">
         <span className="flex items-center gap-2">
           <span

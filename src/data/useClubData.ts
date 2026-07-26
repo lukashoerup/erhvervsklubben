@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
+import { DEMO, demoAttendances, demoNews, demoRecords, demoUpcoming } from './demo'
 
 /**
  * The club's attendance history, shaped for the page.
@@ -14,6 +15,14 @@ export function useAttendance() {
   return useQuery({
     queryKey: ['attendance'],
     queryFn: async () => {
+      if (DEMO) {
+        const roster = buildRoster(demoRecords, demoAttendances)
+        return {
+          roster,
+          meetings: buildMeetings(demoRecords, demoAttendances, roster),
+          labels: shortLabels(roster.map((r) => r.name)),
+        }
+      }
       const [recs, atts] = await Promise.all([
         supabase()
           .from('attendance_records')
@@ -41,6 +50,7 @@ export function useNews() {
   return useQuery({
     queryKey: ['news'],
     queryFn: async () => {
+      if (DEMO) return demoNews
       const { data, error } = await supabase()
         .from('news')
         .select('id, title, excerpt, author, date')
@@ -57,6 +67,7 @@ export function useMyMemberName(userId: string | null) {
     queryKey: ['my-member', userId],
     enabled: Boolean(userId),
     queryFn: async () => {
+      if (DEMO) return 'Lukas'
       const { data } = await supabase()
         .from('user_member_mapping')
         .select('member_name')
@@ -85,6 +96,7 @@ export function useUpcoming() {
   return useQuery({
     queryKey: ['upcoming'],
     queryFn: async () => {
+      if (DEMO) return demoUpcoming
       const today = new Date().toISOString().slice(0, 10)
       const { data, error } = await supabase()
         .from('events')

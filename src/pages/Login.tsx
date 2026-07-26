@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { DEMO } from '../data/demo'
 
 export default function Login() {
   const { userId, loading, signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  // Prefilled in the demo build only. A preview whose first screen is an empty
+  // login box, with no valid credentials existing anywhere, is a dead end.
+  const [email, setEmail] = useState(DEMO ? 'demo@erhvervsklubben.dk' : '')
+  const [password, setPassword] = useState(DEMO ? 'demo' : '')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -27,7 +30,7 @@ export default function Login() {
   }
 
   return (
-    <main className="mx-auto grid min-h-screen max-w-sm place-items-center px-5">
+    <main className="mx-auto grid min-h-dvh max-w-sm place-items-center px-5">
       <form onSubmit={onSubmit} className="w-full">
         <div className="mb-8 text-center">
           <div
@@ -82,6 +85,13 @@ export default function Login() {
         >
           {busy ? 'Logger ind…' : 'Log ind'}
         </button>
+
+        {DEMO && (
+          <p className="mt-4 text-center text-[0.7rem] leading-relaxed text-faint">
+            Demoversion med opdigtede tal. Tryk bare <strong>Log ind</strong> —
+            der er ingen database bag denne udgave.
+          </p>
+        )}
       </form>
     </main>
   )
