@@ -88,14 +88,20 @@ accounts and presents them annually.
 Measured purely in **number of attendances**. Being an active member does not
 earn it; only turning up does.
 
-The wrinkle the app must not flatten: attendance can be **revoked by vote**.
-If a member leaves an event early for something else, those present may vote to
-strip the anciennitet for that attendance. It is denied only if at least 2/3
-vote against, the vote happens at that same meeting during dinner, and if no
-vote is held, full anciennitet is earned automatically.
+The statutes allow attendance to be **revoked by vote**: if a member leaves an
+event early for something else, those present may strip the anciennitet for that
+attendance. It needs 2/3 against, decided at that meeting during dinner, and if
+no vote is held full anciennitet is earned automatically.
 
-So an attendance row needs to carry whether it counted, not just whether the
-person was there.
+**Deliberately not built** (Lukas, 2026-07-26): it has never happened, and has
+never even been proposed. Building a voting flow, a revoked state and the screens
+to explain it would be real work and permanent complexity in the most-used page,
+for an event with no precedent.
+
+If it ever does happen, the existing `attendances.attended` flag already covers
+it — the treasurer flips that one row to false, which is what a revoked
+attendance means anyway. No schema change, no UI, nothing to maintain in the
+meantime. Revisit only if it happens twice.
 
 ---
 

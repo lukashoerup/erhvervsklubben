@@ -83,6 +83,14 @@ without losing data and without taking the old site down until an approved cutov
   balance is off the front page and out of the launch animation, where an
   animated number would have been the least private place to put it.
 
+- **2026-07-26 — anciennitet revocation is not built.** §11 allows attendance to
+  be revoked by a 2/3 vote; Lukas: it has never happened and has never been
+  suggested. A voting flow plus a revoked state plus the screens to explain them
+  is permanent complexity in the most-used page for an event with no precedent.
+  If it ever occurs, flipping `attendances.attended` to false is exactly what a
+  revoked attendance means — no schema change and no UI needed. Revisit if it
+  happens twice.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
