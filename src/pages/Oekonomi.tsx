@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import { READONLY, supabase } from '../lib/supabase'
 import { balancesByMember, buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
 import { Loading, Problem } from '../components/State'
 import { FineCapture, type DraftFine } from '../components/FineCapture'
@@ -29,6 +29,10 @@ function useFinance() {
     queryKey: ['finance'],
     queryFn: async () => {
       if (DEMO) return { fines: demoFines, payments: demoPayments }
+      // The live project predates the club's books: it has no fines or
+      // payments tables, and this build may not create them. Empty is the
+      // truthful answer, and the page says so rather than erroring.
+      if (READONLY) return { fines: [], payments: [] }
       const [fines, payments] = await Promise.all([
         supabase().from('fines').select('member_name, amount_kr, record_id'),
         supabase().from('payments').select('month, amount_kr'),
@@ -83,6 +87,7 @@ function RecordFines() {
   const [meetingId, setMeetingId] = useState<number | null>(null)
   const [draft, setDraft] = useState<DraftFine[]>([])
 
+  if (READONLY) return null
   if (!attendance.data || attendance.data.meetings.length === 0) return null
   const meetings = attendance.data.meetings
   const meeting = meetings.find((m) => m.id === meetingId)
@@ -167,6 +172,7 @@ function MissingDates() {
   })
 
   const undated = (attendance.data?.meetings ?? []).filter((m) => !m.date)
+  if (READONLY) return null
   if (undated.length === 0) return null
 
   return (
@@ -248,6 +254,19 @@ export default function Oekonomi() {
           Indbetalt i alt. Udestående bøder: <span className="tabular">{kr(totalOwed)}</span>
         </p>
       </section>
+
+      {READONLY && (
+        <section className="rounded-xl border border-line bg-surface p-3">
+          <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
+            Skrivebeskyttet forhåndsvisning
+          </h2>
+          <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
+            Denne udgave læser klubbens rigtige data, men kan ikke ændre dem.
+            Bøder og indbetalinger findes endnu ikke i databasen, så tallene
+            herunder står på nul, indtil regnskabet flyttes ind.
+          </p>
+        </section>
+      )}
 
       <RecordFines />
       <MissingDates />
