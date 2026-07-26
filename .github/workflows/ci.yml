@@ -1,0 +1,84 @@
+# CI is the judge (CLAUDE.md contract). Two jobs, deliberately separate:
+#
+#   checks — lint, typecheck, build, unit tests. Fast, offline, runs everywhere.
+#   rls    — the RLS behaviour suite against a real Supabase stack in the runner.
+#
+# The split matters. The RLS job needs Docker and pulls several images, so it is
+# minutes where `checks` is seconds; keeping them apart means a lint error is
+# reported immediately instead of behind a stack boot, and a red RLS suite is
+# distinguishable from a red build at a glance.
+#
+# This job is also what makes RLS work possible from a cloud session at all:
+# those tests cannot run without Docker, so without CI an agent writing them
+# would be asserting they pass. The repo's rule is that tests are the judge,
+# never an agent's self-report — this is the thing that enforces it.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `npm run build` runs `tsc -b` first, so this covers typecheck too.
+      - name: Typecheck and build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+  rls:
+    runs-on: ubuntu-latest
+    # Booting the stack pulls several container images on a cold cache.
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Installed globally in the runner rather than via a marketplace action:
+      # CLAUDE.md forbids adding dependencies without approval, and an action is
+      # a dependency like any other. A global install touches the runner only —
+      # nothing enters package.json.
+      #
+      # Pinned deliberately. An unpinned CLI lets an upstream release turn this
+      # suite red with no change in this repo, and the failure would look like a
+      # policy regression rather than a version bump. Raise it on purpose.
+      - name: Install Supabase CLI
+        env:
+          SUPABASE_CLI_VERSION: "2.109.1"
+        run: |
+          npm install -g "supabase@${SUPABASE_CLI_VERSION}"
+          supabase --version
+
+      - name: Start the local stack
+        run: supabase start
+
+      # test:rls:reset rebuilds from migrations, seeds auth users, then runs the
+      # suite. Reusing the repo's own script rather than restating the sequence
+      # here keeps CI and a developer's laptop running literally the same steps.
+      - name: RLS behaviour suite
+        run: npm run test:rls:reset
+
+      - name: Stack logs on failure
+        if: failure()
+        run: supabase status || true

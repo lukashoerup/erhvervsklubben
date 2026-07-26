@@ -36,6 +36,34 @@ npm run test:rls:reset    # applies migrations + seed + auth users, runs RLS tes
 must be created via the GoTrue admin API (`scripts/seed-auth.mjs`) — raw
 `auth.users` INSERTs fail GoTrue's schema scan. Only `test:rls:reset` runs both.
 
+## CI — what judges a push
+`.github/workflows/ci.yml`, on every push and PR. Two jobs:
+
+| Job | Runs | Why separate |
+|---|---|---|
+| `checks` | lint → `tsc -b` + build → `npm test` | Seconds, offline. A lint error should not wait behind a stack boot. |
+| `rls` | installs the Supabase CLI, `supabase start`, `npm run test:rls:reset` | Minutes — it pulls container images. Failing here is a policy regression, not a build error. |
+
+The `rls` job runs the repo's own script rather than restating its steps in
+YAML, so CI and a laptop execute literally the same sequence.
+
+**This is what makes RLS work possible from a cloud session.** Those tests need
+Docker; a session without it cannot run them, and an agent that writes RLS tests
+it cannot execute is asserting rather than proving. CI is the thing that keeps
+"tests are the judge, never an agent's self-report" true when the author has no
+stack.
+
+The CLI is installed globally in the runner at a pinned version, not via a
+marketplace action — an action is a dependency, and the contract forbids adding
+those unasked. A global install touches the runner only; nothing enters
+`package.json`. Bump `SUPABASE_CLI_VERSION` in the workflow deliberately: an
+unpinned CLI would let an upstream release turn the suite red with no change
+here, and it would read as a policy regression rather than a version bump.
+
+Claude Code hooks live in `.claude/settings.json`: oxlint after every edit, the
+unit suite on session stop. Both are fast and offline; the RLS suite is
+deliberately not hooked, since it needs the stack running.
+
 ## Local stack facts
 - Postgres **17** locally (Supabase CLI default) vs prod **15**. Forcing 15 broke
   GoTrue locally; the engine version doesn't affect what we test. See LEARNINGS.
