@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-24. Single source of truth for "where are we". Update this at the
+_Updated 2026-07-26. Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Phase progress
@@ -23,11 +23,17 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 - `npm test` — 1 component/unit test (jsdom, fast, offline).
 - `npm run build`, `npm run lint` — clean.
 - `npm run test:rls` — 9 RLS integration cases vs the local Supabase stack.
+- **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
+  unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,
+  and the `rls` job is proven to go red on a real policy regression — see
+  T022's working notes for the evidence.
 - Migration applies clean: 7 tables / 7 RLS-enabled / 21 policies / 2 SECURITY
   DEFINER functions / 1 signup trigger. Verified faithful to prod 2026-07-24.
 
 ## Immediate next tasks (resume here)
 1. **T020 cont. — expand the RLS suite** to the full matrix in PLAN-REVIEW Part B.
+   Now safe to do from a cloud session: those tests need Docker, which a cloud
+   session lacks, so CI is what proves them rather than the author's word.
    Priority gaps (flagged by Fable review): positive-auth (member CAN read
    attendances/attendance_records; member CAN CRUD own evaluation; signup trigger
    T1–T3), anon INSERT sweep, admin ALL on attendances (A7), user_member_mapping
@@ -36,8 +42,8 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 2. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,
    grants) against the prod snapshot. Currently fidelity is verified by hand.
-3. **T013 — wire CI** (GitHub Actions): lint + typecheck + `npm test`, then a job
-   that boots the local stack and runs `test:rls` + parity.
+3. ~~**T013 — wire CI**~~ ✅ **done 2026-07-26 as T022.** Add the parity check to
+   the `rls` job once T011 exists.
 4. Fix the `supabase/seed.sql` header (it says `db:reset` runs seed-auth; it does
    not — only `test:rls:reset` does) and remove the `record_id: 1` coupling in
    `scripts/seed-auth.mjs`.
