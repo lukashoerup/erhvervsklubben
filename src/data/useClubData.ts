@@ -66,3 +66,34 @@ export function useMyMemberName(userId: string | null) {
     },
   })
 }
+
+export type EventItem = {
+  id: string
+  title: string
+  date: string
+  time: string
+  location: string
+  description: string
+}
+
+/**
+ * The next meetings. §9 says two are always planned ahead, so this should
+ * normally return two — if it returns none, that is itself worth seeing on the
+ * front page rather than hiding.
+ */
+export function useUpcoming() {
+  return useQuery({
+    queryKey: ['upcoming'],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10)
+      const { data, error } = await supabase()
+        .from('events')
+        .select('id, title, date, time, location, description')
+        .gte('date', today)
+        .order('date', { ascending: true })
+        .limit(2)
+      if (error) throw error
+      return (data ?? []) as EventItem[]
+    },
+  })
+}
