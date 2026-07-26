@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { balancesByMember, quarterOf } from '../data/ledger'
+import { balancesByMember, buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
 import { Loading, Problem } from '../components/State'
 import { FineCapture, type DraftFine } from '../components/FineCapture'
 import { useAttendance } from '../data/useClubData'
@@ -16,23 +16,29 @@ import { useAuth } from '../auth/AuthContext'
  * spreadsheet stored its totals, which is how it came to disagree with itself
  * by 50 kr.
  *
- * The month-by-month ledger is deliberately absent for now: meetings carry no
- * date (§9 says two are always planned ahead, so dates are captured from here
- * on), and a fine cannot be placed in a month until its meeting has one.
- * Showing an invented month would be worse than showing none.
+ * A fine belongs to the month its meeting happened in. Meetings recorded before
+ * dates were captured have none, so those fines count towards what is owed but
+ * stay out of the month-by-month view — and the amount left out is stated,
+ * rather than being quietly dropped or shoved into an arbitrary month, which
+ * would misstate a quarter. The undated meetings are listed with a field to
+ * fill in, so the gap is finite, visible and shrinking.
  */
 function useFinance() {
   return useQuery({
     queryKey: ['finance'],
     queryFn: async () => {
       const [fines, payments] = await Promise.all([
-        supabase().from('fines').select('member_name, amount_kr'),
+        supabase().from('fines').select('member_name, amount_kr, record_id'),
         supabase().from('payments').select('month, amount_kr'),
       ])
       if (fines.error) throw fines.error
       if (payments.error) throw payments.error
       return {
-        fines: (fines.data ?? []) as { member_name: string; amount_kr: number }[],
+        fines: (fines.data ?? []) as {
+          member_name: string
+          amount_kr: number
+          record_id: number
+        }[],
         payments: (payments.data ?? []) as { month: string; amount_kr: number }[],
       }
     },
@@ -190,15 +196,46 @@ function MissingDates() {
 
 export default function Oekonomi() {
   const { data, isPending, error } = useFinance()
+  const attendance = useAttendance()
 
   if (isPending) return <Loading what="klubkassen" />
   if (error) return <Problem />
 
-  const owed = balancesByMember(
-    data.fines.map((f) => ({ month: '', member_name: f.member_name, amount_kr: f.amount_kr })),
+  // A fine belongs to the month its meeting happened in. Fines on a meeting
+  // that still has no date are counted in the totals — they are owed either
+  // way — but left out of the month-by-month view rather than dumped into an
+  // arbitrary month, which would misstate a quarter.
+  const monthOf = new Map(
+    (attendance.data?.meetings ?? []).map((m) => [m.id, m.month]),
   )
+  const finesWithMonth = data.fines.map((f) => ({
+    month: monthOf.get(f.record_id) ?? '',
+    member_name: f.member_name,
+    amount_kr: f.amount_kr,
+  }))
+  const dated = finesWithMonth.filter((f) => f.month)
+  const undatedKr = finesWithMonth
+    .filter((f) => !f.month)
+    .reduce((n, f) => n + f.amount_kr, 0)
+
+  const owed = balancesByMember(finesWithMonth)
   const totalOwed = owed.reduce((n, o) => n + o.kr, 0)
   const received = data.payments.reduce((n, p) => n + p.amount_kr, 0)
+
+  const quarters = quarterlyTotals(dated)
+  const months = [
+    ...dated.map((f) => f.month),
+    ...data.payments.map((p) => p.month.slice(0, 7)),
+  ].sort()
+  const ledger = months.length
+    ? buildLedger({
+        from: months[0],
+        to: months[months.length - 1],
+        fines: dated,
+        payments: data.payments.map((p) => ({ ...p, month: p.month.slice(0, 7) })),
+        activeMembers: () => attendance.data?.roster.length ?? 0,
+      })
+    : []
 
   return (
     <div className="flex flex-col gap-3">
@@ -231,6 +268,61 @@ export default function Oekonomi() {
           </ul>
         )}
       </section>
+
+      {quarters.length > 0 && (
+        <section className="rounded-xl border border-line bg-surface p-3">
+          <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
+            Kvartalsvis opkrævning
+          </h2>
+          <ul className="mt-1">
+            {quarters.map((q) => (
+              <li
+                key={q.quarter}
+                className="flex justify-between border-b border-line py-1.5 text-xs last:border-0"
+              >
+                <span className="tabular">{q.quarter}</span>
+                <span className="tabular font-semibold">{kr(q.kr)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {ledger.length > 0 && (
+        <section className="rounded-xl border border-line bg-surface p-3">
+          <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
+            Måned for måned
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="mt-2 w-full text-xs">
+              <thead>
+                <tr className="text-faint">
+                  <th className="text-left font-normal">Måned</th>
+                  <th className="text-right font-normal">Forventet</th>
+                  <th className="text-right font-normal">Modtaget</th>
+                  <th className="text-right font-normal">Udestående</th>
+                </tr>
+              </thead>
+              <tbody className="tabular">
+                {ledger.map((m) => (
+                  <tr key={m.month} className="border-t border-line">
+                    <td className="py-1">{m.month}</td>
+                    <td className="py-1 text-right">{m.expected}</td>
+                    <td className="py-1 text-right">{m.received}</td>
+                    <td className="py-1 text-right text-accent">{m.outstanding}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {undatedKr > 0 && (
+            <p className="mt-2 text-[0.68rem] text-faint">
+              {kr(undatedKr)} i bøder hører til møder uden dato og indgår derfor
+              ikke i månedsoversigten. De tælles stadig med i totalen.
+            </p>
+          )}
+        </section>
+      )}
 
       <p className="text-[0.68rem] leading-relaxed text-faint">
         Alle tal er beregnet, ikke gemte — summen kan ikke komme i modstrid med
