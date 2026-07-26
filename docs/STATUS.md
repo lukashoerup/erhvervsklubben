@@ -50,7 +50,7 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    `scripts/seed-auth.mjs`.
 
 ## Blocked / waiting on Lukas (see PROJECT.md open decisions)
-- Q1 finance-chart data source (no finance table) — blocks the finance chart (T054).
+- ~~Q1 finance-chart data source~~ **answered 2026-07-26** — derived from meeting/attendance data, with a quarterly bank confirmation. T050 carries it; blocked only on the published fine rules, which this environment cannot reach.
 - Q3 keep prod on free tier (auto-pauses) or upgrade to paid.
 - Q4 new URL / domain.
 - Design template (Phase 7) — non-blocking; the theme seam in `src/index.css` waits.

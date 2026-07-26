@@ -60,6 +60,14 @@ without losing data and without taking the old site down until an approved cutov
   may read this?" into a decision rather than an oversight. Relevant to the
   financials table when Q1 is resolved.
 
+- **2026-07-26 — Q1 answered: finances come from a Google Sheet today, and will
+  be derived instead.** Everything except money-actually-received is computable
+  from data the club already holds — the database records every meeting, its
+  lead, and who attended. The machine maintains the expected side; Lukas
+  confirms the bank balance quarterly. No bank credentials and no aggregator
+  subscription: his explicit choice, and it keeps the attack surface at zero.
+  Blocked on the published fine rules — see T050.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
