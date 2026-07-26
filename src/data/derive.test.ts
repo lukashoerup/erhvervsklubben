@@ -80,6 +80,40 @@ describe('meetings', () => {
     expect(buildMeetings(records, rows, roster).map((m) => m.number)).toEqual([3, 2, 1])
   })
 
+  test('a date, where one exists, gives the month a fine belongs to', () => {
+    const dated: RecordRow[] = [{ ...records[0], meeting_date: '2026-02-13' }]
+    const m = buildMeetings(dated, [], buildRoster(dated, []))[0]
+    expect(m.date).toBe('2026-02-13')
+    expect(m.month).toBe('2026-02')
+  })
+
+  test('an undated meeting says so rather than guessing', () => {
+    // The history genuinely has no dates. A wrong month is invisible; a missing
+    // one is not, so the absence has to survive into the model.
+    const m = buildMeetings(records, rows, buildRoster(records, rows))[0]
+    expect(m.date).toBeNull()
+    expect(m.month).toBeNull()
+  })
+
+  test('dates order the list when both meetings have one', () => {
+    // Meeting numbers can repeat — the seed contains a deliberate duplicate —
+    // so where a date exists it is the more trustworthy ordering.
+    const dated: RecordRow[] = [
+      { ...records[0], id: 10, meeting_number: 9, meeting_date: '2026-01-10' },
+      { ...records[1], id: 11, meeting_number: 8, meeting_date: '2026-05-10' },
+    ]
+    const order = buildMeetings(dated, [], buildRoster(dated, [])).map((m) => m.number)
+    expect(order).toEqual([8, 9])
+  })
+
+  test('falls back to the meeting number when a date is missing', () => {
+    const mixed: RecordRow[] = [
+      { ...records[0], id: 10, meeting_number: 5, meeting_date: '2026-01-10' },
+      { ...records[1], id: 11, meeting_number: 6, meeting_date: null },
+    ]
+    expect(buildMeetings(mixed, [], buildRoster(mixed, [])).map((m) => m.number)).toEqual([6, 5])
+  })
+
   test('drop the empty steps from the route', () => {
     const roster = buildRoster(records, rows)
     const meetings = buildMeetings(records, rows, roster)

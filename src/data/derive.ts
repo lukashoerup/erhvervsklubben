@@ -13,6 +13,8 @@ export type RecordRow = {
   pre_location: string | null
   main_location: string
   post_location: string | null
+  /** Null for meetings recorded before dates were captured. */
+  meeting_date?: string | null
 }
 
 export type AttendanceRow = {
@@ -25,6 +27,10 @@ export type Meeting = {
   id: number
   number: number
   lead: string
+  /** YYYY-MM-DD, or null where the history never recorded one. */
+  date: string | null
+  /** YYYY-MM, for placing fines in a month. Null without a date. */
+  month: string | null
   /** Før → Sted → Efter, with the empty steps dropped. */
   route: string[]
   present: string[]
@@ -105,7 +111,15 @@ export function buildMeetings(
   const rank = (n: string) => order.get(n) ?? Number.MAX_SAFE_INTEGER
 
   return [...records]
-    .sort((a, b) => b.meeting_number - a.meeting_number)
+    // Newest first. Dates win where both have one, since a meeting number can
+    // repeat — the data contains duplicates — but the number is the only
+    // ordering available for the undated history.
+    .sort((a, b) => {
+      if (a.meeting_date && b.meeting_date) {
+        return b.meeting_date.localeCompare(a.meeting_date)
+      }
+      return b.meeting_number - a.meeting_number
+    })
     .map((r) => {
       const rows = byRecord.get(r.id) ?? []
       const present = rows.filter((x) => x.attended).map((x) => x.member_name).sort((a, b) => rank(a) - rank(b))
@@ -114,6 +128,8 @@ export function buildMeetings(
         id: r.id,
         number: r.meeting_number,
         lead: r.lead,
+        date: r.meeting_date ?? null,
+        month: r.meeting_date ? r.meeting_date.slice(0, 7) : null,
         route: [r.pre_location, r.main_location, r.post_location].filter(
           (v): v is string => Boolean(v && v.trim()),
         ),

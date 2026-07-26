@@ -17,7 +17,7 @@ export function useAttendance() {
       const [recs, atts] = await Promise.all([
         supabase()
           .from('attendance_records')
-          .select('id, meeting_number, lead, pre_location, main_location, post_location'),
+          .select('id, meeting_number, lead, pre_location, main_location, post_location, meeting_date'),
         supabase().from('attendances').select('record_id, member_name, attended'),
       ])
       if (recs.error) throw recs.error

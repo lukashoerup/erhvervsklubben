@@ -136,6 +136,58 @@ function RecordFines() {
   )
 }
 
+/**
+ * The meetings still missing a date, and a way to fill one in.
+ *
+ * Not busywork: a fine cannot be placed in a month without one, so every undated
+ * meeting is a hole in the books. Listing them makes the gap finite and visible
+ * instead of a vague "the history has no dates" — and it shrinks as they are
+ * filled, so it disappears on its own.
+ */
+function MissingDates() {
+  const attendance = useAttendance()
+  const qc = useQueryClient()
+  const setDate = useMutation({
+    mutationFn: async ({ id, date }: { id: number; date: string }) => {
+      const { error } = await supabase()
+        .from('attendance_records')
+        .update({ meeting_date: date })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
+  })
+
+  const undated = (attendance.data?.meetings ?? []).filter((m) => !m.date)
+  if (undated.length === 0) return null
+
+  return (
+    <section className="rounded-xl border border-line bg-surface p-3">
+      <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
+        Møder uden dato · {undated.length}
+      </h2>
+      <p className="mt-1 text-[0.68rem] text-faint">
+        Bøder kan ikke placeres i en måned uden en dato. Udfyld dem her, så
+        regnskabet måned for måned bliver muligt.
+      </p>
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {undated.slice(0, 12).map((m) => (
+          <li key={m.id} className="flex items-center gap-2 text-xs">
+            <span className="tabular w-8 font-semibold text-accent">{m.number}</span>
+            <span className="flex-1 truncate text-muted">{m.lead || 'ukendt'}</span>
+            <input
+              type="date"
+              aria-label={`Dato for møde ${m.number}`}
+              className="rounded border border-line bg-raised px-2 py-1 text-ink"
+              onChange={(e) => e.target.value && setDate.mutate({ id: m.id, date: e.target.value })}
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 export default function Oekonomi() {
   const { data, isPending, error } = useFinance()
 
@@ -159,6 +211,7 @@ export default function Oekonomi() {
       </section>
 
       <RecordFines />
+      <MissingDates />
 
       <section className="rounded-xl border border-line bg-surface p-3">
         <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">Bøder pr. medlem</h2>

@@ -37,7 +37,12 @@ export function MeetingCard({
     <article className="rounded-xl border border-line bg-surface p-3">
       <div className="flex items-baseline gap-2">
         <span className="tabular text-[0.95rem] font-semibold text-accent">{meeting.number}</span>
-        <h3 className="text-[0.92rem] font-semibold">{meeting.lead}</h3>
+        <h3 className="text-[0.92rem] font-semibold">{meeting.lead || 'Ukendt lead'}</h3>
+        <span className="tabular ml-auto text-[0.65rem] text-faint">
+          {meeting.date
+            ? new Date(meeting.date).toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })
+            : 'uden dato'}
+        </span>
       </div>
 
       {meeting.route.length > 0 && (
