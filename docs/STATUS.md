@@ -10,9 +10,9 @@ end of every working session._
 | 1 | Schema-as-migration, seed, local stack | ✅ **done** (T010, T012) |
 | 2 | RLS test suite | ✅ **done** (T020) — 40 assertions generated from the rule, green in CI |
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
-| 4 | Read-only screens | 🟡 **mostly done** — Anciennitet, Nyheder, Regler live on real data; landing/about outstanding |
+| 4 | Read-only screens | ✅ **done** — front page, Anciennitet, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first |
-| 6 | Admin write flows | 🟡 **fine capture done** (T054); news/events editing outstanding |
+| 6 | Admin write flows | 🟡 **fines + meeting dates done**; news/events editing outstanding |
 | 7 | Design | ✅ **agreed 2026-07-26** — corporate blue redesign + logo; tokens live in `src/index.css` |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
@@ -20,7 +20,7 @@ end of every working session._
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 61 component/derivation tests (jsdom, fast, offline).
+- `npm test` — 65 component/derivation tests (jsdom, fast, offline).
 - `npm run build`, `npm run lint` — clean.
 - `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
@@ -37,11 +37,13 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 1. **Decide whether Leads can record fines** — the one thing blocking the
    finance flow from matching the regulation. See T050's "Capture is built"
    note; it is an access-rule change, so it needs Lukas.
-2. **Meeting dates.** Nothing else can be placed in a month without them: the
-   monthly ledger is written and tested but shows nothing. Capture from the next
-   meeting (§9 plans two ahead) and backfill from the old events page.
-3. **Landing/about pages**, and news/events editing for the admin.
-4. **Import the sheet's history** once dates exist to hang it on.
+2. **Fill in the missing meeting dates.** The treasurer's screen lists every
+   undated meeting with a date field; the monthly ledger only covers meetings
+   that have one, and says how much is left out. The backfill from the events
+   table handled the unambiguous ones.
+3. **News/events editing for the admin** — currently read-only.
+4. **Import the sheet's history**, now that dates exist to hang it on.
+5. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
 2. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,
    grants) against the prod snapshot. Currently fidelity is verified by hand.
