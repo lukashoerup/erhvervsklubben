@@ -29,6 +29,23 @@ without losing data and without taking the old site down until an approved cutov
 - **2026-07-23 — RLS reproduced verbatim.** The `Only admins can update profiles`
   policy was verified NOT to allow self-escalation (members can't update profiles
   at all), so verbatim == secure; no policy changes needed.
+- **2026-07-26 — first deliberate deviation from prod: admins can read all event
+  evaluations.** Prod has three owner-scoped policies on `event_evaluations` and
+  no admin policy, so the club admin could not read the feedback members submit —
+  it went into the table and nobody could ever look at it. Lukas confirmed this
+  was an oversight, not a decision. Members still see only their own; DELETE
+  stays absent for everyone, deliberately. Must be applied to prod at cutover:
+  `supabase/migrations/20260726160000_admin_can_read_evaluations.sql`.
+- **2026-07-26 — the access rule is stated once, and tests are generated from it**
+  (`tests/rls/rules.ts`), replacing the ~50-case table × actor × operation matrix.
+  Lukas's rule: members read everything, only admins write, personal rows are
+  owner-only. Enumerating the grid mostly re-tested the same three ideas; deriving
+  from the rule means the tests cannot drift from it, and a new table forces a
+  bucket decision instead of shipping untested. 40 assertions, ~1s.
+  Why RLS matters here at all, recorded because it will be asked again: the
+  browser talks straight to the database, and the initial migration grants
+  `authenticated` full access to every table. The policies are not one layer
+  among several — they are the entire lock.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod

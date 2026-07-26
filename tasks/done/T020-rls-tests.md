@@ -42,17 +42,17 @@ this widens SELECT for admins only. DELETE stays absent for everyone —
 deliberate, and Lukas chose to keep it that way.
 
 ## Acceptance criteria
-- [ ] The rule lives in one place (`tests/rls/rules.ts`), tests generated from it
-- [ ] Signed-out: reads public tables, sees nothing in gated ones, writes nothing
-- [ ] Member: reads all shared data; cannot insert, update or delete any of it
-- [ ] Admin: can create and remove rows in every admin-writable table
-- [ ] Personal rows visible only to their owner
-- [ ] Admin can read a **member's** feedback — asserted on someone else's row,
+- [x] The rule lives in one place (`tests/rls/rules.ts`), tests generated from it
+- [x] Signed-out: reads public tables, sees nothing in gated ones, writes nothing
+- [x] Member: reads all shared data; cannot insert, update or delete any of it
+- [x] Admin: can create and remove rows in every admin-writable table
+- [x] Personal rows visible only to their owner
+- [x] Admin can read a **member's** feedback — asserted on someone else's row,
       since the seeded evaluation is the admin's own and would pass regardless
-- [ ] Nobody can delete feedback, including the admin
-- [ ] A member cannot promote themselves to admin
-- [ ] A sweep proving no gated table is readable by the open internet
-- [ ] Green in CI
+- [x] Nobody can delete feedback, including the admin
+- [x] A member cannot promote themselves to admin
+- [x] A sweep proving no gated table is readable by the open internet
+- [x] Green in CI
 
 ## Scope
 **May change:** `tests/rls/`, `supabase/migrations/` (the new policy only)
@@ -73,3 +73,14 @@ policy is a permanent decision).
 One session.
 
 ## Working notes (agent fills in)
+- Done 2026-07-26. CI run 30208156761: `checks` ✅, `rls` ✅ — **40 assertions
+  passing in ~870ms**, up from 9 hand-written cases.
+- Written from a cloud session with no Docker, so the suite was never run
+  locally. CI proved it. That is the whole point of doing T022 first, and it is
+  now the normal way to work on this repo from anywhere.
+- The admin-read test asserts on a row owned by member1, not the seeded
+  evaluation. The seeded one belongs to the admin, so the obvious version of
+  that test would have passed without the new policy and proved nothing.
+- Deliberately dropped from the PLAN-REVIEW Part B spec: the per-cell grid.
+  Kept and generalised: every idea it was testing. The signup trigger cases
+  T1-T3 are deferred to the auth work, where the trigger actually matters.

@@ -8,7 +8,7 @@ end of every working session._
 |---|---|---|
 | 0 | Repo + app scaffold + green pipeline | ✅ **done** (T001) |
 | 1 | Schema-as-migration, seed, local stack | ✅ **done** (T010, T012) |
-| 2 | RLS test suite (full ~50-case matrix) | 🟡 **in progress** — harness proven, 9 representative cases green (T020) |
+| 2 | RLS test suite | ✅ **done** (T020) — 40 assertions generated from the rule, green in CI |
 | 3 | App shell + auth + role gating | ⬜ not started |
 | 4 | Read-only screens (landing, about, news, events, seniority data layer) | ⬜ not started |
 | 5 | Anciennitet UI (matrix + charts) | ⬜ not started |
@@ -22,23 +22,24 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 ## Green right now
 - `npm test` — 1 component/unit test (jsdom, fast, offline).
 - `npm run build`, `npm run lint` — clean.
-- `npm run test:rls` — 9 RLS integration cases vs the local Supabase stack.
+- `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,
   and the `rls` job is proven to go red on a real policy regression — see
   T022's working notes for the evidence.
-- Migration applies clean: 7 tables / 7 RLS-enabled / 21 policies / 2 SECURITY
-  DEFINER functions / 1 signup trigger. Verified faithful to prod 2026-07-24.
+- Migrations apply clean: 7 tables / 7 RLS-enabled / **22** policies / 2 SECURITY
+  DEFINER functions / 1 signup trigger. The initial migration is faithful to prod
+  (verified 2026-07-24); the 22nd policy is the deliberate 2026-07-26 deviation
+  letting admins read member feedback — see PROJECT.md. It must be applied to
+  prod at cutover.
 
 ## Immediate next tasks (resume here)
-1. **T020 cont. — expand the RLS suite** to the full matrix in PLAN-REVIEW Part B.
-   Now safe to do from a cloud session: those tests need Docker, which a cloud
-   session lacks, so CI is what proves them rather than the author's word.
-   Priority gaps (flagged by Fable review): positive-auth (member CAN read
-   attendances/attendance_records; member CAN CRUD own evaluation; signup trigger
-   T1–T3), anon INSERT sweep, admin ALL on attendances (A7), user_member_mapping
-   spoof (M3), event_evaluations owner-delete-denied (EV7), P8 admin-client role
-   update.
+1. **Phase 3 — app shell + auth + role gating.** Phase 2 is closed: the access
+   rule is covered by 40 generated assertions and CI proves them against a real
+   stack. Two spec items were deliberately dropped as redundant under the
+   rule-driven approach (the per-cell grid from PLAN-REVIEW Part B); the signup
+   trigger cases T1–T3 are still worth adding when auth work starts, since that
+   is when the trigger actually matters.
 2. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,
    grants) against the prod snapshot. Currently fidelity is verified by hand.
