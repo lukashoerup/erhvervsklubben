@@ -47,20 +47,42 @@ for automating it, not tidiness.
 membership is 100 kr/month, and 8 members × 100 = the 800 kr/month in the sheet.
 Confirms the fee is derivable rather than hand-entered.
 
-**Unexplained:** the figure jumps to 1,800 kr/month from June 26. That is either
-18 members or a fee change, and it must be pinned down before the calculation is
-trusted — guessing here silently corrupts every later month.
+**Explained 2026-07-26:** the jump to 1,800 kr/month is a **doubling of the
+monthly fee**, 100 → 200 kr, confirmed by Lukas. The arithmetic is consistent
+with 9 active members × 200 kr, where the earlier 800 kr was 8 × 100 kr.
 
-## Blocked on
-**The fine rules.** Lukas says they are published on the old site under
-*Om os → Bødekasseregulativ*. That page cannot be reached from a cloud session:
-plain fetch returns 403 and a real browser gets a blocked tunnel, because this
-environment's proxy does not allow that host. The repo's screenshot of that page
-(`docs/old-site-shots/07-om-os.png`) captures only the first tab, and the new
-app is still a bare scaffold with no content carried over.
+Note the statutes on file (§4 Stk. 3) still say 100 kr — the document is behind
+the vote. The code should follow the vote, and the document should be corrected
+in the Drive.
 
-So the regulations need to arrive another way — pasted, screenshotted, or
-fetched from a session that can reach the site.
+**And the formula is narrower than it looked:** §3 distinguishes *aktive* from
+*inaktive* members, and only active members pay. Income is **active members ×
+rate**, never all members.
+
+## Unblocked 2026-07-26 — and one assumption was wrong
+The regulations were in the Drive, not only on the site. Transcribed into
+`docs/RULES.md` from `250504_Bødekasseregulativ_Erhvervsklubben_v02.docx` and
+`250426_Vedtaegter_vS.docx`.
+
+**Correction: fines are not derivable.** This task previously claimed they could
+be computed from meeting and attendance data. Reading the actual rules, four of
+the five are observations only someone at the table can make — what a member
+ordered, whether they toasted before the Lead, how many minutes late they were
+(the fine is 50 kr. *plus 5 kr. per minute*). The fifth needs a distinction the
+attendance record does not hold: *udeblivelse **uden afbud*** is not the same as
+being absent.
+
+The regulation already assigns the job to a human — *"Lead er ansvarlig for at
+notere eventuelle bøder og informere kasseren umiddelbart efter hvert møde."*
+
+So the automation is **capture and arithmetic, not derivation**: give the Lead a
+fast way to record fines the moment a meeting ends, then do every sum, ledger
+and quarterly total automatically. That is still nearly all of the manual work,
+and it is what actually went stale in the sheet.
+
+**The quarterly rhythm is the club's own.** Bødekasseregulativ Stk. 3: the
+Kasserer collects quarterly. Lukas's quarterly bank check is not a new process
+bolted on — it is the process the club already voted for.
 
 ## Design (agreed 2026-07-26)
 **The split is clean.** Everything except money-actually-received is derivable
@@ -108,11 +130,15 @@ Design consequences, already applied to the mockups:
 - The finance chart (T054) becomes a treasurer's screen, not a members' one.
 
 ## Acceptance criteria (draft — firm up once unblocked)
-- [ ] Fine rules encoded from the published regulations, with the source quoted
-      in the code so the rule and its authority stay together
-- [ ] Fines computed from meeting + attendance data, not hand-entered
-- [ ] Membership fees computed from member count × the published rate
-- [ ] The 1,800 kr/month change from June 26 explained and encoded
+- [ ] Fine amounts encoded from `docs/RULES.md`, including the two escape
+      clauses (late arrival waived if the Lead is told within 24h; drinks fine
+      waived with the Lead's consent) and the one-fine-per-offence-per-meeting cap
+- [ ] The Lead can record a meeting's fines in well under a minute, on a phone,
+      the moment it ends — this is the actual product, not a form
+- [ ] Every sum, per-member ledger and quarterly total derived, never typed
+- [ ] Membership fees computed from **active** member count × rate (§3 —
+      inactive members pay nothing), with the rate change 100 → 200 kr dated
+- [ ] The fee change 100 → 200 kr encoded with its effective date
 - [ ] Expected balance reconciles to the sheet's history for every past month —
       the migration is only trustworthy if it reproduces the known past
 - [ ] The 50 kr discrepancy resolved, not silently absorbed
