@@ -1,8 +1,54 @@
+import { FINE_RULES, duesFor } from '../data/rules'
+
+/**
+ * The rules, given a page of their own rather than a buried third tab.
+ *
+ * Amounts sit in the left column so you can find the one you are arguing about
+ * mid-argument, without reading a paragraph.
+ */
 export default function Regler() {
+  const dues = duesFor(new Date().toISOString().slice(0, 7))
+
   return (
-    <div>
-      <h2 className="text-xl font-semibold">Regler</h2>
-      <p className="mt-2 text-sm text-muted">Indhold følger.</p>
+    <div className="flex flex-col gap-3">
+      <section className="rounded-xl border border-line bg-surface p-3">
+        <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
+          Bødekasseregulativ
+        </h2>
+        <dl className="mt-1">
+          {FINE_RULES.map((r) => (
+            <div key={r.id} className="flex gap-3 border-b border-line py-2 last:border-0">
+              <dt className="tabular w-20 shrink-0 text-xs font-semibold text-accent">
+                {r.kr} kr.
+                {r.perMinute && <span className="block text-[0.65rem]">+{r.perMinute}/min</span>}
+              </dt>
+              <dd className="text-xs leading-snug text-muted">
+                {r.offence}
+                {r.waiver && <span className="mt-0.5 block text-faint">{r.waiver}</span>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-2 text-[0.68rem] text-faint">
+          Et medlem kan ikke pålægges mere end én bøde pr. forseelse pr. møde.
+          Bøder opkræves kvartalsvist af kassereren.
+        </p>
+      </section>
+
+      <section className="rounded-xl border border-line bg-surface p-3">
+        <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
+          Medlemskab · vedtægterne §4
+        </h2>
+        <div className="mt-1 flex gap-3 py-2">
+          <span className="tabular w-20 shrink-0 text-xs font-semibold text-accent">
+            {dues} kr.
+          </span>
+          <p className="text-xs leading-snug text-muted">
+            Pr. måned, betalt forud. Optagelse kræver godkendelse fra mindst 2/3 af de
+            aktive medlemmer — og man skal have deltaget som gæst mindst én gang først.
+          </p>
+        </div>
+      </section>
     </div>
   )
 }

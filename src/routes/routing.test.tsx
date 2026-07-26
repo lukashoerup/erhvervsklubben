@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import { AuthContext, type AuthState } from '../auth/AuthContext'
 import { ROUTES } from './routes'
+import { withQuery } from '../test/harness'
 
 /**
  * Route protection, tested offline.
@@ -28,11 +29,13 @@ function renderAt(path: string, auth: Partial<AuthState>) {
     ...auth,
   }
   return render(
-    <AuthContext.Provider value={value}>
-      <MemoryRouter initialEntries={[path]}>
-        <App />
-      </MemoryRouter>
-    </AuthContext.Provider>,
+    withQuery(
+      <AuthContext.Provider value={value}>
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    ),
   )
 }
 
@@ -137,6 +140,9 @@ describe('an admin', () => {
 test('signing in returns you to the page you asked for', async () => {
   const user = userEvent.setup()
 
+  // The provider is created outside the stateful component on purpose: calling
+  // withQuery in the render body would build a fresh QueryClient on every
+  // update and quietly reset the tree mid-test.
   function Harness() {
     const [signedIn, setSignedIn] = useState(false)
     return (
@@ -159,13 +165,13 @@ test('signing in returns you to the page you asked for', async () => {
     )
   }
 
-  render(<Harness />)
+  render(withQuery(<Harness />))
   await user.type(screen.getByLabelText('E-mail'), 'bob@test.local')
   await user.type(screen.getByLabelText('Adgangskode'), 'password123')
   await user.click(screen.getByRole('button', { name: 'Log ind' }))
 
   // Back to /regler, not dumped on the front page.
-  expect(await screen.findByRole('heading', { name: 'Regler' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Bødekasseregulativ' })).toBeInTheDocument()
 })
 
 // ------------------------------------------------------------- failed login

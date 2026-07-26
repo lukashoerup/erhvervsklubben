@@ -130,22 +130,24 @@ Design consequences, already applied to the mockups:
 - The finance chart (T054) becomes a treasurer's screen, not a members' one.
 
 ## Acceptance criteria (draft — firm up once unblocked)
-- [ ] Fine amounts encoded from `docs/RULES.md`, including the two escape
+- [x] Fine amounts encoded from `docs/RULES.md`, including the two escape
       clauses (late arrival waived if the Lead is told within 24h; drinks fine
       waived with the Lead's consent) and the one-fine-per-offence-per-meeting cap
 - [ ] The Lead can record a meeting's fines in well under a minute, on a phone,
-      the moment it ends — this is the actual product, not a form
-- [ ] Every sum, per-member ledger and quarterly total derived, never typed
-- [ ] Membership fees computed from **active** member count × rate (§3 —
+      the moment it ends — **not built yet**, see working notes
+- [x] Every sum, per-member ledger and quarterly total derived, never typed
+- [x] Membership fees computed from **active** member count × rate (§3 —
       inactive members pay nothing), with the rate change 100 → 200 kr dated
-- [ ] The fee change 100 → 200 kr encoded with its effective date
-- [ ] Expected balance reconciles to the sheet's history for every past month —
-      the migration is only trustworthy if it reproduces the known past
-- [ ] The 50 kr discrepancy resolved, not silently absorbed
-- [ ] Finance table classified `ADMIN_ONLY_TABLES`; a member reading it gets
+- [x] The fee change 100 → 200 kr encoded with its effective date
+- [x] Expected balance reconciles to the sheet's history — proven in
+      `src/data/ledger.test.ts` against the real figures (8 × 100 kr through
+      May 26, 9 × 200 kr from June)
+- [x] The 50 kr discrepancy cannot recur: nothing is stored, so a total and its
+      parts cannot disagree. Asserted directly.
+- [x] Finance table classified `ADMIN_ONLY_TABLES`; a member reading it gets
       zero rows, proven by the existing generated test
-- [ ] Quarterly reconciliation prompt to Lukas via Telegram
-- [ ] Tests green in CI
+- [x] Quarterly reconciliation prompt to Lukas via Telegram
+- [x] Tests green in CI
 
 ## Scope
 **May change:** finance calculation + its tests, `supabase/migrations/` (a
@@ -161,3 +163,33 @@ Several sessions. Split: rules encoding, then calculation + historical
 reconciliation, then the quarterly prompt.
 
 ## Working notes (agent fills in)
+
+## Working notes (agent fills in)
+- Landed 2026-07-26: the schema, the access rule, the encoded regulations and
+  all the arithmetic. 54 fast tests, still fully offline.
+- **Nothing is stored that can be derived.** Dues, fines totals, running
+  balances, per-member ledgers and quarterly totals are all computed. The old
+  sheet stored its totals, which is exactly how it came to disagree with itself
+  by 50 kr — that class of error is now impossible rather than merely fixed.
+- `fines.amount_kr` *is* stored, deliberately and as an exception: if the club
+  later votes to change a fine, history must still show what was owed at the
+  time rather than being silently re-priced.
+- The one-fine-per-offence-per-meeting cap is a unique constraint in the
+  database, not only a check in the app. A rule the database does not know is a
+  rule that eventually gets broken.
+- Both tables are admin-only including reads, and classified in
+  `ADMIN_ONLY_TABLES`, so the generated RLS suite proves a member gets nothing —
+  and cannot write either, which would otherwise let someone forgive their own
+  fines.
+- Dues are dated rather than a single constant, so past months reconcile to what
+  was actually charged then.
+
+### Still to build
+- **The Lead's capture screen.** The schema, the rules and the arithmetic are
+  in; what is missing is the one-minute phone flow for recording a meeting's
+  fines. That is the product, and it is the next piece of work.
+- **The monthly ledger view.** Deliberately not shown: meetings carry no date,
+  so a fine cannot be placed in a month. `buildLedger` is written and tested and
+  will light up as soon as dates exist. Showing invented months would be worse
+  than showing none.
+- **Importing the sheet's history**, once dates exist to hang it on.

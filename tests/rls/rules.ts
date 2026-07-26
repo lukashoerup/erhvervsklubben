@@ -26,10 +26,11 @@ export const PERSONAL_TABLES = ['profiles', 'user_member_mapping', 'event_evalua
  * everyone should know how much money is in the bank account." He is the
  * club's treasurer; the balance is his to see, not the membership's.
  *
- * Empty until the finance table exists (T050) — the guard below will refuse to
- * let it ship unclassified.
+ * Populated 2026-07-26 when the finance tables landed. The guard below is what
+ * made that a decision rather than an oversight: an unclassified table fails
+ * the suite by name.
  */
-export const ADMIN_ONLY_TABLES = [] as const
+export const ADMIN_ONLY_TABLES = ['fines', 'payments'] as const
 
 export const ALL_TABLES = [
   ...PUBLIC_TABLES, ...SHARED_TABLES, ...PERSONAL_TABLES, ...ADMIN_ONLY_TABLES,
@@ -42,6 +43,11 @@ export const SAMPLE_ROW: Record<string, Record<string, unknown>> = {
   events: { title: 'probe', date: '2025-01-01', time: '18:00', location: 'probe', description: 'probe' },
   attendance_records: { meeting_number: 9999, lead: 'probe', main_location: 'probe' },
   attendances: { record_id: 1, member_name: 'probe', attended: true },
+  // Admin-only tables. A member must not be able to write these either — an
+  // unwritable-but-readable balance would still be a leak, and a writable one
+  // would let a member forgive their own fines.
+  fines: { record_id: 1, member_name: 'probe', rule_id: 'skaal', amount_kr: 50 },
+  payments: { month: '2026-01-01', amount_kr: 1 },
 }
 
 /** Tables an admin is expected to be able to write. */
