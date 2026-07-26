@@ -38,6 +38,38 @@ if (!script.includes('Demoversion')) {
   throw new Error('bundle does not look like a VITE_DEMO build — build with VITE_DEMO=1')
 }
 
+/**
+ * Answer to an explicit theme as well as the operating system's.
+ *
+ * The app follows `prefers-color-scheme` alone, which is right for a site people
+ * open in their own browser. A viewer that offers its own light/dark switch sets
+ * `data-theme` on the root element instead, and the app would ignore it — the
+ * switch would appear to do nothing.
+ *
+ * Derived from the stylesheet rather than written out again: the light values are
+ * read from the media query and the dark ones from the tokens it overrides, so
+ * this cannot drift from the palette. Attribute selectors outrank the bare
+ * `:root` in the media query, so an explicit choice wins over the system in both
+ * directions.
+ */
+function themeAttributeRules(sheet) {
+  const light = sheet.match(/@media \(prefers-color-scheme:\s*light\)\{:root\{([^}]*)\}/)
+  if (!light) throw new Error('no light-mode override found in the stylesheet')
+  const names = [...light[1].matchAll(/(--[\w-]+):/g)].map((m) => m[1])
+  // Only look before the media query. A token that no utility consumes is
+  // dropped from the theme layer entirely, so searching the whole sheet would
+  // find its light value and emit that as the dark one.
+  const before = sheet.slice(0, light.index)
+  const dark = names
+    .map((n) => {
+      const found = [...before.matchAll(new RegExp(`${n}:([^;}]+)`, 'g'))].pop()
+      return found ? `${n}:${found[1]}` : null
+    })
+    .filter(Boolean)
+    .join(';')
+  return `:root[data-theme="light"]{${light[1]}}:root[data-theme="dark"]{${dark}}`
+}
+
 // Deliberately no <html>, <head> or <body>: this is valid on its own (a browser
 // supplies them) and it also drops straight into a host that provides its own
 // document skeleton. One file that works in both places beats two that differ.
@@ -50,6 +82,7 @@ const html = `<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <style>
 ${safe(style)}
+${themeAttributeRules(style)}
 </style>
 <div id="root"></div>
 <script type="module">
