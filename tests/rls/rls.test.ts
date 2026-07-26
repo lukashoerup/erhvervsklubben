@@ -11,7 +11,7 @@
 import { beforeAll, describe, expect, test } from 'vitest'
 import { anonClient, serviceClient, signedInClient, SEED, RLS_DENIED } from './clients'
 import {
-  PUBLIC_TABLES, SHARED_TABLES, PERSONAL_TABLES, ALL_TABLES,
+  PUBLIC_TABLES, SHARED_TABLES, PERSONAL_TABLES, ADMIN_ONLY_TABLES, ALL_TABLES,
   ADMIN_WRITABLE, SAMPLE_ROW,
 } from './rules'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -58,6 +58,16 @@ describe('a signed-in member', () => {
     expect(error).toBeNull()
     expect(data?.length).toBeGreaterThan(0)
   })
+
+  test.skipIf(ADMIN_ONLY_TABLES.length === 0)
+    .each(ADMIN_ONLY_TABLES)('sees nothing in %s — admin only', async (t) => {
+      // The club's money is the treasurer's business, not the membership's
+      // (Lukas, 2026-07-26). This is the one place a member is denied a read,
+      // so it gets its own test rather than riding along with the others.
+      const { data, error } = await member1.from(t).select('*')
+      expect(error).toBeNull()
+      expect(data).toEqual([])
+    })
 
   test.each(Object.keys(SAMPLE_ROW))('cannot create in %s', async (t) => {
     const { error } = await member1.from(t).insert(SAMPLE_ROW[t])

@@ -75,6 +75,14 @@ without losing data and without taking the old site down until an approved cutov
   the 50 kr discrepancy and two stale months. Lukas may keep his sheet privately;
   nothing will depend on it.
 
+- **2026-07-26 — the club's finances are admin-only, including reads.** Lukas:
+  "Not everyone should know how much money is in the bank account." He is the
+  treasurer; the balance is his to see, not the membership's. This is the single
+  exception to "members read everything", so it gets its own bucket in
+  `tests/rls/rules.ts` (`ADMIN_ONLY_TABLES`) rather than a footnote — and the
+  balance is off the front page and out of the launch animation, where an
+  animated number would have been the least private place to put it.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

@@ -18,7 +18,22 @@ export const SHARED_TABLES = ['attendance_records', 'attendances'] as const
 /** Personal rows — you see yours, not anyone else's. */
 export const PERSONAL_TABLES = ['profiles', 'user_member_mapping', 'event_evaluations'] as const
 
-export const ALL_TABLES = [...PUBLIC_TABLES, ...SHARED_TABLES, ...PERSONAL_TABLES]
+/**
+ * Admin-only, read included. Ordinary members cannot see these at all.
+ *
+ * Note this breaks the otherwise tidy "members read everything" rule, which is
+ * why it is its own bucket rather than a footnote. Lukas, 2026-07-26: "Not
+ * everyone should know how much money is in the bank account." He is the
+ * club's treasurer; the balance is his to see, not the membership's.
+ *
+ * Empty until the finance table exists (T050) — the guard below will refuse to
+ * let it ship unclassified.
+ */
+export const ADMIN_ONLY_TABLES = [] as const
+
+export const ALL_TABLES = [
+  ...PUBLIC_TABLES, ...SHARED_TABLES, ...PERSONAL_TABLES, ...ADMIN_ONLY_TABLES,
+]
 
 /** Minimal valid rows, so a denial test fails on the policy and not on a
  *  NOT NULL constraint — a constraint error would look like a passing test. */

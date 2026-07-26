@@ -92,6 +92,21 @@ Consequences worth stating, because they are the reason:
 - The existing sheet is read once, to import history, and then nothing depends
   on it. Lukas may keep it privately.
 
+## Who can see it — decided 2026-07-26
+**Admin only, reads included.** Lukas: *"Not everyone should know how much
+money is in the bank account."*
+
+This is the one place the "members read everything" rule does not hold, so the
+finance table goes in `ADMIN_ONLY_TABLES` in `tests/rls/rules.ts`, which already
+carries a test asserting a member sees zero rows there. The guard that fails on
+an unclassified table means this cannot be forgotten when the table is created.
+
+Design consequences, already applied to the mockups:
+- The balance is **off the member front page**.
+- It is **out of the launch animation** — it was a counting figure in the first
+  version, and an animated number is the least private place to put one.
+- The finance chart (T054) becomes a treasurer's screen, not a members' one.
+
 ## Acceptance criteria (draft — firm up once unblocked)
 - [ ] Fine rules encoded from the published regulations, with the source quoted
       in the code so the rule and its authority stay together
@@ -101,6 +116,8 @@ Consequences worth stating, because they are the reason:
 - [ ] Expected balance reconciles to the sheet's history for every past month —
       the migration is only trustworthy if it reproduces the known past
 - [ ] The 50 kr discrepancy resolved, not silently absorbed
+- [ ] Finance table classified `ADMIN_ONLY_TABLES`; a member reading it gets
+      zero rows, proven by the existing generated test
 - [ ] Quarterly reconciliation prompt to Lukas via Telegram
 - [ ] Tests green in CI
 
