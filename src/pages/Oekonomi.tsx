@@ -4,14 +4,16 @@ import { READONLY, supabase } from '../lib/supabase'
 import { balancesByMember, buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
 import { Loading, Problem } from '../components/State'
 import { FineCapture, type DraftFine } from '../components/FineCapture'
+import { FinanceChart, kr } from '../components/FinanceChart'
 import { useAttendance } from '../data/useClubData'
 import { useAuth } from '../auth/AuthContext'
 import { DEMO, demoFines, demoPayments } from '../data/demo'
 
 /**
- * The treasurer's screen. Reached only through RequireAccess access="admin",
- * and the tables behind it are admin-only in the database too — hiding a page
- * stops honest people, policies stop everyone.
+ * The club's money. A member route since 2026-07-27 — §8 puts the accounts in
+ * front of the whole membership once a year, so there is no reading of the
+ * statutes where the people funding the club may not see what it collects. What
+ * is still the treasurer's is gated inside the page, not at the door.
  *
  * Every figure here is derived from the fines and payments rows. The old
  * spreadsheet stored its totals, which is how it came to disagree with itself
@@ -50,8 +52,6 @@ function useFinance() {
     },
   })
 }
-
-const kr = (n: number) => `${n.toLocaleString('da-DK')} kr.`
 
 /** Save a meeting's fines. One row per fine; the database enforces the cap. */
 function useRecordFines() {
@@ -218,9 +218,8 @@ export default function Oekonomi() {
   // that still has no date are counted in the totals — they are owed either
   // way — but left out of the month-by-month view rather than dumped into an
   // arbitrary month, which would misstate a quarter.
-  const monthOf = new Map(
-    (attendance.data?.meetings ?? []).map((m) => [m.id, m.month]),
-  )
+  const meetings = attendance.data?.meetings ?? []
+  const monthOf = new Map(meetings.map((m) => [m.id, m.month]))
   const finesWithMonth = data.fines.map((f) => ({
     month: monthOf.get(f.record_id) ?? '',
     member_name: f.member_name,
@@ -282,6 +281,20 @@ export default function Oekonomi() {
         </section>
       )}
 
+      {/* Every member, not just the treasurer (Lukas, 2026-07-27: members could
+          not see the club's finances at all). It shows what the club charges
+          against what it collects — not the bank balance, which is the card
+          above and still his. */}
+      <FinanceChart
+        ledger={ledger}
+        books={{
+          fines: data.fines.length,
+          payments: data.payments.length,
+          meetings: meetings.length,
+          undatedMeetings: meetings.filter((m) => !m.month).length,
+        }}
+      />
+
       <RecordFines />
       <MissingDates />
 
@@ -329,9 +342,15 @@ export default function Oekonomi() {
 
       {ledger.length > 0 && (
         <section className="rounded-xl border border-line bg-surface p-3">
+          {/* Also the chart's table view: every value the curves and the hover
+              readout show is here in text, so nothing on this page can only be
+              read by having a mouse or seeing a colour. */}
           <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
             Måned for måned
           </h2>
+          <p className="mt-1 text-[0.68rem] text-faint">
+            De samme tal som kurven, måned for måned frem for lagt sammen.
+          </p>
           <div className="overflow-x-auto">
             <table className="mt-2 w-full text-xs">
               <thead>
@@ -346,12 +365,15 @@ export default function Oekonomi() {
                 </tr>
               </thead>
               <tbody className="tabular">
+                {/* Formatted, not raw. The same page wrote 3.600 kr. two cards
+                    up and 3600 here, and a reader comparing them has to work
+                    out that they are the same kind of number first. */}
                 {ledger.map((m) => (
                   <tr key={m.month} className="border-t border-line">
                     <td className="py-1">{m.month}</td>
-                    <td className="py-1 text-right">{m.expected}</td>
-                    <td className="py-1 text-right">{m.received}</td>
-                    <td className="py-1 text-right text-accent">{m.outstanding}</td>
+                    <td className="py-1 text-right">{kr(m.expected)}</td>
+                    <td className="py-1 text-right">{kr(m.received)}</td>
+                    <td className="py-1 text-right text-accent">{kr(m.outstanding)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -31,13 +31,18 @@ behind the login; admins additionally edit news, events and attendance.
    the members' front page moved to `/hjem` — a signed-in member opening `/` is
    forwarded there. The page reads only `news` and `events`, the two
    anon-readable tables, and a test asserts it asks for nothing else.
-3. **Admin editing of news and events** — currently read-only in the UI even
+3. ~~**The finance graph**~~ ✅ **done 2026-07-27 (T061).** `/oekonomi` now draws
+   what the club has charged against what has actually arrived, running totals,
+   for every member rather than the treasurer alone. **In production it draws
+   nothing and says why** — no fines, no payments, no meeting dates — which is
+   the honest state and the thing item 5 below fixes.
+4. **Admin editing of news and events** — currently read-only in the UI even
    though RLS allows it.
-4. **Import the finance figures** from *Klubbens finanser*. Unresolved first:
+5. **Import the finance figures** from *Klubbens finanser*. Unresolved first:
    its fine total reads 1.730 kr. against 1.780 kr. in the annual report, and
    the per-member breakdown loses which Lead's column some fines belong to.
    Do not import a number that cannot be stood behind.
-5. **Known defects** from the 2026-07-27 browser test, left deliberately because
+6. **Known defects** from the 2026-07-27 browser test, left deliberately because
    the design system should decide how they look: late-arrival minutes are lost
    unless Enter is pressed; meeting dates show no year; present/absent is red
    and green with no legend; small text fails AA contrast; "Log ud" is a 37×16px
@@ -54,7 +59,7 @@ behind the login; admins additionally edit news, events and attendance.
 | 2 | RLS test suite | ✅ **done** (T020) — 40 assertions generated from the rule, green in CI |
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Nyheder, Regler on real data |
-| 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first |
+| 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
 | 6 | Admin write flows | 🟡 **fines + meeting dates done**; news/events editing outstanding |
 | 7 | Design | 🟡 **tokens + landing done** — corporate blue, the design system's surfaces and its logo intro live in `src/index.css`. The dark palette was silently absent from the build until T058 — see its notes. Outstanding: self-host the two Instrument fonts, and apply the system to the members' screens. |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
@@ -63,7 +68,9 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 99 component/derivation tests (jsdom, fast, offline).
+- `npm test` — 117 component/derivation tests (jsdom, fast, offline). The finance
+  chart is asserted through its words, never its SVG: recharts renders in jsdom
+  but with no layout, so every coordinate in it is zero.
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
   (`dist-demo/index.html`), for showing the thing without hosting anything real.
@@ -100,7 +107,7 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    `scripts/seed-auth.mjs`.
 
 ## Blocked / waiting on Lukas (see PROJECT.md open decisions)
-- ~~Q1 finance-chart data source~~ **answered 2026-07-26** — derived from meeting/attendance data, with a quarterly bank confirmation. T050 carries it; blocked only on the published fine rules, which this environment cannot reach.
+- ~~Q1 finance-chart data source~~ **closed 2026-07-27** — answered 2026-07-26 (derived, in the club's own database, with a quarterly bank confirmation), and the chart it blocked shipped as T061. Nothing is left for Lukas here; what is left is importing the figures.
 - Q3 keep prod on free tier (auto-pauses) or upgrade to paid.
 - Q4 new URL / domain.
 - ~~Design template (Phase 7)~~ **arrived 2026-07-27** — Lukas committed the

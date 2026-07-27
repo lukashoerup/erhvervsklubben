@@ -104,7 +104,10 @@ T032 auth-flow · T033 role-gating
 **Phase 4 — Read-only screens:** T040 landing · T041 about · T042 news-list ·
 T043 events-list · T044 seniority-data-layer
 **Phase 5 — Anciennitet UI:** T050 attendance-bar-chart · T051 matrix-desktop ·
-T052 matrix-mobile-cards · T053 member-highlight-and-drilldown · T054 finance-chart (blocked on Q1)
+T052 matrix-mobile-cards · T053 member-highlight-and-drilldown · T054 finance-chart
+✅ **shipped 2026-07-27** as `tasks/done/T061-finance-graph.md` — the repo's task
+numbering diverged from this grid back at T060 and is not worth renumbering; read
+the `tasks/` files, not these IDs, for what actually exists
 **Phase 6 — Admin write flows:** T060 admin-attendance-editing · T061 admin-events-crud ·
 T062 admin-news-crud · T063 event-evaluations-form (confirm Q7)
 **Phase 7 — Design-template integration (non-blocking):** T070 template-tokens ·
@@ -128,7 +131,10 @@ T081 → T090. Phases 4/5/6/7 largely parallelizable once deps land.
 RLS suite exists BEFORE feature UI, so every task lands on a security regression net.
 
 ## 6. Open questions for Lukas (ranked) — see PLAN-REVIEW.md for the review's take
-1. **Q1** Finance chart data source — no finance table exists; formula lives in old bundle. Blocks T054.
+1. ~~**Q1** Finance chart data source~~ **closed 2026-07-27.** Answered 2026-07-26
+   (derived, in the club's own database — see PROJECT.md), and the chart it blocked
+   now exists. It draws whatever `fines` and `payments` hold; today that is nothing,
+   and the chart says so rather than drawing it.
 2. **Q2** Staging auth: synthetic (recommended) vs copy real users.
 3. **Q3** Prod free-tier pausing — upgrade to paid, or document unpause?
 4. **Q4** New URL/domain — is `erhvervsklubbensforum.dk` yours?

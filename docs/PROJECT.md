@@ -123,6 +123,27 @@ without losing data and without taking the old site down until an approved cutov
   price tag on a page someone is deciding about the club from, and that is
   Lukas's call to make rather than a side effect of building the page.
 
+- **2026-07-27 — the finance graph is cumulative, and it refuses to draw an
+  empty one.** Lukas: *"Members cannot see the finance graph. I.e., the
+  financials of the club (expected vs. realised income)."* Two choices in it
+  that should survive a rewrite.
+
+  It plots the **running totals**, not each month against itself, because
+  fines are collected **quarterly** (Bødekasseregulativ, Stk. 3): a month's
+  payment against that month's charge is meaningless by design — one month
+  shows a quarter's money arriving and the two either side show none. A monthly
+  chart draws that sawtooth as if it were a collection problem. On running
+  totals the vertical distance between the curves *is* `outstanding`, the number
+  the rest of the page already reports. The monthly figures stay in the table
+  under it, which is also the chart's table view.
+
+  And **an empty chart is a card of reasons, not a flat line at zero.** `fines`
+  and `payments` are empty and every meeting is undated, so there is nothing to
+  group into a month. A line along zero would fill the space and read as a club
+  that charged nothing and collected nothing — the page instead states which of
+  those things is missing, counted rather than assumed, so each reason
+  disappears on its own as the books are filled in.
+
 - **2026-07-26 — anciennitet revocation is not built.** §11 allows attendance to
   be revoked by a 2/3 vote; Lukas: it has never happened and has never been
   suggested. A voting flow plus a revoked state plus the screens to explain them
@@ -145,7 +166,8 @@ at `~/backups/erhvervsklubben/` (off-git, contains PII). A complete `pg_dump` is
 task T000, and a fresh backup is a hard gate at cutover pre-flight.
 
 ## Open decisions (resolve at the noted phase; tracked as Q# in PLAN.md)
-- Q1 finance-chart data source (no finance table exists) — blocks the finance chart.
+- ~~Q1 finance-chart data source~~ **closed 2026-07-27** — answered 2026-07-26 (see
+  above), and the chart is built.
 - Q3 keep prod on free tier (auto-pauses) or upgrade to paid.
 - Q4 new URL / domain (is erhvervsklubbensforum.dk yours?).
 - Q5 two auth users have no member mapping — who are they?

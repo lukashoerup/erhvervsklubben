@@ -34,7 +34,15 @@ Which DB an environment uses is set by two build-time env vars
   intended levels are asserted independently in `routing.test.tsx`, so changing
   one takes two deliberate edits rather than one word.
 - **TanStack Query** for data fetching/caching; **supabase-js** as the client.
-- **Recharts** for the two charts (attendance bar, finances line).
+- **Recharts** for the finance curves on `/oekonomi` (`src/components/FinanceChart.tsx`)
+  and nowhere else — the anciennitet bars are plain divs, because ten bars did
+  not need a charting library and two curves over a variable number of months
+  do. It costs ~107 kB gzipped, so it is worth knowing it is one screen's
+  dependency. Its marks take `stroke`/`fill="currentColor"` with a `text-*`
+  token class on the wrapper: recharts paints its own colour onto the `<path>`
+  as a presentation attribute and puts `className` on the `<g>` around it, so a
+  `stroke-accent` utility loses silently and the whole chart comes out recharts
+  blue.
 - **Tailwind v4** with all design tokens in `src/index.css` `@theme` — the single
   seam where the Claude Design template drops in (components use tokens only).
   The same file holds the landing page's logo intro and the design system's
