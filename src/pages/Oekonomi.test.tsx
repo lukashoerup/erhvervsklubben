@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { AuthContext, type AuthState } from '../auth/AuthContext'
 import { withQuery } from '../test/harness'
 
@@ -137,6 +138,23 @@ describe('the figures in the monthly table', () => {
     const june = screen.getByText('2026-06').closest('tr')
     expect(june).toHaveTextContent('2.310 kr.')
     expect(june).toHaveTextContent('1.800 kr.')
+  })
+})
+
+describe('recording a meeting’s fines', () => {
+  it('counts them in Danish, not in "bøde(r)"', async () => {
+    // The placeholder plural shipped: the treasurer read it at the end of every
+    // meeting, and it said the app was unfinished.
+    const user = userEvent.setup()
+    aClubWithBooks()
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '1')
+
+    await user.click(screen.getAllByRole('button', { name: /Skål før/ })[0])
+    expect(screen.getByRole('button', { name: 'Gem 1 bøde' })).toBeInTheDocument()
+
+    await user.click(screen.getAllByRole('button', { name: /Skål før/ })[1])
+    expect(screen.getByRole('button', { name: 'Gem 2 bøder' })).toBeInTheDocument()
   })
 })
 

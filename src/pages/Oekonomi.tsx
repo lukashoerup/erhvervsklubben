@@ -53,6 +53,15 @@ function useFinance() {
   })
 }
 
+/**
+ * Danish has a singular and a plural, and neither of them is "bøde(r)".
+ *
+ * The parenthesis is a note-to-self left in the interface: the club's own
+ * treasurer reads it every time he closes a meeting, and it says the app was
+ * not finished.
+ */
+const boeder = (n: number) => `${n} ${n === 1 ? 'bøde' : 'bøder'}`
+
 /** Save a meeting's fines. One row per fine; the database enforces the cap. */
 function useRecordFines() {
   const qc = useQueryClient()
@@ -131,7 +140,7 @@ function RecordFines() {
             onClick={() => record.mutate({ recordId: meeting.id, fines: draft })}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {record.isPending ? 'Gemmer…' : `Gem ${draft.length} bøde(r)`}
+            {record.isPending ? 'Gemmer…' : `Gem ${boeder(draft.length)}`}
           </button>
           {record.isSuccess && (
             <p role="status" className="text-xs text-present">
