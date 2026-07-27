@@ -69,10 +69,16 @@ behind the login; admins additionally edit news, events and attendance.
    ✅ **Tap targets** — "Log ud", the fine chips, the minutes field and the save
    button are all at the design system's 48px floor. `minTapHeightPx` in
    `src/test/harness.tsx` is what the tests assert against.
-   ⬜ **Small text still fails AA** in places on the members' screens, which
-   have not been through the design system yet. Filled buttons are done: they
-   use `--color-brand`, a theme-constant #2563eb where white measures 5.1:1
-   against `bg-accent`'s 3.2:1. Anything filled added later should be too.
+   ✅ **Small text meets AA** as of T064. Two light-mode tokens were short and
+   both are measured in a browser now rather than argued from a hex: `--color-
+   faint` was 4.05:1 on the page ground (it had been corrected once against
+   white, which is not where most of it sits) and is 4.59:1; `--color-present`
+   was 4.02:1 where it is actually read — 8.8px initials on a wash mixed from
+   itself in the attendance pips — and is 4.9:1. Every text/background pair on
+   all six screens, both themes, now passes 4.5:1 (3:1 large). Filled buttons
+   were already done: they use `--color-brand`, a theme-constant #2563eb where
+   white measures 5.1:1 against `bg-accent`'s 3.2:1. Anything filled added
+   later should be too.
 
 ## Phase progress
 | Phase | What | State |

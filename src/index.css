@@ -120,14 +120,24 @@
     --color-line-hi: #d6e0f0;
     --color-ink: #0a1120;
     --color-muted: #5a6b85;
-    /* #6b7a93, not the design's #94a3b8. The lighter slate is the right note
+    /* #63718a, not the design's #94a3b8. The lighter slate is the right note
        for large type, but --color-faint is used at 8–12px — the roster labels,
-       the meeting dates, "Log ud" — where it measured 3.35:1 against white and
-       failed AA. This is the same hue two steps down, at 4.6:1. */
-    --color-faint: #6b7a93;
+       the meeting dates, "Log ud" — where the design's own value measured
+       3.35:1 against white and failed AA.
+
+       It was corrected once, to #6b7a93, on the strength of a figure against
+       white. That was the wrong backdrop to check: most of this text sits on
+       the page ground, not on a card, and #6b7a93 measured 4.05:1 there —
+       still failing, on the majority of its uses. Measured in the browser at
+       both, this is 4.93:1 on a card and 4.59:1 on the ground. */
+    --color-faint: #63718a;
     --color-accent: #2563eb;
     --color-accent-d: #3b72e8;
-    --color-present: #1f7a4d;
+    /* Dark enough to stay legible *on its own 20% wash*, which is where it is
+       actually read: the attendance pips set 8.8px initials in this green on a
+       fill mixed from it. The design's #1f7a4d measured 4.02:1 there. This is
+       the same green a step down, at 4.9:1 on the pip and 6.5:1 on a card. */
+    --color-present: #1a6b43;
     --color-absent: #b4453c;
   }
 }
