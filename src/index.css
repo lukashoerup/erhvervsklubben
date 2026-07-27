@@ -14,24 +14,33 @@
    constant across themes: a mark that changes colour with its background is
    decoration, not a logo. */
 @theme {
-  --color-ground: #080e1a;
-  --color-surface: #0f1829;
-  --color-raised: #16223a;
-  --color-line: #1f2e4a;
-  --color-line-hi: #2c3f63;
-  --color-ink: #edf3fd;
-  --color-muted: #94a7c6;
-  --color-faint: #62759a;
-  --color-accent: #4d8dff;
-  --color-accent-d: #2456b8;
+  --color-ground: #0a1120;
+  --color-surface: #16233f;
+  --color-raised: #1b2740;
+  --color-line: #24314e;
+  --color-line-hi: #33456b;
+  --color-ink: #edf1f8;
+  --color-muted: #94a3b8;
+  --color-faint: #8a9ab4;
+  --color-accent: #5b8def;
+  --color-accent-d: #3b72e8;
 
   /* Semantic, and kept clear of the brand blue on purpose: green and red mean
      present and absent, nothing else, so a screen of ticks reads without
      needing labels. */
-  --color-present: #35c08c;
-  --color-absent: #f26d60;
+  --color-present: #4ec08b;
+  --color-absent: #e58b83;
 
-  --color-navy: #17233f;
+  --color-navy: #16233f;
+
+  /* Instrument Serif for display, Instrument Sans for everything else — the
+     design system's own pairing. The two are inlined in
+     design/erhvervsklubben-designsystem-v2.html but not yet extracted into the
+     app, so these fall back to Georgia and the system sans for now: close in
+     feel, not the real thing. They must be self-hosted when extracted — the
+     app has no CDN access. */
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
 }
 
 /* `:root`, not a second `@theme`. Tailwind collects every `@theme` block into
@@ -45,16 +54,20 @@
   :root {
     --color-ground: #f4f7fc;
     --color-surface: #ffffff;
-    --color-raised: #f7fafe;
-    --color-line: #dee7f4;
-    --color-line-hi: #c6d5ea;
-    --color-ink: #08121f;
-    --color-muted: #4a5c7a;
-    --color-faint: #7488a8;
-    --color-accent: #1f5fd8;
-    --color-accent-d: #4d8dff;
-    --color-present: #12805a;
-    --color-absent: #c4453a;
+    --color-raised: #f9fbfe;
+    --color-line: #e2e8f2;
+    --color-line-hi: #d6e0f0;
+    --color-ink: #0a1120;
+    --color-muted: #5a6b85;
+    /* #6b7a93, not the design's #94a3b8. The lighter slate is the right note
+       for large type, but --color-faint is used at 8–12px — the roster labels,
+       the meeting dates, "Log ud" — where it measured 3.35:1 against white and
+       failed AA. This is the same hue two steps down, at 4.6:1. */
+    --color-faint: #6b7a93;
+    --color-accent: #2563eb;
+    --color-accent-d: #3b72e8;
+    --color-present: #1f7a4d;
+    --color-absent: #b4453c;
   }
 }
 
