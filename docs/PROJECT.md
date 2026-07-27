@@ -83,6 +83,21 @@ without losing data and without taking the old site down until an approved cutov
   balance is off the front page and out of the launch animation, where an
   animated number would have been the least private place to put it.
 
+- **2026-07-27 — members see the club's income; the treasurer keeps the
+  balance.** Lukas: "Members cannot see the finance graph. I.e., the financials
+  of the club (expected vs. realised income)." That is not a reversal of the
+  entry above, it is a distinction: the **bank balance** stays with the
+  treasurer, the **collection performance** — expected against realised, month
+  by month and by quarter — belongs to the people paying the kontingent. So
+  `/oekonomi` moved from `admin` to `member`, and the balance card, the
+  per-member arrears list and every write control are gated inside the page.
+
+  Worth stating plainly, because it is the seam between the two rules: the
+  monthly "Modtaget" column sums to the balance. A member who adds it up can
+  arrive at the figure the entry above keeps private. Raised with Lukas
+  2026-07-27; showing income was the explicit instruction, so it stands until
+  he says otherwise.
+
 - **2026-07-26 — anciennitet revocation is not built.** §11 allows attendance to
   be revoked by a 2/3 vote; Lukas: it has never happened and has never been
   suggested. A voting flow plus a revoked state plus the screens to explain them

@@ -48,7 +48,10 @@ export function Shell() {
           defeats the reason the tabs are at the bottom in the first place. */}
       <nav
         aria-label="Hovedmenu"
-        className="sticky bottom-0 grid grid-cols-4 border-t border-line bg-surface"
+        /* Columns from the route table, not a fixed four: adding a tab should
+           not silently wrap the bar onto a second row. */
+        style={{ gridTemplateColumns: `repeat(${NAV_ROUTES.length}, minmax(0, 1fr))` }}
+        className="sticky bottom-0 grid border-t border-line bg-surface"
       >
         {NAV_ROUTES.map((r) => (
           <NavLink

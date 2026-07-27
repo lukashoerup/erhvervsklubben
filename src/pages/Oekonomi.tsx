@@ -205,6 +205,11 @@ function MissingDates() {
 export default function Oekonomi() {
   const { data, isPending, error } = useFinance()
   const attendance = useAttendance()
+  // Every member sees what the club holds and what it is owed. Who owes it is
+  // the treasurer's business: a standing list naming who is behind turns a
+  // shared account into a public debt notice at the table.
+  const { role } = useAuth()
+  const isTreasurer = role === 'admin'
 
   if (isPending) return <Loading what="klubkassen" />
   if (error) return <Problem />
@@ -247,13 +252,22 @@ export default function Oekonomi() {
 
   return (
     <div className="flex flex-col gap-3">
-      <section className="rounded-xl border border-accent-d bg-surface p-4">
-        <p className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">Klubkassen</p>
-        <p className="tabular mt-1 text-2xl font-semibold">{kr(received)}</p>
-        <p className="mt-1 text-xs text-muted">
-          Indbetalt i alt. Udestående bøder: <span className="tabular">{kr(totalOwed)}</span>
-        </p>
-      </section>
+      {/* The balance itself stays with the treasurer (Lukas, 2026-07-26: "not
+          everyone should know how much money is in the bank account"), while
+          the club's income against what it should have collected is for every
+          member (Lukas, 2026-07-27). Both hold at once — one is a bank
+          balance, the other is whether the club collects what it is owed. */}
+      {isTreasurer && (
+        <section className="rounded-xl border border-accent-d bg-surface p-4">
+          <p className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">
+            Klubkassen · kun kassereren
+          </p>
+          <p className="tabular mt-1 text-2xl font-semibold">{kr(received)}</p>
+          <p className="mt-1 text-xs text-muted">
+            Indbetalt i alt. Udestående bøder: <span className="tabular">{kr(totalOwed)}</span>
+          </p>
+        </section>
+      )}
 
       {READONLY && (
         <section className="rounded-xl border border-line bg-surface p-3">
@@ -271,24 +285,28 @@ export default function Oekonomi() {
       <RecordFines />
       <MissingDates />
 
-      <section className="rounded-xl border border-line bg-surface p-3">
-        <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">Bøder pr. medlem</h2>
-        {owed.length === 0 ? (
-          <p className="mt-2 text-xs text-muted">Ingen bøder registreret endnu.</p>
-        ) : (
-          <ul className="mt-1">
-            {owed.map((o) => (
-              <li
-                key={o.member}
-                className="flex justify-between border-b border-line py-1.5 text-xs last:border-0"
-              >
-                <span>{o.member}</span>
-                <span className="tabular font-semibold text-accent">{kr(o.kr)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {isTreasurer && (
+        <section className="rounded-xl border border-line bg-surface p-3">
+          <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
+            Bøder pr. medlem · kun kassereren
+          </h2>
+          {owed.length === 0 ? (
+            <p className="mt-2 text-xs text-muted">Ingen bøder registreret endnu.</p>
+          ) : (
+            <ul className="mt-1">
+              {owed.map((o) => (
+                <li
+                  key={o.member}
+                  className="flex justify-between border-b border-line py-1.5 text-xs last:border-0"
+                >
+                  <span>{o.member}</span>
+                  <span className="tabular font-semibold text-accent">{kr(o.kr)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {quarters.length > 0 && (
         <section className="rounded-xl border border-line bg-surface p-3">
@@ -321,7 +339,10 @@ export default function Oekonomi() {
                   <th className="text-left font-normal">Måned</th>
                   <th className="text-right font-normal">Forventet</th>
                   <th className="text-right font-normal">Modtaget</th>
-                  <th className="text-right font-normal">Udestående</th>
+                  {/* Labelled as accumulating, because it does: the column is a
+                      running balance while the two beside it are that month's
+                      own figures. Unlabelled, a month reads as not adding up. */}
+                  <th className="text-right font-normal">Udestående (akk.)</th>
                 </tr>
               </thead>
               <tbody className="tabular">

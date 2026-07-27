@@ -61,7 +61,10 @@ const INTENDED: Record<string, string> = {
   '/anciennitet': 'member',
   '/nyheder': 'member',
   '/regler': 'member',
-  '/oekonomi': 'admin', // the club's money — Lukas, 2026-07-26
+  // Members, not admins — Lukas, 2026-07-27, correcting the call made a day
+  // earlier. It is the members' money and §8 lays the accounts before all of
+  // them; the treasurer's extra powers are gated inside the page instead.
+  '/oekonomi': 'member',
 }
 
 test('every route is declared at the access level we intend', () => {

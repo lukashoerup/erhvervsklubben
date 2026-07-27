@@ -30,7 +30,11 @@ export const ROUTES: RouteDef[] = [
   { path: '/anciennitet', access: 'member', nav: { label: 'Anciennitet', icon: '▤' } },
   { path: '/nyheder', access: 'member', nav: { label: 'Nyheder', icon: '✦' } },
   { path: '/regler', access: 'member', nav: { label: 'Regler', icon: '§' } },
-  { path: '/oekonomi', access: 'admin' },
+  // Members, not admins. It is their money: §8 puts the accounts in front of
+  // the whole membership once a year, and there is no reading of the statutes
+  // where the people funding the club may not see what it holds. The
+  // treasurer's extra powers are gated inside the page, not at the door.
+  { path: '/oekonomi', access: 'member', nav: { label: 'Økonomi', icon: '◈' } },
 ]
 
 export const NAV_ROUTES = ROUTES.filter((r) => r.nav)

@@ -28,7 +28,7 @@ export default function App() {
         <Route path="/anciennitet" element={<RequireAccess access="member"><Anciennitet /></RequireAccess>} />
         <Route path="/nyheder" element={<RequireAccess access="member"><Nyheder /></RequireAccess>} />
         <Route path="/regler" element={<RequireAccess access="member"><Regler /></RequireAccess>} />
-        <Route path="/oekonomi" element={<RequireAccess access="admin"><Oekonomi /></RequireAccess>} />
+        <Route path="/oekonomi" element={<RequireAccess access="member"><Oekonomi /></RequireAccess>} />
       </Route>
 
       {/* An unknown URL goes home, which then applies the same guard as any
