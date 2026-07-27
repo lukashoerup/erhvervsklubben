@@ -8,6 +8,7 @@ import { FinanceChart, kr } from '../components/FinanceChart'
 import { useAttendance } from '../data/useClubData'
 import { useAuth } from '../auth/AuthContext'
 import { DEMO, demoFines, demoPayments } from '../data/demo'
+import { SectionTitle } from '../components/SectionTitle'
 
 /**
  * The club's money. A member route since 2026-07-27 — §8 puts the accounts in
@@ -107,8 +108,8 @@ function RecordFines() {
   const meeting = meetings.find((m) => m.id === meetingId)
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-3">
-      <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">Registrér bøder</h2>
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+      <SectionTitle onCard>Registrér bøder</SectionTitle>
 
       <label className="mt-2 block text-xs text-muted">
         Møde
@@ -194,10 +195,8 @@ function MissingDates() {
   if (undated.length === 0) return null
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-3">
-      <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-        Møder uden dato · {undated.length}
-      </h2>
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+      <SectionTitle onCard>Møder uden dato · {undated.length}</SectionTitle>
       <p className="mt-1 text-[0.68rem] text-faint">
         Bøder kan ikke placeres i en måned uden en dato. Udfyld dem her, så
         regnskabet måned for måned bliver muligt.
@@ -275,7 +274,7 @@ export default function Oekonomi() {
           member (Lukas, 2026-07-27). Both hold at once — one is a bank
           balance, the other is whether the club collects what it is owed. */}
       {isTreasurer && (
-        <section className="rounded-xl border border-accent-d bg-surface p-4">
+        <section data-reveal className="rounded-2xl border border-accent-d bg-surface p-4">
           <p className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">
             Klubkassen · kun kassereren
           </p>
@@ -287,10 +286,8 @@ export default function Oekonomi() {
       )}
 
       {READONLY && (
-        <section className="rounded-xl border border-line bg-surface p-3">
-          <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-            Skrivebeskyttet forhåndsvisning
-          </h2>
+        <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+          <SectionTitle onCard>Skrivebeskyttet forhåndsvisning</SectionTitle>
           <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
             Denne udgave læser klubbens rigtige tal, men kan ikke ændre dem. Der
             kan hverken registreres bøder eller rettes datoer herfra.
@@ -316,10 +313,8 @@ export default function Oekonomi() {
       <MissingDates />
 
       {isTreasurer && (
-        <section className="rounded-xl border border-line bg-surface p-3">
-          <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-            Bøder pr. medlem · kun kassereren
-          </h2>
+        <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+          <SectionTitle onCard>Bøder pr. medlem · kun kassereren</SectionTitle>
           {owed.length === 0 ? (
             <p className="mt-2 text-xs text-muted">Ingen bøder registreret endnu.</p>
           ) : (
@@ -339,10 +334,8 @@ export default function Oekonomi() {
       )}
 
       {quarters.length > 0 && (
-        <section className="rounded-xl border border-line bg-surface p-3">
-          <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-            Kvartalsvis opkrævning
-          </h2>
+        <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+          <SectionTitle onCard>Kvartalsvis opkrævning</SectionTitle>
           <ul className="mt-1">
             {quarters.map((q) => (
               <li
@@ -358,13 +351,11 @@ export default function Oekonomi() {
       )}
 
       {ledger.length > 0 && (
-        <section className="rounded-xl border border-line bg-surface p-3">
+        <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
           {/* Also the chart's table view: every value the curves and the hover
               readout show is here in text, so nothing on this page can only be
               read by having a mouse or seeing a colour. */}
-          <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-            Måned for måned
-          </h2>
+          <SectionTitle onCard>Måned for måned</SectionTitle>
           <p className="mt-1 text-[0.68rem] text-faint">
             De samme tal som kurven, måned for måned frem for lagt sammen.
           </p>

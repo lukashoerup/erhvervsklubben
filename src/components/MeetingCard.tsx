@@ -66,7 +66,13 @@ export function MeetingCard({
   )
 
   return (
-    <article className="rounded-xl border border-line bg-surface p-3">
+    /* data-reveal on the card, not on its parts. 29 of these stack down the
+       page and the system's reveal is per element ("60 ms forskudt pr.
+       element") — but a card whose date arrives after its own heading reads as
+       a page still loading, not as choreography. The stagger here is the
+       scroll itself: the cards enter one after another because they are
+       stacked, so the thumb supplies the offset. */
+    <article data-reveal className="rounded-2xl border border-line bg-surface p-3">
       <div className="flex items-baseline gap-2">
         <span className="tabular text-[0.95rem] font-semibold text-accent">{meeting.number}</span>
         <h3 className="text-[0.92rem] font-semibold">{meeting.lead || 'Ukendt lead'}</h3>
@@ -122,7 +128,7 @@ export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
   const top = roster[0]?.attended ?? 0
   const total = roster[0]?.total ?? 0
   return (
-    <section className="rounded-xl border border-line bg-surface p-3">
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
       <p className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
         Anciennitet · antal deltagelser{total ? ` af ${total}` : ''}
       </p>
@@ -138,7 +144,14 @@ export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
               {r.attended}
             </span>
             <span aria-hidden="true" className="flex h-14 w-full items-end">
+              {/* "Søjler vokser ved scroll" (§04), from the baseline (§01). The
+                  height stays an inline style and the growth is a scaleY on top
+                  of it, so the bar's real height is still the number it
+                  represents — animating the height itself would be the one
+                  thing the system forbids, and it would relayout the row ten
+                  times a frame. */}
               <span
+                data-bar
                 className={`w-full rounded-t-[3px] ${
                   r.attended === top ? 'bg-accent' : 'bg-accent-d'
                 }`}

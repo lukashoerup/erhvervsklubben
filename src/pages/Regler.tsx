@@ -1,5 +1,6 @@
 import { FINE_RULES, duesFor } from '../data/rules'
 import { VEDTAEGTER } from '../data/vedtaegter'
+import { SectionTitle } from '../components/SectionTitle'
 
 /**
  * The rules, given a page of their own rather than a buried third tab.
@@ -12,10 +13,8 @@ export default function Regler() {
 
   return (
     <div className="flex flex-col gap-3">
-      <section className="rounded-xl border border-line bg-surface p-3">
-        <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-          Bødekasseregulativ
-        </h2>
+      <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+        <SectionTitle onCard>Bødekasseregulativ</SectionTitle>
         <dl className="mt-1">
           {FINE_RULES.map((r) => (
             <div key={r.id} className="flex gap-3 border-b border-line py-2 last:border-0">
@@ -36,10 +35,8 @@ export default function Regler() {
         </p>
       </section>
 
-      <section className="rounded-xl border border-line bg-surface p-3">
-        <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-          Medlemskab · vedtægterne §4
-        </h2>
+      <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+        <SectionTitle onCard>Medlemskab · vedtægterne §4</SectionTitle>
         <div className="mt-1 flex gap-3 py-2">
           <span className="tabular w-20 shrink-0 text-xs font-semibold text-accent">
             {dues} kr.
@@ -55,10 +52,8 @@ export default function Regler() {
           Fifteen sections open at once is a wall nobody reads, but a summary
           would be a second version of rules members are actually held to — so
           the text is verbatim and the folding does the shortening. */}
-      <section className="rounded-xl border border-line bg-surface p-3">
-        <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-          Vedtægter
-        </h2>
+      <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+        <SectionTitle onCard>Vedtægter</SectionTitle>
         <p className="mt-1 text-[0.68rem] text-faint">
           Vedtaget på generalforsamlingen. Ændringer kræver 2/3 flertal, jf. §14.
         </p>

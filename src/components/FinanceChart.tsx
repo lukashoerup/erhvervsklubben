@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts'
 import type { LedgerMonth } from '../data/ledger'
+import { SectionTitle } from './SectionTitle'
 
 /**
  * Danish money, defined once.
@@ -152,10 +153,8 @@ export function FinanceChart({ ledger, books }: { ledger: LedgerMonth[]; books: 
         : 'klubben har fået præcis det ind, den har opkrævet'
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-3">
-      <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-        Forventet mod modtaget
-      </h2>
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+      <SectionTitle onCard>Forventet mod modtaget</SectionTitle>
       <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
         Akkumuleret, {span}. Afstanden mellem kurverne er det, klubben har opkrævet
         og ikke fået ind.
@@ -385,10 +384,8 @@ function NothingToPlot({ books }: { books: BooksState }) {
   }
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-3">
-      <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-        Forventet mod modtaget
-      </h2>
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+      <SectionTitle onCard>Forventet mod modtaget</SectionTitle>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Der er ingen kurve at tegne endnu — ikke fordi klubben hverken har opkrævet
         eller modtaget noget, men fordi tallene ikke er her.

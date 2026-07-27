@@ -89,7 +89,7 @@ export default function Nyheder() {
         mayEdit && editor.editing(n.id) ? (
           form(n.id)
         ) : (
-          <article key={n.id} className="rounded-xl border border-line bg-surface p-3">
+          <article key={n.id} data-reveal className="rounded-2xl border border-line bg-surface p-3">
             <p className="tabular text-[0.6rem] tracking-[0.1em] text-accent uppercase">
               {daDate(n.date, { day: 'numeric', month: 'long' })}
             </p>
