@@ -3,6 +3,53 @@ import { supabase } from '../lib/supabase'
 import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
 import { DEMO, demoAttendances, demoNews, demoRecords, demoUpcoming } from './demo'
 
+/** The columns every version of the club's database has had. */
+const RECORD_COLUMNS = 'id, meeting_number, lead, pre_location, main_location, post_location'
+
+/** Postgres `undefined_column` — PostgREST passes the SQLSTATE straight through. */
+const UNDEFINED_COLUMN = '42703'
+
+/**
+ * The meeting records, tolerating a database older than this code.
+ *
+ * `meeting_date` arrived in a migration that has been applied here but not to
+ * the club's live project, and asking for a column that does not exist fails
+ * the *whole* read — fifteen years of history disappearing behind "kunne ikke
+ * hente data" because one optional field was missing. The dates are worth
+ * having and not worth that, so a missing column costs the dates and nothing
+ * else.
+ *
+ * Written as a retry rather than a flag so it repairs itself: the day the
+ * column is added, the first request succeeds and the dates simply appear.
+ */
+export async function readRecords(): Promise<RecordRow[]> {
+  const withDate = await supabase()
+    .from('attendance_records')
+    .select(`${RECORD_COLUMNS}, meeting_date`)
+  if (!withDate.error) return (withDate.data ?? []) as RecordRow[]
+  if (withDate.error.code !== UNDEFINED_COLUMN) throw withDate.error
+
+  const withoutDate = await supabase().from('attendance_records').select(RECORD_COLUMNS)
+  if (withoutDate.error) throw withoutDate.error
+  return (withoutDate.data ?? []) as RecordRow[]
+}
+
+/**
+ * Its own function, not an inline `supabase().from(...)` in the Promise.all
+ * below: `supabase()` throws synchronously when it has no configuration, and a
+ * synchronous throw while building that array abandons the sibling promise
+ * mid-flight — an unhandled rejection, and a failure reported from the wrong
+ * place. Inside an async function the same throw is just a rejection, which
+ * Promise.all is built to handle.
+ */
+async function readAttendances(): Promise<AttendanceRow[]> {
+  const { data, error } = await supabase()
+    .from('attendances')
+    .select('record_id, member_name, attended')
+  if (error) throw error
+  return (data ?? []) as AttendanceRow[]
+}
+
 /**
  * The club's attendance history, shaped for the page.
  *
@@ -23,17 +70,7 @@ export function useAttendance() {
           labels: shortLabels(roster.map((r) => r.name)),
         }
       }
-      const [recs, atts] = await Promise.all([
-        supabase()
-          .from('attendance_records')
-          .select('id, meeting_number, lead, pre_location, main_location, post_location, meeting_date'),
-        supabase().from('attendances').select('record_id, member_name, attended'),
-      ])
-      if (recs.error) throw recs.error
-      if (atts.error) throw atts.error
-
-      const records = (recs.data ?? []) as RecordRow[]
-      const rows = (atts.data ?? []) as AttendanceRow[]
+      const [records, rows] = await Promise.all([readRecords(), readAttendances()])
       const roster = buildRoster(records, rows)
       return {
         roster,
