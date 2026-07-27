@@ -3,6 +3,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+/** Read here rather than imported from data/demo, which must not depend on this module. */
+const DEMO = import.meta.env.VITE_DEMO === '1'
+
 /**
  * A build that may read the club's live database but must never write to it.
  *
@@ -12,8 +15,17 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
  * that: the write-shaped UI is not rendered (see Oekonomi), and the client
  * below refuses the calls outright. Either alone would be a promise; together
  * they are a guarantee that survives someone forgetting the other.
+ *
+ * Never in the demo build. `build:demo` is a production build, so it picks up
+ * .env.production and inherited this flag — which stripped the treasurer's
+ * whole fine-recording screen out of the very build made for showing the app,
+ * and left it claiming to read real data next to a banner saying the numbers
+ * are invented. There is no database behind the demo, so there is nothing for
+ * read-only to protect: the two modes are mutually exclusive by definition,
+ * and saying so here is more reliable than hoping every build script sets the
+ * variable correctly.
  */
-export const READONLY = import.meta.env.VITE_READONLY === '1'
+export const READONLY = import.meta.env.VITE_READONLY === '1' && !DEMO
 
 const REFUSED =
   'Skrivebeskyttet forhåndsvisning: denne udgave må ikke ændre klubbens data.'

@@ -66,28 +66,45 @@ export function MeetingCard({
   )
 }
 
-/** Anciennitet at a glance — §11 defines it as the count of attendances. */
+/**
+ * Anciennitet at a glance — §11 defines it as the count of attendances.
+ *
+ * The count is printed, not just drawn. It used to live only in a `title`
+ * tooltip, which does not exist on a touchscreen: the club's most-used page
+ * showed ten unlabelled bars and withheld the single number it is about.
+ *
+ * Every member on the top score is highlighted, not just the first. Five of
+ * them are usually tied, and colouring one of a tie crowns a leader the data
+ * does not have.
+ */
 export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
   const top = roster[0]?.attended ?? 0
+  const total = roster[0]?.total ?? 0
   return (
     <section className="rounded-xl border border-line bg-surface p-3">
       <p className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-        Anciennitet · antal deltagelser
+        Anciennitet · antal deltagelser{total ? ` af ${total}` : ''}
       </p>
-      <ul className="mt-2 flex h-16 items-end gap-1">
+      <ul className="mt-2 flex items-end gap-1">
         {roster.map((r) => (
           <li
             key={r.name}
+            aria-label={`${r.name}: ${r.attended} af ${r.total}`}
             title={`${r.name}: ${r.attended} af ${r.total}`}
-            className={`flex-1 rounded-t-[3px] ${r === roster[0] ? 'bg-accent' : 'bg-accent-d'}`}
-            style={{ height: `${top ? Math.max(4, (r.attended / top) * 100) : 4}%` }}
-          />
-        ))}
-      </ul>
-      <ul className="mt-1 flex gap-1">
-        {roster.map((r) => (
-          <li key={r.name} className="tabular flex-1 text-center text-[0.5rem] text-faint">
-            {r.label}
+            className="flex flex-1 flex-col items-center gap-0.5"
+          >
+            <span className="tabular text-[0.6rem] leading-none font-semibold text-ink">
+              {r.attended}
+            </span>
+            <span aria-hidden="true" className="flex h-14 w-full items-end">
+              <span
+                className={`w-full rounded-t-[3px] ${
+                  r.attended === top ? 'bg-accent' : 'bg-accent-d'
+                }`}
+                style={{ height: `${top ? Math.max(4, (r.attended / top) * 100) : 4}%` }}
+              />
+            </span>
+            <span className="tabular text-[0.55rem] leading-none text-muted">{r.label}</span>
           </li>
         ))}
       </ul>

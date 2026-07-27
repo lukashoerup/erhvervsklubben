@@ -43,7 +43,13 @@ export function Shell() {
         <Outlet />
       </main>
 
-      <nav aria-label="Hovedmenu" className="grid grid-cols-4 border-t border-line bg-surface">
+      {/* sticky, not static: Anciennitet runs to ~3400px, so a nav that scrolls
+          away can only be reached by scrolling past all 29 meetings — which
+          defeats the reason the tabs are at the bottom in the first place. */}
+      <nav
+        aria-label="Hovedmenu"
+        className="sticky bottom-0 grid grid-cols-4 border-t border-line bg-surface"
+      >
         {NAV_ROUTES.map((r) => (
           <NavLink
             key={r.path}
