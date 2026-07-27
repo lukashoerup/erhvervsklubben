@@ -55,6 +55,93 @@ test('late arrival asks for minutes and charges 50 kr plus 5 per minute', async 
   expect(draft()).toEqual([{ member: 'Mads', ruleId: 'for-sent', minutes: 12, kr: 110 }])
 })
 
+/**
+ * The one that cost money.
+ *
+ * Enter was the only thing that committed the minutes, and on a phone tapping
+ * elsewhere is how the keyboard is dismissed — so the ordinary way of finishing
+ * with the field was also the way of throwing the fine away, silently, with the
+ * Lead believing it was recorded.
+ */
+test('minutes typed and then tapped away from are recorded', async () => {
+  const user = userEvent.setup()
+  render(<Harness />)
+  await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+  await user.type(screen.getByLabelText('Minutter for sent — Mads'), '12')
+
+  // No Enter. Somewhere else on the screen, which is the gesture that used to
+  // lose it.
+  await user.click(screen.getByText('Saaby'))
+
+  expect(draft()).toEqual([{ member: 'Mads', ruleId: 'for-sent', minutes: 12, kr: 110 }])
+})
+
+test('a number too large to be lateness is refused, and says so', async () => {
+  const user = userEvent.setup()
+  render(<Harness />)
+  await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+  await user.type(screen.getByLabelText('Minutter for sent — Mads'), '99999')
+  await user.click(screen.getByText('Saaby'))
+
+  // It used to be taken at face value: a 500045 kr. fine, accepted in silence.
+  expect(draft()).toEqual([])
+  expect(screen.getByRole('alert')).toHaveTextContent('mellem 0 og 240')
+  expect(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0]).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+})
+
+test('a negative number is refused rather than charged as none', async () => {
+  // min={0} on the input never did anything, because the value was read on
+  // keydown: -50 activated the chip at 50 kr. with nothing to say it had been
+  // rejected.
+  const user = userEvent.setup()
+  render(<Harness />)
+  await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+  await user.type(screen.getByLabelText('Minutter for sent — Mads'), '-50')
+  await user.click(screen.getByText('Saaby'))
+
+  expect(draft()).toEqual([])
+  expect(screen.getByRole('alert')).toBeInTheDocument()
+})
+
+test('the refusal survives moving on to the next member', async () => {
+  // The panel closes when another chip is tapped. A message living inside it
+  // would go with it, which is the silent drop again wearing a different hat.
+  const user = userEvent.setup()
+  render(<Harness />)
+  await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+  await user.type(screen.getByLabelText('Minutter for sent — Mads'), '1200')
+  await user.click(screen.getAllByRole('button', { name: /Skål før/ })[1]) // Saaby
+
+  expect(screen.getByRole('alert')).toBeInTheDocument()
+  expect(draft().map((f) => f.member)).toEqual(['Saaby'])
+})
+
+test('the ceiling itself is a fine, not an error', async () => {
+  const user = userEvent.setup()
+  render(<Harness />)
+  await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+  await user.type(screen.getByLabelText('Minutter for sent — Mads'), '240')
+  await user.click(screen.getByText('Saaby'))
+
+  expect(draft()).toEqual([{ member: 'Mads', ruleId: 'for-sent', minutes: 240, kr: 1250 }])
+})
+
+test('opening the field and tapping away records nothing', async () => {
+  // An empty field is a mis-tapped chip. Committing zero would be a 50 kr. fine
+  // nobody asked for — the same silent money, in the other direction.
+  const user = userEvent.setup()
+  render(<Harness />)
+  await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+  await user.click(screen.getByText('Saaby'))
+
+  expect(draft()).toEqual([])
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText(/Minutter/)).not.toBeInTheDocument()
+})
+
 test('only late arrival asks for minutes', async () => {
   const user = userEvent.setup()
   render(<Harness />)
