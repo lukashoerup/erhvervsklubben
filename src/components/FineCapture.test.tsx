@@ -149,6 +149,29 @@ test('only late arrival asks for minutes', async () => {
   expect(screen.queryByLabelText(/Minutter/)).not.toBeInTheDocument()
 })
 
+test('amounts are written the way the rest of the app writes money', async () => {
+  // The chip printed `{active.kr}` raw, so a four-figure fine came out as
+  // 1250 kr. on a screen writing 3.600 kr. two cards away. Same helper now,
+  // so the two cannot disagree about what kind of number this is.
+  const user = userEvent.setup()
+  render(<Harness />)
+  await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+  await user.type(screen.getByLabelText('Minutter for sent — Mads'), '240{Enter}')
+
+  expect(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0]).toHaveTextContent(
+    '1.250 kr.',
+  )
+  expect(screen.getByText(/^I alt/)).toHaveTextContent('I alt 1.250 kr.')
+})
+
+test('a per-minute rule says what the minutes cost', async () => {
+  // "50+ kr." named neither the rate nor what the plus was for.
+  render(<Harness />)
+  expect(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0]).toHaveTextContent(
+    '50 kr. +5/min',
+  )
+})
+
 test('the running total is the sum of what has been tapped', async () => {
   const user = userEvent.setup()
   render(<Harness />)

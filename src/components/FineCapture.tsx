@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FINE_RULES, fineAmount } from '../data/rules'
+import { kr } from './FinanceChart'
 
 export type DraftFine = { member: string; ruleId: string; minutes: number; kr: number }
 
@@ -119,9 +120,16 @@ export function FineCapture({
                     ].join(' ')}
                   >
                     {rule.offence}
+                    {/* The club's own formatter, so a chip and the card two
+                        screens up cannot write the same amount two ways. The
+                        per-minute rule states its rate rather than a bare "+",
+                        which is what the design system's own rules card does. */}
                     <span className="tabular ml-1 font-semibold">
-                      {active ? `${active.kr}` : rule.kr}
-                      {needsMinutes && !active ? '+' : ''} kr.
+                      {active
+                        ? kr(active.kr)
+                        : needsMinutes
+                          ? `${kr(rule.kr)} +${rule.perMinute}/min`
+                          : kr(rule.kr)}
                     </span>
                   </button>
 
@@ -165,7 +173,7 @@ export function FineCapture({
       ))}
 
       <p className="tabular text-right text-sm">
-        I alt <span className="font-semibold text-accent">{total} kr.</span>
+        I alt <span className="font-semibold text-accent">{kr(total)}</span>
       </p>
     </div>
   )
