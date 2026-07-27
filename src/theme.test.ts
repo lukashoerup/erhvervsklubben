@@ -40,3 +40,42 @@ describe('theme tokens', () => {
     expect(grounds[0]).not.toEqual(grounds[1])
   })
 })
+
+/**
+ * The landing intro, guarded the same way and for the same reason: a browser is
+ * the only place this shows, and the failure is silent.
+ *
+ * Adding a fifth animated part to the lockup and forgetting the reduced-motion
+ * block is a one-line mistake that nobody making it can see — the page looks
+ * right to everyone who has not asked for less motion.
+ */
+describe('the landing animation', () => {
+  const animated = [...css.matchAll(/^\.(ek-[a-z-]+)[,\s{]/gm)].map((m) => m[1])
+  const declared = new Set(
+    animated.filter((c) => new RegExp(`\\.${c}\\b[^{]*\\{[^}]*animation-name`, 's').test(css)),
+  )
+
+  it('turns every animated part off for prefers-reduced-motion', () => {
+    const block = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/)
+    expect(block, 'no reduced-motion block found').not.toBeNull()
+    for (const cls of declared) {
+      expect(block![1], `.${cls} keeps animating for someone who asked it not to`).toContain(
+        `.${cls}`,
+      )
+    }
+    expect(block![1]).toContain('animation: none')
+  })
+
+  it('animates only compositor properties', () => {
+    // The design system's own rule: "Kun opacity og transform, så det kører
+    // 60 fps på telefonen." letter-spacing is the single sanctioned exception —
+    // the wordmark tightening is asked for by name and no transform expresses
+    // it. Anything else here means a keyframe is animating layout.
+    const inside = [...css.matchAll(/@keyframes ek-[a-z-]+\s*\{([\s\S]*?)\n\}/g)]
+    expect(inside.length).toBeGreaterThan(0)
+    const props = new Set(
+      inside.flatMap((m) => [...m[1].matchAll(/^\s{4}([a-z-]+):/gm)].map((p) => p[1])),
+    )
+    expect([...props].sort()).toEqual(['letter-spacing', 'opacity', 'transform'])
+  })
+})

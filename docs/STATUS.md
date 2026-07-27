@@ -19,13 +19,18 @@ sheet *Klubbens finanser* and have not been imported.
 behind the login; admins additionally edit news, events and attendance.
 
 **Next, in Lukas's priority order:**
-1. **The Claude Design system** — never reached this session. `DesignSync` needs
-   an interactive authorisation a cloud session cannot do, and the share link
-   needs his browser login. The route that works is **"Send to Claude Code Web"**
-   on the Claude Design page, which seeds the project into the workspace.
-2. **A public landing page** — with the logo animation and core club details.
-   Everything else stays behind the login. Nothing public exists today; `/` is
-   member-only.
+1. **The Claude Design system** — 🟡 **in the repo since 2026-07-27** as
+   `design/erhvervsklubben-designsystem-v2.html`, exported by Lukas. Palette,
+   type pairing, the three surfaces and the logo intro are in the app. **Still
+   outstanding: the two Instrument fonts**, which are inlined in that bundle but
+   not extracted — the app falls back to Georgia and the system sans. They must
+   be self-hosted; there is no CDN access.
+2. ~~**A public landing page**~~ ✅ **done 2026-07-27 (T060).** `/` is the club's
+   face: the logo intro, the purpose and cadence quoted from the statutes,
+   upcoming meetings and recent news. Everything else still needs a login, and
+   the members' front page moved to `/hjem` — a signed-in member opening `/` is
+   forwarded there. The page reads only `news` and `events`, the two
+   anon-readable tables, and a test asserts it asks for nothing else.
 3. **Admin editing of news and events** — currently read-only in the UI even
    though RLS allows it.
 4. **Import the finance figures** from *Klubbens finanser*. Unresolved first:
@@ -36,7 +41,10 @@ behind the login; admins additionally edit news, events and attendance.
    the design system should decide how they look: late-arrival minutes are lost
    unless Enter is pressed; meeting dates show no year; present/absent is red
    and green with no legend; small text fails AA contrast; "Log ud" is a 37×16px
-   tap target.
+   tap target. The contrast one now has a fix to copy: filled buttons on the
+   landing page use `--color-brand`, a theme-constant #2563eb where white
+   measures 5.1:1. `bg-accent` buttons elsewhere still measure 3.2:1 on the dark
+   ground and should move to it.
 
 ## Phase progress
 | Phase | What | State |
@@ -45,17 +53,17 @@ behind the login; admins additionally edit news, events and attendance.
 | 1 | Schema-as-migration, seed, local stack | ✅ **done** (T010, T012) |
 | 2 | RLS test suite | ✅ **done** (T020) — 40 assertions generated from the rule, green in CI |
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
-| 4 | Read-only screens | ✅ **done** — front page, Anciennitet, Nyheder, Regler on real data |
+| 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first |
 | 6 | Admin write flows | 🟡 **fines + meeting dates done**; news/events editing outstanding |
-| 7 | Design | ✅ **agreed 2026-07-26** — corporate blue redesign + logo; tokens live in `src/index.css`. The dark palette was silently absent from the build until T058 — see its notes. |
+| 7 | Design | 🟡 **tokens + landing done** — corporate blue, the design system's surfaces and its logo intro live in `src/index.css`. The dark palette was silently absent from the build until T058 — see its notes. Outstanding: self-host the two Instrument fonts, and apply the system to the members' screens. |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
 
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 68 component/derivation tests (jsdom, fast, offline).
+- `npm test` — 99 component/derivation tests (jsdom, fast, offline).
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
   (`dist-demo/index.html`), for showing the thing without hosting anything real.
@@ -95,7 +103,10 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 - ~~Q1 finance-chart data source~~ **answered 2026-07-26** — derived from meeting/attendance data, with a quarterly bank confirmation. T050 carries it; blocked only on the published fine rules, which this environment cannot reach.
 - Q3 keep prod on free tier (auto-pauses) or upgrade to paid.
 - Q4 new URL / domain.
-- Design template (Phase 7) — non-blocking; the theme seam in `src/index.css` waits.
+- ~~Design template (Phase 7)~~ **arrived 2026-07-27** — Lukas committed the
+  export to `design/`. The seam in `src/index.css` is filled: palette, type
+  pairing, surfaces, logo intro. What still needs him is nothing; what needs
+  doing is font extraction and the members' screens.
 
 ## How to resume after a fresh session
 Read [CLAUDE.md](../CLAUDE.md) → this file → [SETUP.md](SETUP.md) to bring the

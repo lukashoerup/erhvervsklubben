@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAccess } from './routes/RequireAccess'
 import { Shell } from './routes/Shell'
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 import Home from './pages/Home'
 import Anciennitet from './pages/Anciennitet'
 import Nyheder from './pages/Nyheder'
@@ -23,16 +24,22 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
 
+      {/* Outside the Shell, deliberately: the Shell is the members' furniture —
+          a tab bar to pages a stranger cannot open, and a "Log ud" button. The
+          landing page carries its own. */}
+      <Route index element={<Landing />} />
+
       <Route element={<Shell />}>
-        <Route index element={<RequireAccess access="member"><Home /></RequireAccess>} />
+        <Route path="/hjem" element={<RequireAccess access="member"><Home /></RequireAccess>} />
         <Route path="/anciennitet" element={<RequireAccess access="member"><Anciennitet /></RequireAccess>} />
         <Route path="/nyheder" element={<RequireAccess access="member"><Nyheder /></RequireAccess>} />
         <Route path="/regler" element={<RequireAccess access="member"><Regler /></RequireAccess>} />
         <Route path="/oekonomi" element={<RequireAccess access="member"><Oekonomi /></RequireAccess>} />
       </Route>
 
-      {/* An unknown URL goes home, which then applies the same guard as any
-          other member route — so a stray link cannot slip past the gate. */}
+      {/* An unknown URL goes to the landing page, which is now public — so a
+          mistyped or stale link shows the club rather than a password box, and
+          a signed-in member is forwarded on to /hjem from there. */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

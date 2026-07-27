@@ -26,7 +26,14 @@ export type RouteDef = {
 
 export const ROUTES: RouteDef[] = [
   { path: '/login', access: 'public' },
-  { path: '/', access: 'member', nav: { label: 'Hjem', icon: '◆' } },
+  // The club's public face, 2026-07-27. `/` used to be the members' front page
+  // and demanded a login before showing anything at all — a stranger following
+  // a link to the club met a password box. It is now the landing page, and the
+  // members' page moved to /hjem: a signed-in visitor at `/` is forwarded
+  // there, so nobody has to choose the right URL and neither audience lands on
+  // a page written for the other.
+  { path: '/', access: 'public' },
+  { path: '/hjem', access: 'member', nav: { label: 'Hjem', icon: '◆' } },
   { path: '/anciennitet', access: 'member', nav: { label: 'Anciennitet', icon: '▤' } },
   { path: '/nyheder', access: 'member', nav: { label: 'Nyheder', icon: '✦' } },
   { path: '/regler', access: 'member', nav: { label: 'Regler', icon: '§' } },

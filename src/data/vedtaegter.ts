@@ -168,6 +168,34 @@ export const VEDTAEGTER: Statute[] = [
   },
 ]
 
+/**
+ * One section, by number.
+ *
+ * Throws rather than returning undefined. The public landing page quotes the
+ * statutes instead of paraphrasing them, and a citation that silently resolves
+ * to nothing would leave a blank paragraph on the club's front door — a loud
+ * failure at build and test time is the cheaper mistake.
+ */
+export function statute(n: number): Statute {
+  const found = VEDTAEGTER.find((s) => s.n === n)
+  if (!found) throw new Error(`Vedtægterne har ingen §${n}`)
+  return found
+}
+
+/**
+ * A stykke with its "Stk. 3." / "Stk. 2. A." label stripped.
+ *
+ * The label is part of the statute and stays on /regler, where members are
+ * reading the rules *as* rules. The public page quotes the same sentences as a
+ * description of the club, where the numbering is noise — the citation is
+ * carried by the "§9" printed beside it instead. Stripping at the point of use
+ * rather than storing a second copy keeps one text in the repo, so a future
+ * amendment cannot land on the statutes page and miss the front door.
+ */
+export function stk(text: string): string {
+  return text.replace(/^Stk\. \d+\.(\s+[A-Z]\.)?\s+/, '')
+}
+
 /** §4 Stk. 3, as written — the clause the charged dues rate must agree with. */
 export const DUES_CLAUSE = VEDTAEGTER.find((s) => s.n === 4)!.items.find((i) =>
   i.startsWith('Stk. 3.'),

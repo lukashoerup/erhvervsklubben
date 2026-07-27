@@ -33,6 +33,15 @@
 
   --color-navy: #16233f;
 
+  /* The filled-button blue, and constant across themes for the same reason
+     --color-navy is: it is a surface carrying white text, not a colour of ink.
+     --color-accent has to lighten on the dark ground to stay legible *as text*,
+     and white on that lightened blue measures 3.2:1 — a primary call to action
+     failing AA on the club's public page. This is the design system's own
+     #2563eb, where white measures 5.1:1 on either ground. */
+  --color-brand: #2563eb;
+  --color-brand-hi: #1d4fd7;
+
   /* Instrument Serif for display, Instrument Sans for everything else — the
      design system's own pairing. The two are inlined in
      design/erhvervsklubben-designsystem-v2.html but not yet extracted into the
@@ -82,4 +91,233 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+/* ------------------------------------------------------------ the surfaces
+   "Tre flader i hele sitet — ikke flere." (designsystem §03 Fundament.)
+
+   The 115° hairline texture is the site's ground tone and repeats on every
+   page; cards sit on top as clean flat surfaces so text never competes with
+   the pattern; the navy is the logo's plate and never a section background.
+   Of everything in the design system this texture carries the most identity —
+   a page without it reads as generic immediately.
+
+   color-mix rather than the export's literal rgba(37,99,235,…): the accent is
+   a token and differs between the two grounds, and a texture hard-coded to the
+   light-mode blue would be the wrong blue on the dark one. */
+.ek-texture {
+  background-image: repeating-linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--color-accent) 5%, transparent) 0 1px,
+    transparent 1px 34px
+  );
+}
+
+/* "Kun øverst på forsiden." The glow is the one place the accent is allowed to
+   act as a background rather than a line. */
+.ek-hero-glow {
+  background-image: radial-gradient(
+      circle at 50% 0%,
+      color-mix(in srgb, var(--color-accent) 14%, transparent) 0%,
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      115deg,
+      color-mix(in srgb, var(--color-accent) 6%, transparent) 0 1px,
+      transparent 1px 34px
+    );
+}
+
+/* ------------------------------------------------------------ the intro
+   The logo intro, as the design system times it (§01 Bevægelse → LOGO-INTRO).
+   Its own summary: "I alt ca. 4,5 s. Bevidst langsom — den skal give indtryk,
+   ikke skynde på." The timeline, verbatim from the export:
+
+     0 → 1,1 s    Mærket toner op fra 92 % skala.
+     0,45 / 0,6 s E glider ind fra venstre, K fra højre — 1,1 s hver.
+     1,35 → 3,25s Den blå streg vandrer rundt om mærket: top → højre → bund →
+                  venstre, 0,55 s pr. kant.
+     2,2 s        Navnetrækket glider op og strammer fra .58em til .26em.
+     2,7 s        Den blå linje trækkes ud fra midten.
+     3,0 → 3,9 s  Nøgletal, byline, overskrift og knapper rejser sig 22 px.
+
+   One deliberate departure, and it is worth being explicit about. The tail —
+   wordmark, rule, then the words — is pulled forward to 1.2 / 1.6 / 1.9 s. The
+   guide times that sequence for its own hero, where the intro *is* the page and
+   a scroll cue sits under it. Here it is the club's front door, and at three
+   seconds the screen was a lone mark above an empty band where the headline
+   belongs: to a stranger that is not deliberate slowness, it is a page that has
+   failed to load. The gestures, their order, their curve and the 60 ms stagger
+   are unchanged; only the queueing is. The frame walk still runs its full
+   1,35 → 3,25 s underneath and finishes last, so the whole impression keeps the
+   system's length while the words stop waiting on it.
+
+   Two properties only, opacity and transform, so it composites at 60 fps on a
+   phone — the system's own rule, and the reason nothing here animates height,
+   top or margin. The one exception is the wordmark's letter-spacing, which the
+   system asks for by name and which no transform can express.
+
+   Every rule below is an animation with `both` fill and no static start state,
+   so the element's ordinary CSS *is* the finished lockup. Switch the animation
+   off and the page is already correct — which is exactly what the
+   reduced-motion block at the end does, and why it can be one line. */
+@keyframes ek-square {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* Translated in SVG user units — the mark's viewBox is 256 wide, so the letters
+   travel the same fraction of the plate at every rendered size. */
+@keyframes ek-e {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+}
+
+@keyframes ek-k {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+
+@keyframes ek-line-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes ek-line-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes ek-word {
+  from {
+    opacity: 0;
+    letter-spacing: 0.58em;
+    transform: translateY(16px);
+  }
+  to {
+    letter-spacing: 0.26em;
+  }
+}
+
+@keyframes ek-rule {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes ek-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+
+.ek-square,
+.ek-e,
+.ek-k,
+.ek-frame,
+.ek-word,
+.ek-rule,
+.ek-rise {
+  animation-duration: 1100ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.ek-square {
+  animation-name: ek-square;
+  /* Without fill-box the scale pivots on the SVG canvas origin instead of the
+     plate, and the square grows out of the top-left corner. */
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ek-e {
+  animation-name: ek-e;
+  animation-delay: 450ms;
+}
+
+.ek-k {
+  animation-name: ek-k;
+  animation-delay: 600ms;
+}
+
+/* The four edges are four elements, drawn in sequence with a rotating
+   transform-origin — top left-to-right, right top-to-bottom, bottom
+   right-to-left, left bottom-to-top. That hand-off is what reads as one blue
+   line walking around the mark rather than four lines appearing. Its own
+   curve, per the export: the walk is mechanical where everything else eases. */
+.ek-frame {
+  animation-duration: 550ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ek-frame-t {
+  animation-name: ek-line-x;
+  animation-delay: 1350ms;
+  transform-origin: left center;
+}
+.ek-frame-r {
+  animation-name: ek-line-y;
+  animation-delay: 1800ms;
+  transform-origin: center top;
+}
+.ek-frame-b {
+  animation-name: ek-line-x;
+  animation-delay: 2250ms;
+  transform-origin: right center;
+}
+.ek-frame-l {
+  animation-name: ek-line-y;
+  animation-delay: 2700ms;
+  transform-origin: center bottom;
+}
+
+.ek-word {
+  animation-name: ek-word;
+  animation-delay: 1200ms;
+}
+
+.ek-rule {
+  animation-name: ek-rule;
+  animation-delay: 1600ms;
+  animation-duration: 700ms;
+  transform-origin: center;
+}
+
+/* The hero's text rises last, 60 ms apart — the system's stagger. The delays
+   are set per element with --ek-rise-delay so the order lives next to the
+   markup it orders. */
+.ek-rise {
+  animation-name: ek-rise;
+  animation-duration: 700ms;
+  animation-delay: var(--ek-rise-delay, 1900ms);
+}
+
+/* Asked for less motion, given none — not a faster version. The preference is
+   usually vestibular, and a quick slide is still a slide. "prefers-reduced-
+   motion slår alt fra og viser indhold med det samme. Ingen bevægelse blokerer
+   læsning." Because the finished state is the elements' plain CSS, switching
+   the animations off leaves the finished lockup rather than a half-built one. */
+@media (prefers-reduced-motion: reduce) {
+  .ek-square,
+  .ek-e,
+  .ek-k,
+  .ek-frame,
+  .ek-frame-t,
+  .ek-frame-r,
+  .ek-frame-b,
+  .ek-frame-l,
+  .ek-word,
+  .ek-rule,
+  .ek-rise {
+    animation: none;
+  }
 }

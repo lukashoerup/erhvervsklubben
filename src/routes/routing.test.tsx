@@ -57,7 +57,14 @@ const ADMIN_PATHS = ROUTES.filter((r) => r.access === 'admin').map((r) => r.path
 // should take a deliberate act, not a one-word edit.
 const INTENDED: Record<string, string> = {
   '/login': 'public',
-  '/': 'member',
+  // Public since 2026-07-27, and the members' front page moved to /hjem. Lukas:
+  // "There should be a landing page for both members and the public… Then
+  // everything else should be behind the login page." `/` is the URL people
+  // type and share, so it is the club's face; a signed-in member is forwarded
+  // from it to /hjem. Changing this line back would put a password box in
+  // front of anyone who has merely heard of the club.
+  '/': 'public',
+  '/hjem': 'member',
   '/anciennitet': 'member',
   '/nyheder': 'member',
   '/regler': 'member',
@@ -89,9 +96,23 @@ describe('a signed-out visitor', () => {
     expect(screen.getByRole('button', { name: 'Log ind' })).toBeInTheDocument()
   })
 
-  test('an unknown URL does not slip past the gate', () => {
+  test('lands on the club, not on a password box', () => {
+    renderAt('/', {})
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Et netværk i København')
+    expect(screen.queryByLabelText('Adgangskode')).not.toBeInTheDocument()
+  })
+
+  // The old behaviour sent a stray link to the login form, because `/` was
+  // gated. It now shows the club — a mistyped URL is not a security event.
+  test('an unknown URL shows the landing page', () => {
     renderAt('/findes-ikke', {})
-    expect(screen.getByLabelText('Adgangskode')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Et netværk i København')
+  })
+
+  test('is shown nothing that belongs to the membership', () => {
+    renderAt('/', {})
+    expect(screen.queryByRole('navigation', { name: 'Hovedmenu' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Log ud')).not.toBeInTheDocument()
   })
 })
 
@@ -120,8 +141,26 @@ describe('a signed-in member', () => {
   })
 
   test('is not offered the treasurer link on the front page', () => {
-    renderAt('/', MEMBER)
+    renderAt('/hjem', MEMBER)
     expect(screen.queryByText(/Klubkassen/)).not.toBeInTheDocument()
+  })
+
+  // The landing page is for people who have not signed in. A member who opens
+  // the URL they always have — or taps a shared link — should get their own
+  // front page without knowing that /hjem exists.
+  test('is forwarded from the landing page to their own', () => {
+    renderAt('/', MEMBER)
+    expect(screen.getByRole('navigation', { name: 'Hovedmenu' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+  })
+
+  test('does not watch the public page flash past while the session loads', () => {
+    // Same trap as the hard-refresh case, one page over: acting on a null
+    // userId during the lookup would start the four-second intro under a
+    // member on every single load, then swap it for /hjem.
+    renderAt('/', { loading: true, userId: null })
+    expect(screen.getByLabelText('Indlæser')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
   })
 })
 

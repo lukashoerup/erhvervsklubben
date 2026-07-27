@@ -26,12 +26,19 @@ Which DB an environment uses is set by two build-time env vars
 (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) — that is also the cutover switch.
 
 ## Frontend stack
-- **React 19 + Vite + TypeScript**, **React Router** (routes mirror the old site:
-  `/`, `/about`, `/login`, `/news`, `/events`, `/seniority`).
+- **React 19 + Vite + TypeScript**, **React Router**. Routes are Danish, and are
+  declared once with their access level in `src/routes/routes.ts`: `/` and
+  `/login` are public; `/hjem`, `/anciennitet`, `/nyheder`, `/regler` and
+  `/oekonomi` need a login. `/` is the club's public landing page since
+  2026-07-27; a signed-in member opening it is forwarded to `/hjem`. The
+  intended levels are asserted independently in `routing.test.tsx`, so changing
+  one takes two deliberate edits rather than one word.
 - **TanStack Query** for data fetching/caching; **supabase-js** as the client.
 - **Recharts** for the two charts (attendance bar, finances line).
 - **Tailwind v4** with all design tokens in `src/index.css` `@theme` — the single
   seam where the Claude Design template drops in (components use tokens only).
+  The same file holds the landing page's logo intro and the design system's
+  three surfaces, for the same reason: one place, and a test guarding it.
 
 ## Data model (7 public tables, RLS on all)
 See [schema-snapshot-2026-07-23.sql](schema-snapshot-2026-07-23.sql) for verbatim
