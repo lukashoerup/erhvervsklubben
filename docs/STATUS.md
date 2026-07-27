@@ -42,23 +42,27 @@ behind the login; admins additionally edit news, events and attendance.
    its fine total reads 1.730 kr. against 1.780 kr. in the annual report, and
    the per-member breakdown loses which Lead's column some fines belong to.
    Do not import a number that cannot be stood behind.
-6. **Known defects** from the 2026-07-27 browser test, being cleared in T062:
-   small text fails AA contrast in places the members' screens have not been
-   through yet. Filled buttons now use `--color-brand`, a theme-constant
-   #2563eb where white measures 5.1:1 against `bg-accent`'s 3.2:1 — the landing
-   page and the fine-recording button are on it; anything filled added later
-   should be too.
-   ✅ **Late-arrival minutes** no longer need Enter — the field commits when it
-   loses focus, which on a phone is how the keyboard gets dismissed — and it is
-   bounded at 240 minutes, with a refused entry saying so.
-   ✅ **Meeting dates carry their year**, and are rendered in UTC so a plain
-   date cannot slide into the month before.
+6. **Known defects** from the 2026-07-27 browser test — cleared in T062, except
+   the last one.
+   ✅ **Late-arrival minutes** no longer need Enter: the field commits when it
+   loses focus, which on a phone is how the keyboard gets dismissed. Bounded at
+   240 minutes (past four hours it is *udeblivelse*, which the regulation
+   charges separately), and a refused entry says so instead of taking 99999 at
+   face value or charging -50 as none.
+   ✅ **Amounts use the shared `kr()`**, so the fine screen and the ledger
+   cannot write the same number two ways. "Gem 1 bøde" / "Gem 2 bøder".
+   ✅ **Meeting dates carry their year**, and render in UTC so a plain date
+   cannot slide into the month before.
    ✅ **Present/absent no longer rides on hue alone** — filled versus hollow
    pips, a key with the counts in it on every card, and the state in the pip's
    own text rather than a tooltip a phone cannot show.
    ✅ **Tap targets** — "Log ud", the fine chips, the minutes field and the save
    button are all at the design system's 48px floor. `minTapHeightPx` in
    `src/test/harness.tsx` is what the tests assert against.
+   ⬜ **Small text still fails AA** in places on the members' screens, which
+   have not been through the design system yet. Filled buttons are done: they
+   use `--color-brand`, a theme-constant #2563eb where white measures 5.1:1
+   against `bg-accent`'s 3.2:1. Anything filled added later should be too.
 
 ## Phase progress
 | Phase | What | State |
@@ -77,9 +81,11 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 117 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 141 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
-  but with no layout, so every coordinate in it is zero.
+  but with no layout, so every coordinate in it is zero. Same reason a tap
+  target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
+  has a size.
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
   (`dist-demo/index.html`), for showing the thing without hosting anything real.
