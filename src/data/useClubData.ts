@@ -5,10 +5,12 @@ import {
   DEMO,
   demoAttendances,
   demoDelete,
+  demoDeleteMeeting,
   demoEvents,
   demoNews,
   demoRecords,
   demoSave,
+  demoSaveMeeting,
 } from './demo'
 
 /** Newest first, the way all three content queries below ask the database for it. */
@@ -193,8 +195,18 @@ export function useEvents() {
 
 // ------------------------------------------------------------ admin writing
 
-/** The two tables the app lets an admin write. RLS is what enforces that. */
-export type EditableTable = 'news' | 'events'
+/**
+ * The tables the app lets an admin write. RLS is what enforces that.
+ *
+ * `attendance_records` stands for the meeting *and* its attendance rows, which
+ * are written together and never apart — see `useSaveMeeting`. Splitting them
+ * into two entries would invite a caller to write one without the other, which
+ * is a meeting nobody attended or attendance at no meeting.
+ */
+export type EditableTable = 'news' | 'events' | 'attendance_records'
+
+/** The two whose rows are flat text and go through the shared form below. */
+export type ContentTable = Exclude<EditableTable, 'attendance_records'>
 
 /**
  * Which cached reads a write invalidates.
@@ -202,10 +214,17 @@ export type EditableTable = 'news' | 'events'
  * `events` feeds two queries — the calendar below and the front page's next
  * two — and refreshing only one of them would leave the club looking at two
  * different calendars in the same app, one of them stale.
+ *
+ * A meeting feeds `finance` as well as `attendance`: a fine is placed in a
+ * month by its meeting's date, so setting that date moves money into the
+ * ledger, and deleting a meeting takes its fines with it (`fines.record_id` is
+ * `on delete cascade`). Leaving `finance` stale would show the club a monthly
+ * total that its own meeting list no longer supports.
  */
 const AFFECTED: Record<EditableTable, string[]> = {
   news: ['news'],
   events: ['events', 'upcoming'],
+  attendance_records: ['attendance', 'finance'],
 }
 
 function refresh(table: EditableTable, qc: ReturnType<typeof useQueryClient>) {
@@ -224,7 +243,7 @@ function refresh(table: EditableTable, qc: ReturnType<typeof useQueryClient>) {
  * one rule worth having (a row must have a title) is enforced where it can be
  * explained to the person typing, not thrown back as a Postgres error.
  */
-export function useSaveRow(table: EditableTable) {
+export function useSaveRow(table: ContentTable) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, values }: { id: string | null; values: Record<string, string> }) => {
@@ -246,7 +265,7 @@ export function useSaveRow(table: EditableTable) {
  * is wired to, which is the only thing standing between a mis-tap and a lost
  * news item.
  */
-export function useDeleteRow(table: EditableTable) {
+export function useDeleteRow(table: ContentTable) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
@@ -255,5 +274,149 @@ export function useDeleteRow(table: EditableTable) {
       if (error) throw error
     },
     onSuccess: () => refresh(table, qc),
+  })
+}
+
+// ------------------------------------------------------ writing a meeting
+
+/** The `attendance_records` columns an admin fills in. */
+export type MeetingRecord = {
+  meeting_number: number
+  lead: string
+  /** Null is ordinary: all 29 meetings in production are undated. */
+  meeting_date: string | null
+  pre_location: string | null
+  main_location: string
+  post_location: string | null
+}
+
+/** Who was ticked off: member name → was present. */
+export type Attendance = Record<string, boolean>
+
+export type MeetingWrite = {
+  /** Null creates the meeting. */
+  id: number | null
+  record: MeetingRecord
+  /** Every name the form offered, as it is ticked now. */
+  attendance: Attendance
+  /** What the database holds. A name missing from this has no row at all. */
+  stored: Attendance
+}
+
+/**
+ * Write a meeting and who attended it — two tables, one save.
+ *
+ * The order matters and is not interchangeable: a new meeting's row has to
+ * exist, and hand back the serial id the database chose, before any attendance
+ * can point at it. So the insert asks for its own row rather than assuming a
+ * number.
+ *
+ * **Only what changed is written.** A member with no row for a meeting is not
+ * the same as a member marked absent — `buildRoster` counts `total` from the
+ * rows that exist, so materialising the missing ones would quietly grow the
+ * denominator under "X deltagelser af Y" on every member, across 29 historical
+ * meetings, as a side effect of opening a form and pressing Gem. The form has
+ * to show two states because a phone toggle has two, so an untouched member
+ * with no row reads as "ikke til stede" and writes nothing at all. Ticking one
+ * *to* present is a deliberate act and does insert a row.
+ *
+ * Attendance is corrected by `(record_id, member_name)` rather than by the
+ * row's own id. There is no unique index on that pair — the club's data does
+ * not have one — so this is a filter, not an upsert; it updates however many
+ * rows match, which for a duplicate would be both, and both are equally wrong
+ * today. Reading the ids back first would be one more round trip to be no more
+ * correct.
+ *
+ * Deliberately not a transaction: PostgREST has no way to offer one. A failure
+ * halfway leaves the meeting saved and some ticks not, which is visible on the
+ * next render and fixable by pressing Gem again — the alternative, deleting
+ * and re-inserting the attendance rows, turns the same failure into a meeting
+ * whose attendance is simply gone.
+ */
+export function useSaveMeeting() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, record, attendance, stored }: MeetingWrite) => {
+      // Before the client, exactly as useSaveRow does it: the demo bundle
+      // carries the live project's URL and key.
+      if (DEMO) return demoSaveMeeting({ id, record, attendance, stored })
+
+      let recordId = id
+      if (recordId === null) {
+        const created = await supabase()
+          .from('attendance_records')
+          .insert(record)
+          .select('id')
+          .single()
+        if (created.error) throw created.error
+        recordId = (created.data as { id: number }).id
+      } else {
+        const { error } = await supabase()
+          .from('attendance_records')
+          .update(record)
+          .eq('id', recordId)
+        if (error) throw error
+      }
+
+      const names = Object.keys(attendance)
+      // A brand new meeting gets a row per member either way — that is the
+      // shape "one row per member per meeting" the club's data is supposed to
+      // have, and the reason to keep writing it for meetings the app creates.
+      const fresh = id === null ? names : names.filter((n) => stored[n] === undefined && attendance[n])
+      const changed =
+        id === null
+          ? []
+          : names.filter((n) => stored[n] !== undefined && stored[n] !== attendance[n])
+
+      if (fresh.length > 0) {
+        const { error } = await supabase()
+          .from('attendances')
+          .insert(
+            fresh.map((member_name) => ({
+              record_id: recordId,
+              member_name,
+              attended: attendance[member_name],
+            })),
+          )
+        if (error) throw error
+      }
+
+      for (const member_name of changed) {
+        const { error } = await supabase()
+          .from('attendances')
+          .update({ attended: attendance[member_name] })
+          .eq('record_id', recordId)
+          .eq('member_name', member_name)
+        if (error) throw error
+      }
+    },
+    onSuccess: () => refresh('attendance_records', qc),
+  })
+}
+
+/**
+ * Remove a meeting, and everything hanging off it.
+ *
+ * One statement, because the database does the rest: `attendances.record_id`
+ * and `fines.record_id` are both `on delete cascade`, so ~10 attendance rows
+ * and any fines recorded that evening go with the meeting. The confirmation
+ * this is wired to says so in those words — the club has one copy and no
+ * backup habit, and "slet møde" reads like one row.
+ *
+ * `event_evaluations.record_id` is deliberately *not* cascading (it matches
+ * production, verified 2026-07-23), so a meeting somebody submitted feedback on
+ * refuses to delete and the screen says the delete failed. One evaluation has
+ * ever been written, so this is close to theoretical — but the refusal is the
+ * right way round: feedback is the one thing on a meeting nobody can recreate.
+ */
+export function useDeleteMeeting() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      if (DEMO) return demoDeleteMeeting(id)
+      const { error } = await supabase().from('attendance_records').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => refresh('attendance_records', qc),
   })
 }

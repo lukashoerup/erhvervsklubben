@@ -34,14 +34,22 @@ Which DB an environment uses is set by two build-time env vars
   intended levels are asserted independently in `routing.test.tsx`, so changing
   one takes two deliberate edits rather than one word.
 - **Admin writing lives inside member pages, not behind an admin route.**
-  `/nyheder` and `/moeder` are member routes; the create/edit/delete controls on
-  them are gated in-page on `role === 'admin'` (and off entirely in a READONLY
-  build), the same shape `/oekonomi` uses for the treasurer's tools. The form,
-  the two-step delete and the open-row state are shared in
-  `src/components/AdminEdit.tsx`; the field lists and the copy belong to each
-  page. The writes go through `useSaveRow` / `useDeleteRow` in
-  `src/data/useClubData.ts`, which are the only mutations in the app besides the
-  fine and meeting-date writes on `/oekonomi`.
+  `/nyheder`, `/moeder` and `/anciennitet` are member routes; the
+  create/edit/delete controls on them are gated in-page on `role === 'admin'`
+  (and off entirely in a READONLY build), the same shape `/oekonomi` uses for
+  the treasurer's tools. The form, the two-step delete and the open-row state
+  are shared in `src/components/AdminEdit.tsx`; the field lists and the copy
+  belong to each page. News and events go through `useSaveRow` /
+  `useDeleteRow`; a meeting goes through `useSaveMeeting` / `useDeleteMeeting`,
+  which are separate because a meeting is two tables written together with an id
+  read back between them (`src/components/MeetingEditor.tsx` is its form).
+  Together with the fine capture on `/oekonomi`, those are every mutation in the
+  app.
+- **A meeting's date is set in exactly one place** — the meeting editor on
+  `/anciennitet` (T065). `/oekonomi` used to carry a date field per undated
+  meeting; it now carries only the count, because how many meetings lack a date
+  is a fact about the books, while the field was a second way to write one
+  column.
 - **TanStack Query** for data fetching/caching; **supabase-js** as the client.
 - **Recharts** for the finance curves on `/oekonomi` (`src/components/FinanceChart.tsx`)
   and nowhere else — the anciennitet bars are plain divs, because ten bars did
@@ -90,6 +98,20 @@ One pure pivot module turns `attendance_records` + `attendances` into
 `memberTotals`. Rendered as: meeting **cards** below `lg`, a sticky-column
 scrollable **matrix** at `lg+`, both keyed by `record_id` (not meeting_number —
 duplicates exist). Tapping a member opens their attendance timeline. See PLAN.md §3.
+
+The **third state is real and load-bearing**: a (meeting, member) pair with no
+row is not the same as `attended = false`, because `buildRoster` counts `total`
+from the rows that exist. 235 rows over 29 meetings is not 10 per meeting. The
+editor (T065) therefore shows a member with no row as absent — a phone toggle
+has two positions — but writes nothing unless the tick is changed *to* present,
+so opening a historical meeting and pressing Gem cannot grow the denominator
+under every member's anciennitet. Meetings the app creates do get a row per
+member, which is the shape the data was always supposed to have.
+
+The **roster is derived from the names in `attendances`**; there is no members
+table. That is why the editor carries a "nyt medlem" field: an eleventh member
+has no row anywhere, so without it they could never be ticked, and the club
+would be back to inserting rows by hand.
 
 ## Testing layers
 | Layer | Where | Runs against |

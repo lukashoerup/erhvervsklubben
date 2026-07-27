@@ -170,6 +170,59 @@ export function demoDelete(table: 'news' | 'events', id: string) {
   if (at >= 0) rows.splice(at, 1)
 }
 
+/**
+ * A meeting and its attendance, in the demo's two arrays.
+ *
+ * The same rule as the real save, deliberately: only a changed tick is written,
+ * and a member who has no row keeps none unless they are ticked present. A demo
+ * that materialised the missing rows would be demonstrating a behaviour the app
+ * does not have — and the demo is what gets shown to the club.
+ */
+export function demoSaveMeeting({
+  id,
+  record,
+  attendance,
+  stored,
+}: {
+  id: number | null
+  record: Omit<RecordRow, 'id'>
+  attendance: Record<string, boolean>
+  stored: Record<string, boolean>
+}) {
+  let recordId = id
+  if (recordId === null) {
+    // The serial the database would have picked.
+    recordId = Math.max(0, ...demoRecords.map((r) => r.id)) + 1
+    demoRecords.push({ id: recordId, ...record })
+  } else {
+    const row = demoRecords.find((r) => r.id === id)
+    if (row) Object.assign(row, record)
+  }
+
+  for (const [member_name, attended] of Object.entries(attendance)) {
+    const existing = demoAttendances.find(
+      (a) => a.record_id === recordId && a.member_name === member_name,
+    )
+    if (existing) {
+      existing.attended = attended
+      continue
+    }
+    if (id !== null && stored[member_name] === undefined && !attended) continue
+    demoAttendances.push({ record_id: recordId, member_name, attended })
+  }
+}
+
+export function demoDeleteMeeting(id: number) {
+  const at = demoRecords.findIndex((r) => r.id === id)
+  if (at >= 0) demoRecords.splice(at, 1)
+  // What `on delete cascade` does in the database. Left behind, the rows would
+  // already count towards nothing — `buildRoster` drops attendance pointing at
+  // a record that no longer exists — but the demo should behave, not coincide.
+  for (let i = demoAttendances.length - 1; i >= 0; i--) {
+    if (demoAttendances[i].record_id === id) demoAttendances.splice(i, 1)
+  }
+}
+
 export const demoFines = [
   { member_name: 'Mads', amount_kr: 200, record_id: 28 },
   { member_name: 'Mads', amount_kr: 185, record_id: 27 },

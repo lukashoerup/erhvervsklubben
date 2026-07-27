@@ -40,14 +40,31 @@ behind the login; admins additionally edit news, events and attendance.
    for every member rather than the treasurer alone. **In production it draws
    nothing and says why** — no fines, no payments, no meeting dates — which is
    the honest state and the thing item 5 below fixes.
-4. ~~**Admin editing of news and events**~~ ✅ **done 2026-07-27 (T063).** An
-   admin can add, correct and delete both from inside the app. News on
-   `/nyheder`; the meetings on a new member page **`/moeder`**, which is also
-   the first place the club's whole calendar — planned *and* held — has been
-   readable. Held meetings stay on it deliberately: a date typed wrong lands in
-   the past, and every other view of `events` shows only the future. Deleting
-   asks a second time and names what will go; the club has no backup habit.
-   Nothing was migrated — RLS has allowed exactly this since 2026-07-23.
+4. ~~**Admin editing of news, events and attendance**~~ ✅ **done 2026-07-27
+   (T063 + T065).** This was Lukas's whole list — *"add and edit news, events,
+   and the anciennitet events"* — and all three are now in the app. Neither task
+   migrated anything: RLS has allowed exactly this since 2026-07-23.
+   **News and events (T063).** News on `/nyheder`; the meetings on a new member
+   page **`/moeder`**, which is also the first place the club's whole calendar —
+   planned *and* held — has been readable. Held meetings stay on it
+   deliberately: a date typed wrong lands in the past, and every other view of
+   `events` shows only the future.
+   **Attendance (T065).** On `/anciennitet`, the page the history is read on: an
+   admin records a meeting and ticks off who came, or corrects one already
+   recorded. Ten members, two columns, 48 px buttons, and a new meeting starts
+   with everyone present so the *absentees* are what get tapped — this is used
+   the morning after a meeting, not at a desk. A member with no row for a
+   meeting keeps none unless he is ticked present, because 235 rows over 29
+   meetings is not ten per meeting and `total` is counted from the rows that
+   exist. The editor can also name someone the club has never recorded, which is
+   the only way an eleventh member ever enters a database with no members table.
+   **A meeting's date is now set in one place** — that editor. The date field on
+   `/oekonomi`'s "Møder uden dato" is gone and its *count* stayed: how many
+   meetings lack a date is a fact about those books, but two inputs on one
+   column are two places for it to start behaving differently.
+   Deleting asks a second time and names what will go; for a meeting that
+   includes counting the ~10 attendance rows and the fines that cascade with it.
+   The club has no backup habit.
 5. **Import the finance figures** from *Klubbens finanser*. Unresolved first:
    its fine total reads 1.730 kr. against 1.780 kr. in the annual report, and
    the per-member breakdown loses which Lead's column some fines belong to.
@@ -89,7 +106,7 @@ behind the login; admins additionally edit news, events and attendance.
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
-| 6 | Admin write flows | ✅ **done** — fines, meeting dates, and news/events create/edit/delete (T063). Attendance itself is still recorded outside the app. |
+| 6 | Admin write flows | ✅ **done** — fines, news/events create/edit/delete (T063), and the attendance history itself (T065). Nothing about the club's records is typed into the database by hand any more. |
 | 7 | Design | ✅ **done** — corporate blue, the surfaces and the logo intro in `src/index.css` (T031/T060); the two Instrument fonts self-hosted and the system applied to all six members' screens (T064). The dark palette was silently absent from the build until T058 — see its notes. Not done, deliberately: §01's count-up on figures (`design/README.md`). |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
@@ -97,7 +114,7 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 182 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 206 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -109,15 +126,17 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
   `cover 26%` range had to become `cover 12%`.
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
-  (`dist-demo/index.html`, ~976 kB), for showing the thing without hosting
+  (`dist-demo/index.html`), for showing the thing without hosting
   anything real. Since T064 it inlines the two woff2 faces as data URIs:
   `public/fonts/` is a path only a web server can answer, and left as a URL the
   standalone file 404s on both and quietly renders in Georgia.
   See T058. It is not a deploy and touches no club record. **Its writes are
-  in-memory** (T063): the demo bundle carries the live project's URL and anon
-  key, so every mutation short-circuits in `data/demo` before the client, and a
-  test asserts the client is never asked. Verified in a browser: create, edit
-  and delete in the demo make no network request at all.
+  in-memory** (T063, extended to meetings in T065): the demo bundle carries the
+  live project's URL and anon key, so every mutation short-circuits in
+  `data/demo` before the client, and a test asserts the client is never asked.
+  Verified in a browser both times: creating, correcting and deleting a news
+  item, a calendar entry or a whole meeting with its attendance makes no network
+  request at all. The demo is now ~981 kB.
 - `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,
@@ -133,10 +152,12 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 1. **Decide whether Leads can record fines** — the one thing blocking the
    finance flow from matching the regulation. See T050's "Capture is built"
    note; it is an access-rule change, so it needs Lukas.
-2. **Fill in the missing meeting dates.** The treasurer's screen lists every
-   undated meeting with a date field; the monthly ledger only covers meetings
-   that have one, and says how much is left out. The backfill from the events
-   table handled the unambiguous ones.
+2. **Fill in the missing meeting dates.** All 29 are undated. Since T065 the
+   date is set on the meeting's own card under Anciennitet, beside its lead, its
+   venues and who attended; `/oekonomi` counts how many are still missing and
+   the monthly ledger says how much it is therefore leaving out. The backfill
+   from the events table handled the unambiguous ones and refused to guess the
+   rest, so the remaining ones need Lukas's agendas rather than more code.
 3. **Import the sheet's history**, now that dates exist to hang it on.
 4. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
 5. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local

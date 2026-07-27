@@ -219,4 +219,20 @@ describe('the club as it actually stands', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
+
+  it('counts the meetings with no date, and sends the fix to one screen', async () => {
+    // This page used to carry a date field per undated meeting — a second way
+    // to write `attendance_records.meeting_date`, on a page about money. T065
+    // gave the meeting its own editor on Anciennitet, where the date sits with
+    // the lead, the venues and who attended. The count stays here, because the
+    // hole is in these books; the input does not, because two inputs on one
+    // column are two places for it to start behaving differently.
+    theClubAsItIsToday()
+    renderPage('admin')
+    await screen.findByText(/ingen kurve at tegne endnu/i)
+    const counted = screen.getByText(/møder har ingen dato/i)
+    expect(counted).toHaveTextContent('29')
+    expect(counted).toHaveTextContent(/under Anciennitet/)
+    expect(document.querySelectorAll('input[type="date"]')).toHaveLength(0)
+  })
 })

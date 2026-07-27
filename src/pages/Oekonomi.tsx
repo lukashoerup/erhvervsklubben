@@ -169,53 +169,34 @@ function RecordFines() {
 }
 
 /**
- * The meetings still missing a date, and a way to fill one in.
+ * How many meetings still have no date, and where that gets fixed.
  *
- * Not busywork: a fine cannot be placed in a month without one, so every undated
- * meeting is a hole in the books. Listing them makes the gap finite and visible
- * instead of a vague "the history has no dates" — and it shrinks as they are
- * filled, so it disappears on its own.
+ * This card used to carry a date field per meeting — a second way to write
+ * `attendance_records.meeting_date`, on a page about money. T065 gave the
+ * meeting itself an editor on `/anciennitet`, where the date sits beside the
+ * lead, the venues and who attended; the field here then became the same
+ * column reached by a worse route, able to set a date and nothing else, and
+ * two inputs on one column are two places for it to start behaving differently.
+ *
+ * The *count* is what was worth keeping, and it stays for the reason it was
+ * built: a fine cannot be placed in a month without a date, so every undated
+ * meeting is a hole in these books and the size of the hole belongs on the page
+ * it is a hole in. It shrinks as they are filled and goes away on its own.
  */
 function MissingDates() {
   const attendance = useAttendance()
-  const qc = useQueryClient()
-  const setDate = useMutation({
-    mutationFn: async ({ id, date }: { id: number; date: string }) => {
-      const { error } = await supabase()
-        .from('attendance_records')
-        .update({ meeting_date: date })
-        .eq('id', id)
-      if (error) throw error
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
-  })
-
-  const undated = (attendance.data?.meetings ?? []).filter((m) => !m.date)
+  const meetings = attendance.data?.meetings ?? []
+  const undated = meetings.filter((m) => !m.date)
   if (READONLY) return null
   if (undated.length === 0) return null
 
   return (
-    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
-      <SectionTitle onCard>Møder uden dato · {undated.length}</SectionTitle>
-      <p className="mt-1 text-[0.68rem] text-faint">
-        Bøder kan ikke placeres i en måned uden en dato. Udfyld dem her, så
-        regnskabet måned for måned bliver muligt.
-      </p>
-      <ul className="mt-2 flex flex-col gap-1.5">
-        {undated.slice(0, 12).map((m) => (
-          <li key={m.id} className="flex items-center gap-2 text-xs">
-            <span className="tabular w-8 font-semibold text-accent">{m.number}</span>
-            <span className="flex-1 truncate text-muted">{m.lead || 'ukendt'}</span>
-            <input
-              type="date"
-              aria-label={`Dato for møde ${m.number}`}
-              className="rounded border border-line bg-raised px-2 py-1 text-ink"
-              onChange={(e) => e.target.value && setDate.mutate({ id: m.id, date: e.target.value })}
-            />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <p className="text-[0.68rem] leading-relaxed text-faint">
+      <span className="tabular">{undated.length}</span> af{' '}
+      <span className="tabular">{meetings.length}</span> møder har ingen dato, og en
+      bøde kan ikke placeres i en måned uden. Datoen sættes på mødets eget kort
+      under Anciennitet, sammen med resten af mødet.
+    </p>
   )
 }
 

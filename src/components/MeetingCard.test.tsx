@@ -17,6 +17,7 @@ function meeting(over: Partial<Meeting> = {}): Meeting {
     date: '2021-12-04',
     month: '2021-12',
     route: ['Propaganda'],
+    venues: { pre: null, main: 'Propaganda', post: null },
     present: ['Mads'],
     absent: ['Saaby'],
     ...over,

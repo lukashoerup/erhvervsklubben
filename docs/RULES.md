@@ -109,9 +109,16 @@ to explain it would be real work and permanent complexity in the most-used page,
 for an event with no precedent.
 
 If it ever does happen, the existing `attendances.attended` flag already covers
-it — the treasurer flips that one row to false, which is what a revoked
-attendance means anyway. No schema change, no UI, nothing to maintain in the
-meantime. Revisit only if it happens twice.
+it — someone flips that one row to false, which is what a revoked attendance
+means anyway. No schema change, nothing to maintain in the meantime. Revisit
+only if it happens twice.
+
+Since T065 that flip no longer needs the database: an admin opens the meeting on
+`/anciennitet`, taps the member's tick and saves. That is a side effect of
+building ordinary attendance correction, not a decision to build revocation —
+there is still no vote, no revoked state and no screen explaining any of it, and
+a revoked attendance and a clerical error look identical in the data. The
+paragraph above stands.
 
 ---
 
