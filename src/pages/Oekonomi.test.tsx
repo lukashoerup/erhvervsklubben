@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthContext, type AuthState } from '../auth/AuthContext'
 import { minTapHeightPx, withQuery } from '../test/harness'
@@ -12,10 +12,16 @@ import { minTapHeightPx, withQuery } from '../test/harness'
  * number two different ways on one screen.
  */
 let rows: Record<string, unknown[]> = {}
+/** What the page actually tried to write. Money, so the payload is the test. */
+let upserted: Record<string, unknown>[] = []
 
 function builder(table: string) {
   const b: Record<string, unknown> = {}
-  for (const m of ['select', 'gte', 'lte', 'eq', 'order', 'limit', 'upsert', 'update']) b[m] = () => b
+  for (const m of ['select', 'gte', 'lte', 'eq', 'order', 'limit', 'update']) b[m] = () => b
+  b.upsert = (written: Record<string, unknown>[]) => {
+    upserted = written
+    return b
+  }
   // oxlint-disable-next-line no-thenable
   b.then = (resolve: (v: unknown) => unknown) =>
     Promise.resolve({ data: rows[table] ?? [], error: null }).then(resolve)
@@ -103,6 +109,7 @@ function renderPage(role: AuthState['role']) {
 
 beforeEach(() => {
   rows = {}
+  upserted = []
 })
 
 describe('who the finance graph is for', () => {
@@ -155,6 +162,29 @@ describe('recording a meeting’s fines', () => {
 
     await user.click(screen.getAllByRole('button', { name: /Skål før/ })[1])
     expect(screen.getByRole('button', { name: 'Gem 2 bøder' })).toBeInTheDocument()
+  })
+
+  it('writes the minutes the Lead typed, without anyone pressing Enter', async () => {
+    // The whole of the worst bug, end to end: type, put the keyboard away by
+    // tapping the thing you meant to tap next, and the club has the money.
+    const user = userEvent.setup()
+    aClubWithBooks()
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '1')
+    await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+    await user.type(screen.getByLabelText(/Minutter for sent/), '12')
+
+    // The first tap on Save only takes the focus off the field — Save is still
+    // disabled, because at that instant nothing is recorded. What matters is
+    // that the tap commits the fine rather than discarding it, so the second
+    // tap has something to save.
+    const save = screen.getByRole('button', { name: /^Gem / })
+    await user.click(save)
+    expect(save).toHaveAccessibleName('Gem 1 bøde')
+
+    await user.click(save)
+    await waitFor(() => expect(upserted).toHaveLength(1))
+    expect(upserted[0]).toMatchObject({ rule_id: 'for-sent', minutes: 12, amount_kr: 110 })
   })
 
   it('saves behind a button that can be hit, and read', async () => {

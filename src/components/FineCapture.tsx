@@ -128,7 +128,10 @@ export function FineCapture({
                         screens up cannot write the same amount two ways. The
                         per-minute rule states its rate rather than a bare "+",
                         which is what the design system's own rules card does. */}
-                    <span className="tabular ml-1 font-semibold">
+                    {/* nowrap: a long offence wraps to two lines, and without
+                        this the amount breaks between the figure and the "kr."
+                        as if it were prose. */}
+                    <span className="tabular ml-1 font-semibold whitespace-nowrap">
                       {active
                         ? kr(active.kr)
                         : needsMinutes
