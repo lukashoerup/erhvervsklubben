@@ -1,6 +1,25 @@
 import type { Meeting, RosterEntry } from '../data/derive'
 
 /**
+ * A meeting's date, and the year is not optional.
+ *
+ * The history runs from December 2021, so five cards read "4. dec." with
+ * nothing on any of them saying which December — on the one page whose whole
+ * subject is a four-and-a-half-year record.
+ *
+ * Rendered in UTC because these are plain YYYY-MM-DD dates: parsed as UTC
+ * midnight and printed in a zone behind it, the 1st of a month becomes the last
+ * day of the month before, and a meeting silently moves.
+ */
+const daDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('da-DK', {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+
+/**
  * One meeting, as a card.
  *
  * The old site showed this as a fifteen-column table, which cannot work on a
@@ -39,9 +58,7 @@ export function MeetingCard({
         <span className="tabular text-[0.95rem] font-semibold text-accent">{meeting.number}</span>
         <h3 className="text-[0.92rem] font-semibold">{meeting.lead || 'Ukendt lead'}</h3>
         <span className="tabular ml-auto text-[0.65rem] text-faint">
-          {meeting.date
-            ? new Date(meeting.date).toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })
-            : 'uden dato'}
+          {meeting.date ? daDate(meeting.date) : 'uden dato'}
         </span>
       </div>
 

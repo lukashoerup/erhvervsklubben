@@ -43,15 +43,16 @@ behind the login; admins additionally edit news, events and attendance.
    the per-member breakdown loses which Lead's column some fines belong to.
    Do not import a number that cannot be stood behind.
 6. **Known defects** from the 2026-07-27 browser test, being cleared in T062:
-   meeting dates show no year; present/absent is red and green with no legend;
-   small text fails AA contrast; "Log ud" is a 37×16px tap target. The contrast
-   one has a fix to copy: filled buttons on the landing page use
-   `--color-brand`, a theme-constant #2563eb where white measures 5.1:1.
-   `bg-accent` buttons elsewhere still measure 3.2:1 on the dark ground and
-   should move to it.
+   present/absent is red and green with no legend; small text fails AA contrast;
+   "Log ud" is a 37×16px tap target. The contrast one has a fix to copy: filled
+   buttons on the landing page use `--color-brand`, a theme-constant #2563eb
+   where white measures 5.1:1. `bg-accent` buttons elsewhere still measure
+   3.2:1 on the dark ground and should move to it.
    ✅ **Late-arrival minutes** no longer need Enter — the field commits when it
    loses focus, which on a phone is how the keyboard gets dismissed — and it is
    bounded at 240 minutes, with a refused entry saying so.
+   ✅ **Meeting dates carry their year**, and are rendered in UTC so a plain
+   date cannot slide into the month before.
 
 ## Phase progress
 | Phase | What | State |
