@@ -353,6 +353,141 @@ body {
   animation-delay: var(--ek-rise-delay, 1900ms);
 }
 
+/* ------------------------------------------------------- the members' motion
+   "Alt bevæger sig af samme grund: at vise hierarki. Indhold træder frem, når
+   det kommer i syne — aldrig for at pynte." (§01 Bevægelse.)
+
+   The system gives this twice, and they are one gesture told two ways. §01
+   states it — 22 px up and a fade, 700 ms, the .16/1/.3/1 curve — and the
+   export's own stylesheet then binds it to scroll position rather than to a
+   clock: `animation-timeline: view()` over `entry 4% cover 26%`. That binding
+   is the part worth having. A timed reveal plays whether or not anyone is
+   looking; a scroll-linked one is driven by the thumb, so a card sits
+   half-arrived when the thumb stops half-way and the page feels attached to the
+   hand holding it.
+
+   No JavaScript, and that is the decision rather than the omission. §05 offers
+   an IntersectionObserver at threshold 0.18 as the way to build this, and the
+   export itself does not use one — it ships the CSS above. Three reasons to
+   follow what the export does over what it says. Anciennitet is 29 cards over
+   ~3400 px, and this keeps the scroll path free of a callback that fires 29
+   times. Nothing can strand content: with no script in it there is no state
+   where a reveal is armed and never fires, which is the one failure a reveal
+   must not have. And a browser too old for `animation-timeline` gets the
+   finished page rather than a second code path to keep correct — the @supports
+   guard means it is never handed a start state it has no way to leave.
+
+   The cost is real and worth stating plainly: on a browser without scroll-driven
+   animations — iOS before Safari 26 — these screens do not move at all. They
+   are complete, readable and correct; they are simply static. Of the things
+   that could break, that is the right one to lose first.
+
+   Both properties composite, so 29 of these touch neither layout nor paint.
+   Deliberately no `will-change`: it would promote 29 cards to their own layers
+   for the whole session to save a millisecond on one of them. */
+@keyframes ek-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+
+/* Anciennitet's roster bars — "søjler vokser ved scroll" (§04 Skærme), against
+   §01's "søjler vokser fra baseline". The origin is what makes that growth
+   rather than a squash, and it is set on the element below. */
+@keyframes ek-bar {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* `auto` duration, not a length: with a scroll timeline the range *is* the
+       duration, and a 700 ms clock would compete with the thumb rather than
+       follow it. §01's 700 ms describes how far the gesture travels; the range
+       below is that distance expressed as scroll.
+
+       `cover 12%`, where the export says `cover 26%`, and the difference is a
+       bug the export cannot have. A scroll-linked animation only finishes if
+       the page can still scroll, and the *last* element on a page cannot: at
+       full scroll Anciennitet's oldest meeting had 171 px of travel left
+       against the 265 px that 26% asks for, and it came to rest — permanently —
+       at 72 % opacity, 6 px low. Møder's last held meeting sat at 86 %. The
+       export is one long desktop page whose sections are never last, so nothing
+       there ever runs out of scroll; six phone screens that each end in a card
+       do, every time.
+
+       12 % is the largest value that still settles the smallest card this app
+       can end a page with, given the trailing space `main` now reserves
+       (see Shell.tsx). The measurement, at 420 × 900: a card is ~121 px, the
+       cover range is viewport + card = 1021 px, and 12 % of it is 123 px
+       against the 203 px available. tests/… has no way to catch this — jsdom
+       has no layout and no scroll — so it is checked in a browser instead.
+
+       Kept in `cover` rather than switched to `entry`, which would also settle:
+       an entry range is the element's own height, and the cards on these
+       screens run from 67 px to 578 px, so the statutes card would fade in over
+       nine times the scroll distance the stat row does — and would still be
+       half transparent while being read. A cover range is mostly viewport, so
+       the tall card and the short one arrive at the same rate. */
+    [data-reveal] {
+      animation-name: ek-reveal;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 4% cover 12%;
+    }
+
+    /* The export's range, verbatim, and it is safe here for a reason worth
+       writing down: a cover range is mostly viewport, so ten bars between 2 px
+       and 56 px tall all grow at the same rate rather than the short ones
+       snapping. It also sits at the top of Anciennitet and so is never the
+       element that runs out of scroll. */
+    [data-bar] {
+      animation-name: ek-bar;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 6% cover 30%;
+      transform-origin: bottom;
+    }
+  }
+}
+
+/* ------------------------------------------------------ the section headers
+   The system's sticky bar, reduced to the one thing a phone has room for: the
+   label of the section being read.
+
+   It earns the space on the long screens rather than decorating the short ones.
+   Økonomi is six sections deep and Regler is fifteen folded statutes — scrolled
+   into the middle of either, the answer to "what am I reading" had gone off the
+   top of the screen. Anciennitet deliberately has none: every card there opens
+   with its own number, lead and date, so a bar repeating one heading over 29
+   self-labelling cards would cost 28 px of phone to say nothing.
+
+   Opaque, where the export's bar is translucent with a 14 px backdrop blur.
+   That blur is the most expensive thing in the export and it recomposites on
+   every scroll frame — on the one screen this has to stay cheap on. What it
+   buys is the page showing through the bar, and what shows through here is a
+   5%-opacity hairline texture. Paying frames on a phone for that is the wrong
+   trade; the band is the page's own colour instead.
+
+   --ek-stick-on so a heading inside a card sits on the card's surface rather
+   than the page ground. A band of the wrong colour is worse than no band. */
+.ek-stick {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--ek-stick-on, var(--color-ground));
+}
+
+.ek-stick-card {
+  --ek-stick-on: var(--color-surface);
+}
+
 /* Asked for less motion, given none — not a faster version. The preference is
    usually vestibular, and a quick slide is still a slide. "prefers-reduced-
    motion slår alt fra og viser indhold med det samme. Ingen bevægelse blokerer

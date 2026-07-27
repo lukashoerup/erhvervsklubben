@@ -92,7 +92,7 @@ export function FineCapture({
   return (
     <div className="flex flex-col gap-2">
       {members.map((member) => (
-        <section key={member} className="rounded-xl border border-line bg-surface p-3">
+        <section key={member} className="rounded-2xl border border-line bg-surface p-3">
           <h3 className="text-sm font-semibold">{member}</h3>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {FINE_RULES.map((rule) => {

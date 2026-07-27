@@ -59,7 +59,7 @@ export function EditForm({
 }) {
   return (
     <form
-      className="flex flex-col gap-2 rounded-xl border border-accent-d bg-surface p-3"
+      className="flex flex-col gap-2 rounded-2xl border border-accent-d bg-surface p-3"
       onSubmit={(e) => {
         e.preventDefault()
         if (canSave && !saving) onSave()

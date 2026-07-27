@@ -31,24 +31,29 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-3">
-      <section className="rounded-xl border border-accent-d bg-surface p-4">
+      {/* The one display line on the screen, and the design system's mobile
+          Hjem puts it here: "NÆSTE MØDE / Møde #29 / torsdag 13. august". Serif
+          because §03 pairs Instrument Serif with display sizes only — the
+          labels, the figures and the body stay Sans, and "tal i 700" is why the
+          three counts below are not set in it. */}
+      <section data-reveal className="rounded-2xl border border-accent-d bg-surface p-4">
         <p className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">Næste møde</p>
         {next ? (
           <>
-            <h2 className="mt-1 text-xl leading-tight font-semibold">{next.title}</h2>
+            <h2 className="mt-1.5 font-serif text-[1.75rem] leading-[1.1]">{next.title}</h2>
             <p className="mt-1 text-sm text-muted">
               {daDate(next.date, { weekday: 'long', day: 'numeric', month: 'long' })}
               {next.time ? ` · ${next.time}` : ''}
             </p>
             {next.location && (
-              <p className="mt-2 inline-block rounded border border-line bg-raised px-2 py-1 text-xs text-muted">
+              <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-line px-3.5 py-2 text-xs text-muted">
                 {next.location}
               </p>
             )}
           </>
         ) : (
           <>
-            <h2 className="mt-1 text-lg font-semibold">Ikke planlagt endnu</h2>
+            <h2 className="mt-1.5 font-serif text-[1.5rem] leading-[1.15]">Ikke planlagt endnu</h2>
             {/* Not a neutral empty state: the statutes require two meetings to
                 be in the calendar at all times, so nothing scheduled is a fact
                 worth surfacing rather than hiding behind a blank card. */}
@@ -60,7 +65,7 @@ export default function Home() {
       </section>
 
       {mine && (
-        <section className="grid grid-cols-3 gap-2">
+        <section data-reveal className="grid grid-cols-3 gap-2">
           <Stat n={mine.attended} label="Fremmøde" />
           <Stat
             n={meetings ? `${Math.round((mine.attended / meetings) * 100)}%` : '—'}
@@ -71,7 +76,7 @@ export default function Home() {
       )}
 
       {latest && (
-        <Link to="/nyheder" className="rounded-xl border border-line bg-surface p-3">
+        <Link to="/nyheder" data-reveal className="rounded-2xl border border-line bg-surface p-3">
           <p className="tabular text-[0.6rem] tracking-[0.1em] text-accent uppercase">
             {daDate(latest.date, { day: 'numeric', month: 'long' })}
           </p>
@@ -83,7 +88,8 @@ export default function Home() {
       {role === 'admin' && (
         <Link
           to="/oekonomi"
-          className="rounded-xl border border-line bg-surface p-3 text-sm text-muted"
+          data-reveal
+          className="rounded-2xl border border-line bg-surface p-3 text-sm text-muted"
         >
           <span className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">Kasserer</span>
           <span className="mt-1 block text-ink">Klubkassen →</span>
@@ -93,11 +99,15 @@ export default function Home() {
   )
 }
 
+/* The three counts, as the system's mobile Hjem lays them out. They stay in
+   Sans at 700 — "tal i 700" (§03) — and the row reveals as one block rather
+   than three, because three cards arriving 60 ms apart across 380 px reads as
+   a stutter rather than a stagger. */
 function Stat({ n, label }: { n: number | string; label: string }) {
   return (
-    <div className="rounded-lg border border-line bg-surface px-2 py-2.5 text-center">
-      <div className="tabular text-xl font-semibold">{n}</div>
-      <div className="mt-0.5 text-[0.55rem] tracking-wider text-faint uppercase">{label}</div>
+    <div className="rounded-2xl border border-line bg-surface px-2 py-3 text-center">
+      <div className="tabular text-[1.375rem] leading-none font-bold">{n}</div>
+      <div className="mt-1.5 text-[0.55rem] tracking-wider text-faint uppercase">{label}</div>
     </div>
   )
 }

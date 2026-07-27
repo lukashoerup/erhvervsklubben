@@ -61,3 +61,11 @@ They are self-hosted because they have to be: the export preconnects to
 fonts.gstatic.com, and the app has no CDN access. A Google Fonts link does not
 error — it just leaves the page in Georgia. `src/theme.test.ts` fails if one is
 ever added back.
+
+## Not done yet
+
+**Count-up on the figures.** §01 asks for "Nøgletal tæller op i 900 ms med
+easeOutExpo", and the members' screens do not. Counting a number up means
+rewriting text every frame, which is the one thing §01's own rule about
+`opacity` and `transform` exists to prevent. Left undone deliberately rather
+than half-done; it needs a decision about which rule wins.

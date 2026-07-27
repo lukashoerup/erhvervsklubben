@@ -4,6 +4,7 @@ import { useEvents, type EventItem } from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
 import { daDate, todayISO } from '../lib/dates'
 import { Loading, Problem } from '../components/State'
+import { SectionTitle } from '../components/SectionTitle'
 import {
   blankDraft,
   DeleteConfirm,
@@ -102,9 +103,10 @@ export default function Moeder() {
   const card = (e: EventItem, next: boolean) => (
     <article
       key={e.id}
+      data-reveal
       /* 1.5px blue on the next one — the design system marks the live row by
          border weight, never by fill. */
-      className={`rounded-xl border bg-surface p-3 ${next ? 'border-[1.5px] border-accent' : 'border-line'}`}
+      className={`rounded-2xl border bg-surface p-3 ${next ? 'border-[1.5px] border-accent' : 'border-line'}`}
     >
       <p className="tabular text-[0.6rem] tracking-[0.1em] text-accent uppercase">
         {daDate(e.date)}
@@ -169,7 +171,11 @@ export default function Moeder() {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">{title}</h2>
+      {/* Sticky here more than anywhere: the two halves of this page look
+          identical card for card, and which half you are in — planned, or
+          already held — is the whole difference between "we are meeting" and
+          "we met". Scrolled past the boundary, the page had stopped saying. */}
+      <SectionTitle>{title}</SectionTitle>
       {children}
     </section>
   )

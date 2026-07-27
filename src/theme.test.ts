@@ -67,6 +67,8 @@ describe('the landing animation', () => {
   })
 
   it('animates only compositor properties', () => {
+    // Covers the members' reveals too: ek-reveal and ek-bar are matched by the
+    // same @keyframes sweep below.
     // The design system's own rule: "Kun opacity og transform, så det kører
     // 60 fps på telefonen." letter-spacing is the single sanctioned exception —
     // the wordmark tightening is asked for by name and no transform expresses
@@ -116,5 +118,44 @@ describe('the typefaces', () => {
 
   it('swaps rather than blocking on the download', () => {
     for (const f of faces) expect(f).toMatch(/font-display:\s*swap/)
+  })
+})
+
+/**
+ * The members' reveals. Same reasoning as the landing intro above — a browser
+ * is the only place this shows — but the failure mode is worse: these rules
+ * start elements at `opacity: 0`, so a guard removed here does not make the app
+ * look wrong, it makes the club's records invisible.
+ *
+ * Two guards, and both are load-bearing. `prefers-reduced-motion: no-preference`
+ * is what gives someone who asked for less motion the finished page rather than
+ * a faster version of the movement. `@supports (animation-timeline: view())` is
+ * what stops a browser that cannot run the animation from being handed its
+ * start state with no way to leave it — without it, every card on every screen
+ * would be permanently blank on older Safari.
+ */
+describe('the members’ reveals', () => {
+  const guarded = css.match(
+    /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*@supports \(animation-timeline: view\(\)\)\s*\{([\s\S]*?)\n {2}\}\n\}/,
+  )
+
+  it('sits behind both the motion preference and the feature check', () => {
+    expect(guarded, 'the scroll-linked rules are not inside both guards').not.toBeNull()
+  })
+
+  it('declares the reveal and the bar growth only in there', () => {
+    expect(guarded![1]).toMatch(/\[data-reveal\]/)
+    expect(guarded![1]).toMatch(/\[data-bar\]/)
+    // One occurrence each, so a second copy cannot escape the guards.
+    expect(css.match(/\[data-reveal\]\s*\{/g)).toHaveLength(1)
+    expect(css.match(/\[data-bar\]\s*\{/g)).toHaveLength(1)
+  })
+
+  it('drives them from scroll position, not a clock', () => {
+    // A length here would play the reveal on a timer whether or not the reader
+    // ever scrolled to it — and on a phone that means content animating
+    // off-screen and arriving already finished.
+    expect(guarded![1]).not.toMatch(/animation-duration:\s*\d/)
+    expect(guarded![1].match(/animation-timeline:\s*view\(\)/g)).toHaveLength(2)
   })
 })

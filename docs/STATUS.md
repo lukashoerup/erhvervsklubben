@@ -19,14 +19,16 @@ sheet *Klubbens finanser* and have not been imported.
 behind the login; admins additionally edit news, events and attendance.
 
 **Next, in Lukas's priority order:**
-1. **The Claude Design system** — 🟡 **in the repo since 2026-07-27** as
-   `design/erhvervsklubben-designsystem-v2.html`, exported by Lukas. Palette,
-   type pairing, the three surfaces and the logo intro are in the app, and as of
-   T064 so are **the two Instrument fonts** — decoded out of that bundle and
-   self-hosted under `public/fonts/`, 51 kB for both. There is no CDN access, so
-   a Google Fonts link would have failed silently; `src/theme.test.ts` fails if
-   one is added. **Still outstanding: the members' screens**, which have had
-   none of the system and read as a different product from the landing page.
+1. ~~**The Claude Design system**~~ ✅ **done 2026-07-27 (T064).** The export is
+   in the repo as `design/erhvervsklubben-designsystem-v2.html`. Palette, type
+   pairing, the three surfaces and the logo intro landed earlier; T064 added
+   the two **Instrument fonts**, decoded out of that bundle and self-hosted
+   under `public/fonts/` (51 kB for both — there is no CDN access, and a
+   Google Fonts link fails silently), and put the system on all six members'
+   screens: the texture ground, the drawn mark in the app bar, 16 px card
+   radius, serif display type, sticky section labels, and the system's
+   scroll-linked reveal. **One thing from §01 is deliberately not done** —
+   the count-up on figures; see `design/README.md`.
 2. ~~**A public landing page**~~ ✅ **done 2026-07-27 (T060).** `/` is the club's
    face: the logo intro, the purpose and cadence quoted from the statutes,
    upcoming meetings and recent news. Everything else still needs a login, and
@@ -82,24 +84,29 @@ behind the login; admins additionally edit news, events and attendance.
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
 | 6 | Admin write flows | ✅ **done** — fines, meeting dates, and news/events create/edit/delete (T063). Attendance itself is still recorded outside the app. |
-| 7 | Design | 🟡 **tokens, landing and fonts done** — corporate blue, the design system's surfaces and its logo intro live in `src/index.css`; the two Instrument fonts are self-hosted (T064). The dark palette was silently absent from the build until T058 — see its notes. Outstanding: apply the system to the members' screens. |
+| 7 | Design | ✅ **done** — corporate blue, the surfaces and the logo intro in `src/index.css` (T031/T060); the two Instrument fonts self-hosted and the system applied to all six members' screens (T064). The dark palette was silently absent from the build until T058 — see its notes. Not done, deliberately: §01's count-up on figures (`design/README.md`). |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
 
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 179 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 182 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
-  has a size.
+  has a size. The members' scroll-linked reveals are asserted the same way —
+  the stylesheet is read as text and checked for its two guards — because jsdom
+  has no layout and no scroll, so whether a card actually finishes revealing
+  can only be answered in a browser. It was, in T064, on all six screens: see
+  that task's notes for the measurements, including why the design export's own
+  `cover 26%` range had to become `cover 12%`.
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
-  (`dist-demo/index.html`), for showing the thing without hosting anything real.
-  Since T064 it inlines the two woff2 faces as data URIs: `public/fonts/` is a
-  path only a web server can answer, and left as a URL the standalone file 404s
-  on both and quietly renders in Georgia.
+  (`dist-demo/index.html`, ~976 kB), for showing the thing without hosting
+  anything real. Since T064 it inlines the two woff2 faces as data URIs:
+  `public/fonts/` is a path only a web server can answer, and left as a URL the
+  standalone file 404s on both and quietly renders in Georgia.
   See T058. It is not a deploy and touches no club record. **Its writes are
   in-memory** (T063): the demo bundle carries the live project's URL and anon
   key, so every mutation short-circuits in `data/demo` before the client, and a
