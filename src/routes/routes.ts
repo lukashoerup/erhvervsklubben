@@ -35,6 +35,14 @@ export const ROUTES: RouteDef[] = [
   { path: '/', access: 'public' },
   { path: '/hjem', access: 'member', nav: { label: 'Hjem', icon: '◆' } },
   { path: '/anciennitet', access: 'member', nav: { label: 'Anciennitet', icon: '▤' } },
+  // Members, added 2026-07-27 with the admin editing (T063). The calendar was
+  // readable in two places and correctable in none — the front page names the
+  // next meeting and the public page shows two, so an admin who typed a date
+  // wrong had no screen to fix it on. Member rather than admin because `events`
+  // is anon-readable already: the club's own meeting list cannot sensibly be
+  // more private to a member than it is to a stranger. Only the buttons on it
+  // are the admin's.
+  { path: '/moeder', access: 'member', nav: { label: 'Møder', icon: '◷' } },
   { path: '/nyheder', access: 'member', nav: { label: 'Nyheder', icon: '✦' } },
   { path: '/regler', access: 'member', nav: { label: 'Regler', icon: '§' } },
   // Members, not admins. It is their money: §8 puts the accounts in front of

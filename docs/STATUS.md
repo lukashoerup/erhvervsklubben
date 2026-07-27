@@ -36,8 +36,14 @@ behind the login; admins additionally edit news, events and attendance.
    for every member rather than the treasurer alone. **In production it draws
    nothing and says why** — no fines, no payments, no meeting dates — which is
    the honest state and the thing item 5 below fixes.
-4. **Admin editing of news and events** — currently read-only in the UI even
-   though RLS allows it.
+4. ~~**Admin editing of news and events**~~ ✅ **done 2026-07-27 (T063).** An
+   admin can add, correct and delete both from inside the app. News on
+   `/nyheder`; the meetings on a new member page **`/moeder`**, which is also
+   the first place the club's whole calendar — planned *and* held — has been
+   readable. Held meetings stay on it deliberately: a date typed wrong lands in
+   the past, and every other view of `events` shows only the future. Deleting
+   asks a second time and names what will go; the club has no backup habit.
+   Nothing was migrated — RLS has allowed exactly this since 2026-07-23.
 5. **Import the finance figures** from *Klubbens finanser*. Unresolved first:
    its fine total reads 1.730 kr. against 1.780 kr. in the annual report, and
    the per-member breakdown loses which Lead's column some fines belong to.
@@ -71,9 +77,9 @@ behind the login; admins additionally edit news, events and attendance.
 | 1 | Schema-as-migration, seed, local stack | ✅ **done** (T010, T012) |
 | 2 | RLS test suite | ✅ **done** (T020) — 40 assertions generated from the rule, green in CI |
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
-| 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Nyheder, Regler on real data |
+| 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
-| 6 | Admin write flows | 🟡 **fines + meeting dates done**; news/events editing outstanding |
+| 6 | Admin write flows | ✅ **done** — fines, meeting dates, and news/events create/edit/delete (T063). Attendance itself is still recorded outside the app. |
 | 7 | Design | 🟡 **tokens + landing done** — corporate blue, the design system's surfaces and its logo intro live in `src/index.css`. The dark palette was silently absent from the build until T058 — see its notes. Outstanding: self-host the two Instrument fonts, and apply the system to the members' screens. |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
@@ -81,7 +87,7 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 141 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 176 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -89,7 +95,11 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
   (`dist-demo/index.html`), for showing the thing without hosting anything real.
-  See T058. It is not a deploy and touches no club record.
+  See T058. It is not a deploy and touches no club record. **Its writes are
+  in-memory** (T063): the demo bundle carries the live project's URL and anon
+  key, so every mutation short-circuits in `data/demo` before the client, and a
+  test asserts the client is never asked. Verified in a browser: create, edit
+  and delete in the demo make no network request at all.
 - `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,
@@ -109,15 +119,14 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    undated meeting with a date field; the monthly ledger only covers meetings
    that have one, and says how much is left out. The backfill from the events
    table handled the unambiguous ones.
-3. **News/events editing for the admin** — currently read-only.
-4. **Import the sheet's history**, now that dates exist to hang it on.
-5. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
-2. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
+3. **Import the sheet's history**, now that dates exist to hang it on.
+4. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
+5. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,
    grants) against the prod snapshot. Currently fidelity is verified by hand.
-3. ~~**T013 — wire CI**~~ ✅ **done 2026-07-26 as T022.** Add the parity check to
+   ~~**T013 — wire CI**~~ ✅ **done 2026-07-26 as T022.** Add the parity check to
    the `rls` job once T011 exists.
-4. Fix the `supabase/seed.sql` header (it says `db:reset` runs seed-auth; it does
+6. Fix the `supabase/seed.sql` header (it says `db:reset` runs seed-auth; it does
    not — only `test:rls:reset` does) and remove the `record_id: 1` coupling in
    `scripts/seed-auth.mjs`.
 

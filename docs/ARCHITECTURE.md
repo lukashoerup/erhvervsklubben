@@ -28,11 +28,20 @@ Which DB an environment uses is set by two build-time env vars
 ## Frontend stack
 - **React 19 + Vite + TypeScript**, **React Router**. Routes are Danish, and are
   declared once with their access level in `src/routes/routes.ts`: `/` and
-  `/login` are public; `/hjem`, `/anciennitet`, `/nyheder`, `/regler` and
-  `/oekonomi` need a login. `/` is the club's public landing page since
+  `/login` are public; `/hjem`, `/anciennitet`, `/moeder`, `/nyheder`, `/regler`
+  and `/oekonomi` need a login. `/` is the club's public landing page since
   2026-07-27; a signed-in member opening it is forwarded to `/hjem`. The
   intended levels are asserted independently in `routing.test.tsx`, so changing
   one takes two deliberate edits rather than one word.
+- **Admin writing lives inside member pages, not behind an admin route.**
+  `/nyheder` and `/moeder` are member routes; the create/edit/delete controls on
+  them are gated in-page on `role === 'admin'` (and off entirely in a READONLY
+  build), the same shape `/oekonomi` uses for the treasurer's tools. The form,
+  the two-step delete and the open-row state are shared in
+  `src/components/AdminEdit.tsx`; the field lists and the copy belong to each
+  page. The writes go through `useSaveRow` / `useDeleteRow` in
+  `src/data/useClubData.ts`, which are the only mutations in the app besides the
+  fine and meeting-date writes on `/oekonomi`.
 - **TanStack Query** for data fetching/caching; **supabase-js** as the client.
 - **Recharts** for the finance curves on `/oekonomi` (`src/components/FinanceChart.tsx`)
   and nowhere else — the anciennitet bars are plain divs, because ten bars did
