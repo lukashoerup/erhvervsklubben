@@ -98,6 +98,13 @@ Set it to `1` for any build that should read production without being able to
 change it — a preview for review, a session inspecting live data. It is one
 line, and it is the cheapest safety net in the project.
 
+Such a build **reads the real figures**, `fines` and `payments` included.
+`/oekonomi` used to answer empty without asking, from when the live project had
+neither table; both have existed since 2026-07-27, and a preview reporting a
+club that had charged nothing and collected nothing would defeat the point of
+previewing it. `src/pages/Oekonomi.readonly.test.tsx` pins both halves: it
+reads, and it offers nothing that writes.
+
 It is forced off in the demo build regardless of this file: `build:demo` is a
 production build and inherited the flag from here, which silently stripped the
 treasurer's whole fine-recording screen out of the build made for showing the

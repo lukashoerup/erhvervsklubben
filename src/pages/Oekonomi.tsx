@@ -25,16 +25,21 @@ import { DEMO, demoFines, demoPayments } from '../data/demo'
  * rather than being quietly dropped or shoved into an arbitrary month, which
  * would misstate a quarter. The undated meetings are listed with a field to
  * fill in, so the gap is finite, visible and shrinking.
+ *
+ * A read-only build reads these two tables like any other. It used to answer
+ * empty without asking, because the live project genuinely had no `fines` or
+ * `payments` and a locked build could not have created them; both have existed
+ * in production since 2026-07-27. Short-circuiting now would only make a
+ * preview of the books report zeros — a lie about the club's money, told by the
+ * mode whose entire purpose is looking without touching. The client refuses the
+ * writes on its own (see lib/supabase), and the write-shaped UI below is not
+ * rendered, so nothing is protected by also refusing to read.
  */
 function useFinance() {
   return useQuery({
     queryKey: ['finance'],
     queryFn: async () => {
       if (DEMO) return { fines: demoFines, payments: demoPayments }
-      // The live project predates the club's books: it has no fines or
-      // payments tables, and this build may not create them. Empty is the
-      // truthful answer, and the page says so rather than erroring.
-      if (READONLY) return { fines: [], payments: [] }
       const [fines, payments] = await Promise.all([
         supabase().from('fines').select('member_name, amount_kr, record_id'),
         supabase().from('payments').select('month, amount_kr'),
@@ -287,9 +292,8 @@ export default function Oekonomi() {
             Skrivebeskyttet forhåndsvisning
           </h2>
           <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
-            Denne udgave læser klubbens rigtige data, men kan ikke ændre dem.
-            Bøder og indbetalinger findes endnu ikke i databasen, så tallene
-            herunder står på nul, indtil regnskabet flyttes ind.
+            Denne udgave læser klubbens rigtige tal, men kan ikke ændre dem. Der
+            kan hverken registreres bøder eller rettes datoer herfra.
           </p>
         </section>
       )}
