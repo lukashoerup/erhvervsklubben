@@ -17,16 +17,16 @@ export type Draft = Record<string, string>
    tapped on a phone. bg-brand for the filled button and never bg-accent: white
    on the accent measures 3.2:1 on the dark ground and fails AA. */
 const INPUT =
-  'mt-1 block min-h-12 w-full rounded-lg border border-line bg-raised px-3 py-2 text-sm text-ink'
+  'mt-1 block min-h-12 w-full rounded-btn border border-line bg-raised px-3 py-2 text-sm text-ink'
 const FILLED =
-  'inline-flex min-h-12 items-center justify-center rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hi disabled:opacity-50'
+  'inline-flex min-h-12 items-center justify-center rounded-btn bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hi disabled:opacity-50'
 const QUIET =
-  'inline-flex min-h-12 items-center justify-center rounded-lg border border-line px-4 text-sm text-muted hover:border-accent'
+  'inline-flex min-h-12 items-center justify-center rounded-btn border border-line px-4 text-sm text-muted hover:border-accent'
 /* Outlined, not filled. --color-absent is a light coral on the dark ground and
    a brick red on the light one; white sits legibly on neither, and a button
    that destroys something is the last place to ship a contrast failure. */
 const DANGER =
-  'inline-flex min-h-12 items-center justify-center rounded-lg border border-absent px-4 text-sm font-semibold text-absent disabled:opacity-50'
+  'inline-flex min-h-12 items-center justify-center rounded-btn border border-absent px-4 text-sm font-semibold text-absent disabled:opacity-50'
 
 /**
  * The form behind "Ny" and "Rediger", for both tables an admin may write.

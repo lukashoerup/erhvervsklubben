@@ -57,7 +57,7 @@ export function Shell() {
               bar keeps the height it had. Nothing sits beside it to mis-tap. */}
           <button
             onClick={onSignOut}
-            className="-my-3 -mr-2 inline-flex min-h-12 items-center rounded-lg px-2 text-xs text-faint hover:text-accent"
+            className="-my-3 -mr-2 inline-flex min-h-12 items-center rounded-btn px-2 text-xs text-faint hover:text-accent"
           >
             Log ud
           </button>

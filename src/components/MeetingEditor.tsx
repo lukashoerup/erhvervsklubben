@@ -29,7 +29,7 @@ const FIELDS: Field[] = [
 ]
 
 const TICK =
-  'flex min-h-12 w-full flex-col justify-center rounded-lg border px-2 py-1 text-left'
+  'flex min-h-12 w-full flex-col justify-center rounded-btn border px-2 py-1 text-left'
 /* The same two marks the attendance pips use: filled with a solid edge, or
    hollow with a dashed one. Roughly one man in twelve cannot separate the two
    hues, and this is the control that decides whether he earns anciennitet. Here
@@ -41,7 +41,7 @@ const TICK_STATE = {
 } as const
 
 const SMALL =
-  'inline-flex min-h-12 items-center justify-center rounded-lg border border-line px-3 text-sm text-muted hover:border-accent disabled:opacity-50'
+  'inline-flex min-h-12 items-center justify-center rounded-btn border border-line px-3 text-sm text-muted hover:border-accent disabled:opacity-50'
 
 /** Danish has a singular and a plural, and neither of them is "deltagelse(r)". */
 export const deltagelser = (n: number) => `${n} ${n === 1 ? 'deltagelse' : 'deltagelser'}`
@@ -225,7 +225,7 @@ export function MeetingEditor({
                 e.preventDefault()
                 addName()
               }}
-              className="block min-h-12 w-full rounded-lg border border-line bg-raised px-3 py-2 text-sm text-ink"
+              className="block min-h-12 w-full rounded-btn border border-line bg-raised px-3 py-2 text-sm text-ink"
             />
           </label>
           <button type="button" onClick={addName} disabled={!canAdd} className={SMALL}>

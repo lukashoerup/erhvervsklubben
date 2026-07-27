@@ -75,7 +75,7 @@ export default function Landing() {
           </span>
           <Link
             to="/login"
-            className="inline-flex min-h-12 items-center rounded-[9px] bg-brand px-[18px] text-[13px] font-semibold text-white hover:bg-brand-hi"
+            className="inline-flex min-h-12 items-center rounded-btn bg-brand px-[18px] text-[13px] font-semibold text-white hover:bg-brand-hi"
           >
             Log ind
           </Link>
@@ -163,13 +163,13 @@ function Hero() {
         >
           <Link
             to="/login"
-            className="inline-flex min-h-12 items-center rounded-[10px] bg-brand px-[22px] text-sm font-semibold text-white hover:bg-brand-hi"
+            className="inline-flex min-h-12 items-center rounded-btn bg-brand px-[22px] text-sm font-semibold text-white hover:bg-brand-hi"
           >
             Log ind som medlem
           </Link>
           <a
             href="#klubben"
-            className="inline-flex min-h-12 items-center rounded-[10px] border border-line-hi px-[22px] text-sm font-semibold text-ink hover:border-accent"
+            className="inline-flex min-h-12 items-center rounded-btn border border-line-hi px-[22px] text-sm font-semibold text-ink hover:border-accent"
           >
             Om klubben
           </a>
@@ -364,7 +364,7 @@ function Medlemskab() {
           </p>
           <Link
             to="/login"
-            className="mt-4 inline-flex min-h-12 items-center rounded-[10px] bg-brand px-[22px] text-sm font-semibold text-white hover:bg-brand-hi"
+            className="mt-4 inline-flex min-h-12 items-center rounded-btn bg-brand px-[22px] text-sm font-semibold text-white hover:bg-brand-hi"
           >
             Log ind
           </Link>
@@ -376,10 +376,17 @@ function Medlemskab() {
 
 // ------------------------------------------------------------------ pieces
 
-/** Baseline-aligned section number and serif title — the system's header. */
+/**
+ * Baseline-aligned section number and serif title — the system's header.
+ *
+ * `data-reveal` on the wrapper rather than on the three parts: §01 stages
+ * elements 60 ms apart, but a heading whose own lede arrives after it reads as
+ * a page still loading. The section is one gesture; the stagger down the page
+ * is the scroll itself.
+ */
 function SectionHead({ n, title, lede }: { n: string; title: string; lede: string }) {
   return (
-    <>
+    <div data-reveal>
       <div className="flex items-baseline gap-4">
         <span className="tabular text-xs tracking-[0.24em] text-faint">{n}</span>
         <h2 className="font-serif text-[1.75rem] tracking-[-0.01em] sm:text-[2.75rem]">
@@ -389,14 +396,29 @@ function SectionHead({ n, title, lede }: { n: string; title: string; lede: strin
       <p className="mt-3.5 max-w-[620px] text-[16px] leading-[1.7] text-muted sm:text-[17px]">
         {lede}
       </p>
-    </>
+    </div>
   )
 }
 
-/** Hairline and flat. The system puts shadows on the logo and nothing else. */
+/**
+ * Hairline and flat. The system puts shadows on the logo and nothing else.
+ *
+ * `data-reveal` here, which the members' screens have had since T064 and this
+ * page had not. §01 is not scoped to the login: "Indhold træder frem, når det
+ * kommer i syne", and the export marks every card in every section this way.
+ * The club's public page was the longest scroll in the app that did not move —
+ * four sections and nine cards, arriving all at once, under a hero that spends
+ * four seconds introducing itself.
+ *
+ * Nothing can strand here: the guards in index.css hand an old browser the
+ * finished page, and the 96 px foot under the last card is well past the
+ * `cover 12%` the range asks for.
+ */
 function Card({ className = '', children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={`rounded-2xl border border-line bg-surface ${className}`}>{children}</div>
+    <div data-reveal className={`rounded-2xl border border-line bg-surface ${className}`}>
+      {children}
+    </div>
   )
 }
 

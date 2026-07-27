@@ -27,8 +27,17 @@ behind the login; admins additionally edit news, events and attendance.
    Google Fonts link fails silently), and put the system on all six members'
    screens: the texture ground, the drawn mark in the app bar, 16 px card
    radius, serif display type, sticky section labels, and the system's
-   scroll-linked reveal. **One thing from §01 is deliberately not done** —
-   the count-up on figures; see `design/README.md`.
+   scroll-linked reveal. **T066 then closed the icons and swept the rest.**
+   §03's Material Symbols now ship, subset from 339 kB to **1072 bytes** — the
+   tab bar was six geometric characters that Instrument does not draw, so it
+   rendered differently on every phone. The sweep put the texture, the drawn
+   mark, the brand-blue button and the 48 px floor on `/login` (which the
+   design pass had missed, being outside the Shell), gave the fifteen statute
+   rows on `/regler` a 48 px target, named the button radius §03 asks for, and
+   put §01's reveal on the public landing page. Contrast is at zero failing
+   pairs on all eight screens in both themes. **What is deliberately still
+   open** — the members' type scale against §04's phone mocks, §01's count-up
+   on figures, and iOS before Safari 26 — is in `design/README.md`.
 2. ~~**A public landing page**~~ ✅ **done 2026-07-27 (T060).** `/` is the club's
    face: the logo intro, the purpose and cadence quoted from the statutes,
    upcoming meetings and recent news. Everything else still needs a login, and
@@ -93,9 +102,12 @@ behind the login; admins additionally edit news, events and attendance.
    was 4.02:1 where it is actually read — 8.8px initials on a wash mixed from
    itself in the attendance pips — and is 4.9:1. Every text/background pair on
    all six screens, both themes, now passes 4.5:1 (3:1 large). Filled buttons
-   were already done: they use `--color-brand`, a theme-constant #2563eb where
-   white measures 5.1:1 against `bg-accent`'s 3.2:1. Anything filled added
-   later should be too.
+   use `--color-brand`, a theme-constant #2563eb where white measures 5.1:1
+   against `bg-accent`'s 3.2:1 — with one exception T064 could not see, because
+   it swept the six members' screens and `/login` is not one of them. **"Log
+   ind" was `bg-accent` and measured 3.23:1 on the dark ground** — the one
+   button nobody can get past — and is `bg-brand` since T066. All eight screens
+   are now at zero failing pairs. Anything filled added later should be too.
 
 ## Phase progress
 | Phase | What | State |
@@ -107,14 +119,14 @@ behind the login; admins additionally edit news, events and attendance.
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
 | 6 | Admin write flows | ✅ **done** — fines, news/events create/edit/delete (T063), and the attendance history itself (T065). Nothing about the club's records is typed into the database by hand any more. |
-| 7 | Design | ✅ **done** — corporate blue, the surfaces and the logo intro in `src/index.css` (T031/T060); the two Instrument fonts self-hosted and the system applied to all six members' screens (T064). The dark palette was silently absent from the build until T058 — see its notes. Not done, deliberately: §01's count-up on figures (`design/README.md`). |
+| 7 | Design | ✅ **done** — corporate blue, the surfaces and the logo intro in `src/index.css` (T031/T060); the two Instrument fonts self-hosted and the system applied to all six members' screens (T064); the icon set and a conformance sweep of all eight screens (T066). The dark palette was silently absent from the build until T058 — see its notes. Still open, and all of it written up in `design/README.md`: the members' **type scale** sits one notch below §04's own phone mocks, §01's count-up on figures, and no motion on iOS before Safari 26. |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
 
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 206 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 208 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -127,7 +139,8 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
   (`dist-demo/index.html`), for showing the thing without hosting
-  anything real. Since T064 it inlines the two woff2 faces as data URIs:
+  anything real. Since T064 it inlines the woff2 faces as data URIs — three of
+  them since T066, the two Instrument subsets and the 1 kB icon subset:
   `public/fonts/` is a path only a web server can answer, and left as a URL the
   standalone file 404s on both and quietly renders in Georgia.
   See T058. It is not a deploy and touches no club record. **Its writes are
@@ -136,7 +149,7 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
   `data/demo` before the client, and a test asserts the client is never asked.
   Verified in a browser both times: creating, correcting and deleting a news
   item, a calendar entry or a whole meeting with its attendance makes no network
-  request at all. The demo is now ~981 kB.
+  request at all. The demo is now ~984 kB.
 - `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,
