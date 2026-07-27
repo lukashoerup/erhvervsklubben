@@ -7,7 +7,7 @@
     "env": {
       "VITE_SUPABASE_URL": "https://urlabzyihqrsdeasvrfe.supabase.co",
       "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVybGFienlpaHFyc2RlYXN2cmZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNTI0MzUsImV4cCI6MjA2MDcyODQzNX0.mWtHI4LIagdrm3jYonkbudro6M1M4WEXmFQdpOFpu5g",
-      "VITE_READONLY": "1"
+      "VITE_READONLY": "0"
     }
   },
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]

@@ -87,16 +87,29 @@ Three build variables are set there, and the third is the important one:
 | `VITE_SUPABASE_ANON_KEY` | Publishable key; it is designed to ship inside a browser bundle. Not a secret, and **not** the service-role key, which must never appear here. |
 | `VITE_READONLY=1` | Makes writing impossible, not merely hidden. |
 
-**`VITE_READONLY=1` is deliberate on every deployment, production included.**
-The club has fifteen years of history in the prod project and no backup on this
-side, so nothing that reaches the public internet may write to it. `supabase.ts`
-refuses `insert`/`update`/`upsert`/`delete`/`rpc` outright, and the write-shaped
-UI is not rendered; `src/lib/supabase.test.ts` proves it. Turning the flag off
-is a decision to point the app at a database it is allowed to damage — do that
-only against a non-production project.
+**`VITE_READONLY` is `0` since 2026-07-27 — the deployed app writes to
+production.** Lukas lifted the lock once he held a full data export and
+screenshots of the anciennitet history. Before that, every deployment refused
+to write: `supabase.ts` rejects `insert`/`update`/`upsert`/`delete`/`rpc` and
+the write-shaped UI is not rendered.
 
-The prod project also has no `fines` or `payments` tables, so the finance page
-reports empty and says why. That is accurate, not a bug.
+**The switch stays, and stays tested both ways** (`src/lib/supabase.test.ts`).
+Set it to `1` for any build that should read production without being able to
+change it — a preview for review, a session inspecting live data. It is one
+line, and it is the cheapest safety net in the project.
+
+It is forced off in the demo build regardless of this file: `build:demo` is a
+production build and inherited the flag from here, which silently stripped the
+treasurer's whole fine-recording screen out of the build made for showing the
+app. `READONLY` is now `&& !DEMO` in code — there is no database behind the
+demo, so there is nothing for it to protect.
+
+`fines`, `payments` and `attendance_records.meeting_date` were added to the
+prod project on 2026-07-27 (migrations `add_fines_and_payments`,
+`add_meeting_date_to_attendance_records`). Both are additive; no existing row
+was modified, and the date backfill deliberately filled nothing rather than
+guess, because the events' titles do not match `Møde #N`. So every meeting is
+currently undated in production.
 
 `rewrites` sends every unmatched path to `index.html`: the app routes in the
 browser, so without it a refresh on `/nyheder` would 404 from the CDN.

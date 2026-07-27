@@ -1,7 +1,42 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-26 (late). Single source of truth for "where are we". Update this at the
+_Updated 2026-07-27. Single source of truth for "where are we". Update this at the
 end of every working session._
+
+## Start here if you are picking this up in a new session
+
+**It is live and writable.** <https://erhvervsklubben.vercel.app>, deployed from
+`main` by Vercel's GitHub integration on every push. Build config is in
+`vercel.json` and `.env.production` — both committed, nothing in the dashboard.
+
+**Production now has** `fines`, `payments` and `attendance_records.meeting_date`
+(added 2026-07-27, additive, no existing row touched). All 29 meetings and 235
+attendance rows intact. **Every meeting is undated** — the backfill refused to
+guess. `fines` and `payments` are empty; the real figures are in Lukas's Drive
+sheet *Klubbens finanser* and have not been imported.
+
+**Two roles, and only two** (see PROJECT.md 2026-07-27): members read everything
+behind the login; admins additionally edit news, events and attendance.
+
+**Next, in Lukas's priority order:**
+1. **The Claude Design system** — never reached this session. `DesignSync` needs
+   an interactive authorisation a cloud session cannot do, and the share link
+   needs his browser login. The route that works is **"Send to Claude Code Web"**
+   on the Claude Design page, which seeds the project into the workspace.
+2. **A public landing page** — with the logo animation and core club details.
+   Everything else stays behind the login. Nothing public exists today; `/` is
+   member-only.
+3. **Admin editing of news and events** — currently read-only in the UI even
+   though RLS allows it.
+4. **Import the finance figures** from *Klubbens finanser*. Unresolved first:
+   its fine total reads 1.730 kr. against 1.780 kr. in the annual report, and
+   the per-member breakdown loses which Lead's column some fines belong to.
+   Do not import a number that cannot be stood behind.
+5. **Known defects** from the 2026-07-27 browser test, left deliberately because
+   the design system should decide how they look: late-arrival minutes are lost
+   unless Enter is pressed; meeting dates show no year; present/absent is red
+   and green with no legend; small text fails AA contrast; "Log ud" is a 37×16px
+   tap target.
 
 ## Phase progress
 | Phase | What | State |
