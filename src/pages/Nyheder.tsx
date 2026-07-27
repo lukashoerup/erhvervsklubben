@@ -55,23 +55,30 @@ export default function Nyheder() {
   if (isPending) return <Loading what="nyheder" />
   if (error) return <Problem />
 
+  // The same form whether it is creating or correcting — one set of fields to
+  // get right rather than two that drift.
+  const form = (id: string | null) => (
+    <EditForm
+      key={id ?? 'ny'}
+      fields={FIELDS}
+      draft={editor.draft}
+      onChange={editor.change}
+      onSave={editor.save}
+      onCancel={editor.close}
+      saving={editor.saving}
+      failed={editor.failed}
+      // A news item without a headline is not a news item. Everything else can
+      // be filled in later, and blocking on all four would make writing one
+      // down at the table harder than not writing it.
+      canSave={Boolean(editor.draft.title?.trim())}
+    />
+  )
+
   return (
     <div className="flex flex-col gap-3">
       {mayEdit &&
         (editor.creating ? (
-          <EditForm
-            fields={FIELDS}
-            draft={editor.draft}
-            onChange={editor.change}
-            onSave={editor.save}
-            onCancel={editor.close}
-            saving={editor.saving}
-            failed={editor.failed}
-            // A news item without a headline is not a news item. Everything
-            // else can be filled in later, and blocking on all four would make
-            // writing one down at the table harder than not writing it.
-            canSave={Boolean(editor.draft.title?.trim())}
-          />
+          form(null)
         ) : (
           <NewButton label="Ny nyhed" onClick={() => editor.create(blank())} />
         ))}
@@ -80,17 +87,7 @@ export default function Nyheder() {
 
       {data.map((n) =>
         mayEdit && editor.editing(n.id) ? (
-          <EditForm
-            key={n.id}
-            fields={FIELDS}
-            draft={editor.draft}
-            onChange={editor.change}
-            onSave={editor.save}
-            onCancel={editor.close}
-            saving={editor.saving}
-            failed={editor.failed}
-            canSave={Boolean(editor.draft.title?.trim())}
-          />
+          form(n.id)
         ) : (
           <article key={n.id} className="rounded-xl border border-line bg-surface p-3">
             <p className="tabular text-[0.6rem] tracking-[0.1em] text-accent uppercase">
