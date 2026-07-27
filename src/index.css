@@ -19,9 +19,11 @@
    Latin only, of the four subsets the export ships. The other two are
    latin-ext, and not one character this app puts on screen lives there: every
    letter, every æ ø å, § · × é — and the quotes, dashes and ellipsis — is in
-   the latin subset. What is in neither is the geometric run (→ ▤ ◆ ◇ ◈ ◷ ✦),
-   which Instrument does not draw at all; those already fall back per glyph to
-   the system font and still do. Shipping latin-ext would add 23 kB to buy
+   the latin subset. What was in neither is the geometric run (→ ▤ ◆ ◇ ◈ ◷ ✦),
+   which Instrument does not draw at all and which therefore fell back per
+   glyph to whatever the device had. As of T066 the app sets none of them: the
+   icons come from the Material Symbols subset below and the one bullet is
+   drawn in CSS. Shipping latin-ext would add 23 kB to buy
    nothing, and in the one-file demo build — where everything is inlined and
    `unicode-range` cannot defer a download that has already happened — it would
    be 23 kB nobody can avoid paying.
@@ -49,6 +51,53 @@
   font-weight: 400;
   font-display: swap;
   src: url('/fonts/instrument-serif-latin.woff2') format('woff2');
+}
+
+/* ---------------------------------------------------------------- the icons
+   Material Symbols Outlined, which §03 names as the icon set, out of the same
+   asset map as the two text faces and subset to the nine glyphs this app
+   actually draws. 339 kB whole, 1072 bytes subset — the ligature table alone
+   is 4267 entries and is nearly all of the difference, so addressing the icons
+   by codepoint rather than by name (see Icon.tsx) is what makes the number
+   small. T064 left the face out because the whole of it is seven times both
+   text faces together; a kilobyte is not that trade.
+
+   Weight 300, matching the face in the bundle — it is the Light cut, and the
+   export's own `.ms` rule asks for 300 — so nothing here is synthesised.
+
+   `block`, where the text faces `swap`, and the difference is deliberate. swap
+   exists so the club's own words stay readable while the typeface arrives;
+   there are no words in this file. What a fallback font paints for a Private
+   Use Area codepoint is a tofu box, so swapping would buy a flash of six empty
+   rectangles across the tab bar in exchange for nothing. Blocking on 1 kB from
+   this origin is not a wait. Should the file fail outright the labels are still
+   there under the gap, because §03 requires them. */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 300;
+  font-display: block;
+  src: url('/fonts/material-symbols-subset.woff2') format('woff2');
+}
+
+/* Every reset here is load-bearing, not boilerplate copied from the export.
+   The tab bar sets `tracking-wide` and the section labels set `uppercase` on
+   the parent, and both inherit: letter-spacing adds a phantom right margin
+   inside the glyph's own box and shifts it off centre, and text-transform on a
+   PUA codepoint is a case mapping waiting to be applied by a locale that has
+   one. line-height 1 is what keeps a 22 px icon from setting the height of the
+   line it sits on. */
+.ek-icon {
+  font-family: 'Material Symbols Outlined';
+  font-weight: 300;
+  font-style: normal;
+  font-variant: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* The agreed palette (Lukas, 2026-07-26). Replaces the placeholder tokens and

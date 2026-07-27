@@ -43,24 +43,68 @@ and its `@font-face` rules use those UUIDs as `url()`s. Nine woff2 faces are in
 there: Instrument Sans and Instrument Serif, each as latin and latin-ext,
 upright and italic, plus Material Symbols Outlined.
 
-Two of the nine are in the app, under `public/fonts/`:
+Three of the nine are in the app, under `public/fonts/`:
 
 | File | From | Size |
 |---|---|---|
 | `instrument-sans-latin.woff2` | Sans, latin, variable wght 400–700 | 30 kB |
 | `instrument-serif-latin.woff2` | Serif, latin, 400 | 21 kB |
+| `material-symbols-subset.woff2` | Material Symbols Outlined Light, **nine glyphs** | 1072 B |
 
 **Latin only**, because no character this app renders is in latin-ext — every
 letter, every æ ø å, and § · × é are all in the latin subset. **Upright only**,
-because nothing in the app is italic. **Material Symbols is not extracted**: at
-339 kB it is seven times the two text faces together, and the app draws its
-icons as geometric characters (▤ ◆ ◇ ◈ ◷ ✦) that Instrument does not contain
-and that fall back to the system font per glyph, as they always have.
+because nothing in the app is italic.
 
 They are self-hosted because they have to be: the export preconnects to
 fonts.gstatic.com, and the app has no CDN access. A Google Fonts link does not
 error — it just leaves the page in Georgia. `src/theme.test.ts` fails if one is
 ever added back.
+
+## The icons, and how the 339 kB became 1 kB
+
+T064 left Material Symbols out: whole, it is seven times both text faces
+together. T066 subset it instead, and the app's icons stopped being geometric
+characters (◆ ▤ ✦ § ◈ ◇ ◷ →) that Instrument does not draw and that therefore
+rendered differently on every phone.
+
+Almost all of the 339 kB is the **ligature table** — 4267 entries mapping the
+word `home` to its glyph. The app addresses the icons by codepoint instead
+(`src/components/Icon.tsx`), so that table goes entirely, and what is left is
+nine outlines: **1072 bytes**. Inline SVG was weighed against it and lost — the
+same nine paths are 3869 characters, 1432 bytes gzipped before any wrapper, and
+they would sit in the JavaScript bundle rather than in a file cached once.
+
+The nine, named as §03 names them:
+
+| Icon | U+ | Where |
+|---|---|---|
+| `home` | E88A | tab · Hjem |
+| `bar_chart` | E26B | tab · Anciennitet |
+| `calendar_month` | EBCC | tab · Møder; the "indkaldes" chip on `/` |
+| `article` | EF42 | tab · Nyheder |
+| `gavel` | E90E | tab · Regler |
+| `savings` | E2EB | tab · Økonomi (§03 calls it "Bødekasse") |
+| `place` | E55F | the venue chip on `/hjem` and `/` |
+| `north_east` | F1E1 | §03 calls it "Link" — the Klubkassen cue on `/hjem` |
+| `arrow_right_alt` | E941 | between a meeting's venues on `/anciennitet` |
+
+To re-cut it — which is required the moment a tenth icon is used, or the glyph
+renders blank — decode asset `89888ec1-3c68-43ef-861c-719978d8366f` out of the
+bundle's map and subset it by codepoint with fontTools:
+
+```python
+from fontTools import subset
+o = subset.Options()
+o.layout_features, o.hinting, o.glyph_names, o.notdef_outline = [], False, False, False
+o.drop_tables += ['STAT', 'gasp', 'GSUB', 'GPOS', 'DSIG']
+o.name_IDs, o.name_legacy = [1, 2, 3, 5, 6, 16, 17], False
+f = subset.load_font(SRC, o)
+s = subset.Subsetter(options=o); s.populate(unicodes=CODEPOINTS); s.subset(f)
+o.flavor = 'woff2'; subset.save_font(f, 'public/fonts/material-symbols-subset.woff2', o)
+```
+
+fontTools is not a project dependency and is not being made one — this is a
+one-off that produces a committed artefact, like the extraction above it.
 
 ## Not done yet
 

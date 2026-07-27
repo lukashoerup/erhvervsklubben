@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { Icon } from '../components/Icon'
 import { daDate } from '../lib/dates'
 import { useAttendance, useMyMemberName, useNews, useUpcoming } from '../data/useClubData'
 
@@ -45,8 +46,12 @@ export default function Home() {
               {daDate(next.date, { weekday: 'long', day: 'numeric', month: 'long' })}
               {next.time ? ` · ${next.time}` : ''}
             </p>
+            {/* The pin is the system's, not decoration: §03 names `place` as
+                "Sted", and §04's mobile Hjem draws this exact chip with it —
+                blue mark, muted text, hairline pill. */}
             {next.location && (
               <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-line px-3.5 py-2 text-xs text-muted">
+                <Icon name="place" className="text-base text-accent" />
                 {next.location}
               </p>
             )}
@@ -92,7 +97,12 @@ export default function Home() {
           className="rounded-2xl border border-line bg-surface p-3 text-sm text-muted"
         >
           <span className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">Kasserer</span>
-          <span className="mt-1 block text-ink">Klubkassen →</span>
+          {/* §03 lists `north_east` as "Link" and this is the only one on the
+              screen. It was a → that Instrument does not draw. */}
+          <span className="mt-1 flex items-center gap-1.5 text-ink">
+            Klubkassen
+            <Icon name="north_east" className="text-sm text-accent" />
+          </span>
         </Link>
       )}
     </div>

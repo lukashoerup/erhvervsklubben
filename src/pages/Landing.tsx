@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { Icon, type IconName } from '../components/Icon'
 import { LogoMark } from '../components/LogoMark'
 import { statute, stk } from '../data/vedtaegter'
 import { daDate } from '../lib/dates'
@@ -265,7 +266,7 @@ function Moedekalender({ events }: { events: { id: string; title: string; date: 
             <p className="mt-1.5 max-w-[520px] text-[13px] leading-[1.6] text-muted">
               {stk(statute(9).items[2])}
             </p>
-            <Chip>Indkaldes af mødets lead, senest 2 uger før · §9</Chip>
+            <Chip icon="calendar_month">Indkaldes af mødets lead, senest 2 uger før · §9</Chip>
           </Card>
         ) : (
           events.map((e, i) => (
@@ -282,7 +283,7 @@ function Moedekalender({ events }: { events: { id: string; title: string; date: 
                   is stated rather than left blank — the design system's own
                   wording for an unset field, and it keeps the two cards the
                   same height. */}
-              <Chip>{e.location || 'Sted endnu ikke sat'}</Chip>
+              <Chip icon="place">{e.location || 'Sted endnu ikke sat'}</Chip>
             </Card>
           ))
         )}
@@ -405,15 +406,20 @@ function Label({ children }: { children: ReactNode }) {
   )
 }
 
-/** An unset or pending value, stated rather than hidden. */
-function Chip({ children }: { children: ReactNode }) {
+/**
+ * An unset or pending value, stated rather than hidden.
+ *
+ * The icon is chosen per chip rather than fixed, because §03 gives each of them
+ * a job and "an unset value" is not one of them — a chip about the venue takes
+ * `place`, a chip about convening the meeting takes `calendar_month`. It was a
+ * ◇ for both, which said neither and which Instrument does not draw.
+ */
+function Chip({ icon, children }: { icon: IconName; children: ReactNode }) {
   return (
     <span className="mt-3.5 inline-flex items-center gap-2 rounded-full border border-line px-3.5 py-2 text-xs text-muted">
       {/* Left fully saturated while the text stays muted — the system's way of
           keeping an empty state alive rather than greying it out. */}
-      <span aria-hidden="true" className="text-accent">
-        ◇
-      </span>
+      <Icon name={icon} className="text-base text-accent" />
       {children}
     </span>
   )

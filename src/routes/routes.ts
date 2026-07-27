@@ -1,3 +1,5 @@
+import type { IconName } from '../components/Icon'
+
 /**
  * Every route in the app, and who may reach it. One list, deliberately.
  *
@@ -21,9 +23,21 @@ export type RouteDef = {
   path: string
   access: Access
   /** Shown in the bottom tab bar, in this order. Omit to keep a route off it. */
-  nav?: { label: string; icon: string }
+  nav?: { label: string; icon: IconName }
 }
 
+/*
+ * The icons are the design system's own, and so is the pairing. §03 lists ten
+ * under "IKONER · 24 PX LINJE, ALTID MED TEKST" with a Danish word beside each,
+ * and five of the six below are named there against the very destination they
+ * point at: home/Hjem, bar_chart/Anciennitet, article/Nyheder, gavel/Regler,
+ * calendar_month/Møde. The sixth, savings, is listed as "Bødekasse" — which is
+ * what /oekonomi mostly is, the fine box plus the dues that fund it.
+ *
+ * They used to be ◆ ▤ ◷ ✦ § ◈, chosen for shape rather than meaning, and
+ * Instrument draws none of them: the bar rendered in whatever fallback each
+ * phone happened to have.
+ */
 export const ROUTES: RouteDef[] = [
   { path: '/login', access: 'public' },
   // The club's public face, 2026-07-27. `/` used to be the members' front page
@@ -33,8 +47,8 @@ export const ROUTES: RouteDef[] = [
   // there, so nobody has to choose the right URL and neither audience lands on
   // a page written for the other.
   { path: '/', access: 'public' },
-  { path: '/hjem', access: 'member', nav: { label: 'Hjem', icon: '◆' } },
-  { path: '/anciennitet', access: 'member', nav: { label: 'Anciennitet', icon: '▤' } },
+  { path: '/hjem', access: 'member', nav: { label: 'Hjem', icon: 'home' } },
+  { path: '/anciennitet', access: 'member', nav: { label: 'Anciennitet', icon: 'bar_chart' } },
   // Members, added 2026-07-27 with the admin editing (T063). The calendar was
   // readable in two places and correctable in none — the front page names the
   // next meeting and the public page shows two, so an admin who typed a date
@@ -42,14 +56,14 @@ export const ROUTES: RouteDef[] = [
   // is anon-readable already: the club's own meeting list cannot sensibly be
   // more private to a member than it is to a stranger. Only the buttons on it
   // are the admin's.
-  { path: '/moeder', access: 'member', nav: { label: 'Møder', icon: '◷' } },
-  { path: '/nyheder', access: 'member', nav: { label: 'Nyheder', icon: '✦' } },
-  { path: '/regler', access: 'member', nav: { label: 'Regler', icon: '§' } },
+  { path: '/moeder', access: 'member', nav: { label: 'Møder', icon: 'calendar_month' } },
+  { path: '/nyheder', access: 'member', nav: { label: 'Nyheder', icon: 'article' } },
+  { path: '/regler', access: 'member', nav: { label: 'Regler', icon: 'gavel' } },
   // Members, not admins. It is their money: §8 puts the accounts in front of
   // the whole membership once a year, and there is no reading of the statutes
   // where the people funding the club may not see what it holds. The
   // treasurer's extra powers are gated inside the page, not at the door.
-  { path: '/oekonomi', access: 'member', nav: { label: 'Økonomi', icon: '◈' } },
+  { path: '/oekonomi', access: 'member', nav: { label: 'Økonomi', icon: 'savings' } },
 ]
 
 export const NAV_ROUTES = ROUTES.filter((r) => r.nav)
