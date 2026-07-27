@@ -5,9 +5,11 @@ import { NAV_ROUTES } from './routes'
 /**
  * App bar, content, and a bottom tab bar.
  *
- * The tabs sit at the bottom because that is where a thumb reaches, and there
- * are four of them rather than a hamburger — with four destinations a menu
- * costs a tap and hides the one thing people open the app for.
+ * The tabs sit at the bottom because that is where a thumb reaches, and they
+ * are all shown rather than folded into a hamburger — at this handful of
+ * destinations a menu costs a tap and hides the one thing people open the app
+ * for. The bar takes its columns from the route table, so it stays honest as
+ * the count moves; six of them fit a 420 px phone, and a seventh would not.
  */
 export function Shell() {
   const { signOut } = useAuth()

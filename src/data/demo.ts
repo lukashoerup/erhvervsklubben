@@ -85,14 +85,56 @@ export const demoNews: NewsItem[] = [
   },
 ]
 
+/**
+ * The two meetings §9 promises are always planned, neither with a venue yet.
+ *
+ * Empty strings rather than the words "endnu ikke sat", which is what the data
+ * used to say: a demo that writes the empty state into its own rows never
+ * exercises the empty state, and every page has its own wording for it.
+ */
 export const demoUpcoming: EventItem[] = [
   {
     id: 'u1',
     title: 'Møde #29',
     date: new Date(Date.now() + 18 * 864e5).toISOString().slice(0, 10),
     time: '18:30',
-    location: 'Endnu ikke sat',
+    location: '',
     description: 'Oskar lægger op.',
+  },
+  {
+    id: 'u2',
+    title: 'Møde #30',
+    date: new Date(Date.now() + 79 * 864e5).toISOString().slice(0, 10),
+    time: '18:30',
+    location: '',
+    description: 'Lukas lægger op.',
+  },
+]
+
+/**
+ * The whole calendar, held meetings included — what the Møder page reads.
+ *
+ * Two behind and two ahead, because §9 promises two ahead and the page's own
+ * point is that the ones already held stay visible and correctable. A demo with
+ * nothing in the past would show the empty half of the screen.
+ */
+export const demoEvents: EventItem[] = [
+  ...demoUpcoming,
+  {
+    id: 'p1',
+    title: 'Møde #28',
+    date: new Date(Date.now() - 44 * 864e5).toISOString().slice(0, 10),
+    time: '18:30',
+    location: 'Propaganda',
+    description: 'Esben lagde op. Otte af ti mødte frem.',
+  },
+  {
+    id: 'p2',
+    title: 'Generalforsamling 2026',
+    date: new Date(Date.now() - 98 * 864e5).toISOString().slice(0, 10),
+    time: '17:00',
+    location: 'Tivolihallen',
+    description: 'Kontingentet blev fordoblet med virkning fra juni.',
   },
 ]
 

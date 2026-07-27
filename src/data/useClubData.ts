@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
-import { DEMO, demoAttendances, demoNews, demoRecords, demoUpcoming } from './demo'
+import { DEMO, demoAttendances, demoEvents, demoNews, demoRecords, demoUpcoming } from './demo'
 
 /** The columns every version of the club's database has had. */
 const RECORD_COLUMNS = 'id, meeting_number, lead, pre_location, main_location, post_location'
@@ -144,5 +144,94 @@ export function useUpcoming() {
       if (error) throw error
       return (data ?? []) as EventItem[]
     },
+  })
+}
+
+/**
+ * Every meeting in the calendar, the held ones included, newest first.
+ *
+ * Its own query rather than a looser `useUpcoming`. That one is narrow on
+ * purpose — the next two, because §9 promises two, and a front page answers one
+ * question. Widening it to serve an editing screen would put fifteen years of
+ * meetings on the front page to save a function.
+ *
+ * The past matters here for one specific reason: a date typed wrong lands
+ * behind today, and a list that only shows the future would hide the row that
+ * needs correcting. What the club got wrong has to stay reachable.
+ */
+export function useEvents() {
+  return useQuery({
+    queryKey: ['events'],
+    queryFn: async () => {
+      if (DEMO) return demoEvents
+      const { data, error } = await supabase()
+        .from('events')
+        .select('id, title, date, time, location, description')
+        .order('date', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as EventItem[]
+    },
+  })
+}
+
+// ------------------------------------------------------------ admin writing
+
+/** The two tables the app lets an admin write. RLS is what enforces that. */
+export type EditableTable = 'news' | 'events'
+
+/**
+ * Which cached reads a write invalidates.
+ *
+ * `events` feeds two queries — the calendar below and the front page's next
+ * two — and refreshing only one of them would leave the club looking at two
+ * different calendars in the same app, one of them stale.
+ */
+const AFFECTED: Record<EditableTable, string[]> = {
+  news: ['news'],
+  events: ['events', 'upcoming'],
+}
+
+function refresh(table: EditableTable, qc: ReturnType<typeof useQueryClient>) {
+  for (const key of AFFECTED[table]) qc.invalidateQueries({ queryKey: [key] })
+}
+
+/**
+ * Write one row, new or corrected.
+ *
+ * Insert when there is no id, update when there is — one mutation rather than
+ * two, because "add a news item" and "fix the typo in a news item" are the same
+ * fields and the same save button. Two would be two places to forget a column.
+ *
+ * Nothing here validates: `news` and `events` are `not null` on every column
+ * with no other constraint, so the database's opinion is "text is text". The
+ * one rule worth having (a row must have a title) is enforced where it can be
+ * explained to the person typing, not thrown back as a Postgres error.
+ */
+export function useSaveRow(table: EditableTable) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, values }: { id: string | null; values: Record<string, string> }) => {
+      const { error } = id
+        ? await supabase().from(table).update(values).eq('id', id)
+        : await supabase().from(table).insert(values)
+      if (error) throw error
+    },
+    onSuccess: () => refresh(table, qc),
+  })
+}
+
+/**
+ * Remove one row. There is no undo and no backup — see the confirmation this
+ * is wired to, which is the only thing standing between a mis-tap and a lost
+ * news item.
+ */
+export function useDeleteRow(table: EditableTable) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase().from(table).delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => refresh(table, qc),
   })
 }

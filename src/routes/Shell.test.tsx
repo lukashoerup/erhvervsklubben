@@ -7,7 +7,7 @@ import { minTapHeightPx } from '../test/harness'
 
 /**
  * The furniture every signed-in page sits in. Whatever is wrong here is wrong
- * on all five of them at once.
+ * on all six of them at once.
  */
 function renderShell(over: Partial<AuthState> = {}) {
   const value: AuthState = {

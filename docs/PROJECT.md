@@ -144,6 +144,33 @@ without losing data and without taking the old site down until an approved cutov
   those things is missing, counted rather than assumed, so each reason
   disappears on its own as the books are filled in.
 
+- **2026-07-27 — the admin edits from inside the members' pages, and the club's
+  calendar becomes a page.** Lukas: *"Admin is currently only me (and Claude),
+  and these can add and edit news, events, and the anciennitet events. That's
+  it. Very simple."*
+
+  So there is no admin section, no dashboard and no content types. The controls
+  sit on the pages the content already lives on, gated in-page on the role the
+  same way the treasurer's tools are on `/oekonomi` — a member sees the club's
+  news and calendar exactly as before and is offered no button that could only
+  fail. RLS is unchanged and was never the obstacle: `news` and `events` have
+  been anon-readable and admin-writable since the initial migration, and this
+  task wrote no SQL at all.
+
+  Two things in it worth keeping if it is rewritten. **Held meetings stay on
+  `/moeder`.** The front page shows the next meeting and the public page the
+  next two, so a date typed with the wrong year lands in the past and disappears
+  from every screen that could correct it — the calendar is the one view that
+  must show what the club got wrong. And **deleting asks a second time and names
+  what is about to go.** There is one copy of everything, no undo and no backup
+  habit; "er du sikker?" is a question nobody reads, so the second tap says
+  which news item or which meeting.
+
+  `/moeder` is a **member** route rather than an admin one. `events` is public
+  by the 2026-07-23 decision, so the club's own meeting list cannot sensibly be
+  more private to a member than it is to a stranger reading the landing page.
+  Only the buttons on it are the admin's.
+
 - **2026-07-26 — anciennitet revocation is not built.** §11 allows attendance to
   be revoked by a 2/3 vote; Lukas: it has never happened and has never been
   suggested. A voting flow plus a revoked state plus the screens to explain them
