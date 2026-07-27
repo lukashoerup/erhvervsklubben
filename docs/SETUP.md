@@ -73,6 +73,34 @@ deliberately not hooked, since it needs the stack running.
   `supabase status`). The RLS runner does this for you.
 - DB shell: `sg docker -c "docker exec supabase_db_erhvervsklubben psql -U postgres -d postgres"`.
 
+## Deployment — Vercel
+
+The Vercel project builds this repo from GitHub, so its configuration lives in
+`vercel.json` rather than in the dashboard: a setting only someone with the
+dashboard open can see is a setting nobody can review in a diff.
+
+Three build variables are set there, and the third is the important one:
+
+| Variable | Why |
+|---|---|
+| `VITE_SUPABASE_URL` | The prod project. Reads only — see below. |
+| `VITE_SUPABASE_ANON_KEY` | Publishable key; it is designed to ship inside a browser bundle. Not a secret, and **not** the service-role key, which must never appear here. |
+| `VITE_READONLY=1` | Makes writing impossible, not merely hidden. |
+
+**`VITE_READONLY=1` is deliberate on every deployment, production included.**
+The club has fifteen years of history in the prod project and no backup on this
+side, so nothing that reaches the public internet may write to it. `supabase.ts`
+refuses `insert`/`update`/`upsert`/`delete`/`rpc` outright, and the write-shaped
+UI is not rendered; `src/lib/supabase.test.ts` proves it. Turning the flag off
+is a decision to point the app at a database it is allowed to damage — do that
+only against a non-production project.
+
+The prod project also has no `fines` or `payments` tables, so the finance page
+reports empty and says why. That is accurate, not a bug.
+
+`rewrites` sends every unmatched path to `index.html`: the app routes in the
+browser, so without it a refresh on `/nyheder` would 404 from the CDN.
+
 ## Where things live (NOT in git)
 - **Prod data backup:** `~/backups/erhvervsklubben/` (mode 600 — contains member
   emails). A read-only snapshot taken before any work.

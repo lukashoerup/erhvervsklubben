@@ -34,8 +34,15 @@
   --color-navy: #17233f;
 }
 
+/* `:root`, not a second `@theme`. Tailwind collects every `@theme` block into
+   one `:root` regardless of the at-rules around it, so nesting one in a media
+   query does not narrow it — it silently overwrites the first set, and the dark
+   palette vanishes from the build entirely. It had: the shipped stylesheet
+   contained only the light values, so the agreed dark ground never rendered
+   anywhere. Utilities compile to var(--color-…), so overriding the variables
+   here is all that is needed, and it actually respects the media query. */
 @media (prefers-color-scheme: light) {
-  @theme {
+  :root {
     --color-ground: #f4f7fc;
     --color-surface: #ffffff;
     --color-raised: #f7fafe;

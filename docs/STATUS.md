@@ -13,15 +13,18 @@ end of every working session._
 | 4 | Read-only screens | ✅ **done** — front page, Anciennitet, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first |
 | 6 | Admin write flows | 🟡 **fines + meeting dates done**; news/events editing outstanding |
-| 7 | Design | ✅ **agreed 2026-07-26** — corporate blue redesign + logo; tokens live in `src/index.css` |
+| 7 | Design | ✅ **agreed 2026-07-26** — corporate blue redesign + logo; tokens live in `src/index.css`. The dark palette was silently absent from the build until T058 — see its notes. |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
 
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 65 component/derivation tests (jsdom, fast, offline).
+- `npm test` — 68 component/derivation tests (jsdom, fast, offline).
 - `npm run build`, `npm run lint` — clean.
+- `npm run build:demo` — the whole app as one HTML file with fabricated data
+  (`dist-demo/index.html`), for showing the thing without hosting anything real.
+  See T058. It is not a deploy and touches no club record.
 - `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,

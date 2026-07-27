@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:demo": "VITE_DEMO=1 npm run build && node scripts/build-demo.mjs",
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",

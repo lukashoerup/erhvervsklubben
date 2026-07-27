@@ -13,3 +13,4 @@ node_modules/
 tests/rls/seed-ids.json
 .env.test
 supabase/.temp/
+dist-demo/
