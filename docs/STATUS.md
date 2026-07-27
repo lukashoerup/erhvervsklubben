@@ -87,7 +87,7 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 173 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 176 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -95,7 +95,11 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
   (`dist-demo/index.html`), for showing the thing without hosting anything real.
-  See T058. It is not a deploy and touches no club record.
+  See T058. It is not a deploy and touches no club record. **Its writes are
+  in-memory** (T063): the demo bundle carries the live project's URL and anon
+  key, so every mutation short-circuits in `data/demo` before the client, and a
+  test asserts the client is never asked. Verified in a browser: create, edit
+  and delete in the demo make no network request at all.
 - `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,

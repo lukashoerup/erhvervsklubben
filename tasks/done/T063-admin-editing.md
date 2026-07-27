@@ -19,9 +19,17 @@ write lock came off the same afternoon. The UI was the only thing missing.
   held meetings, with the same three controls for an admin.
 - `src/lib/dates.ts` — the UTC date formatter the meeting card already had,
   extracted so four pages stop parsing plain dates in the reader's own zone.
-- 32 new tests across `Nyheder.test.tsx`, `Moeder.test.tsx`,
-  `AdminEdit.readonly.test.tsx`, `dates.test.ts` and the route table. Offline:
-  the client is mocked and what the page *tried to write* is what is asserted.
+- `src/data/demo.ts` — the demo build's writes, applied to its own arrays. Found
+  while driving the build in a browser: `build:demo` is a production build with
+  VITE_DEMO=1 on top, so it carries the club's real Supabase URL and anon key,
+  and a save would have sent the live project a request. RLS would have refused
+  it — the demo holds no session — but "refused" is a weaker promise than "never
+  sent". `demoWrites.test.tsx` asserts the client is never asked, and the
+  browser run confirms zero offsite requests.
+- 35 new tests across `Nyheder.test.tsx`, `Moeder.test.tsx`,
+  `AdminEdit.readonly.test.tsx`, `demoWrites.test.tsx`, `dates.test.ts` and the
+  route table. Offline: the client is mocked and what the page *tried to write*
+  is what is asserted.
 
 No migration. No new dependency. No SQL of any kind.
 
@@ -75,14 +83,21 @@ No migration. No new dependency. No SQL of any kind.
 - [x] Tap targets at the design system's 48 px floor; filled buttons `bg-brand`
 - [x] 420 px first, no sideways page scroll
 - [x] `src/routes/routes.ts` and `routing.test.tsx` both updated deliberately
-- [x] `npm test` (173), `npm run build`, `npm run lint` green
+- [x] `npm test` (176), `npm run build`, `npm run lint` green
 - [x] Danish throughout
 
 ## Verified in a browser
 Chromium at 420×900, both colour schemes, both roles, against `build:demo`:
 `/nyheder` and `/moeder` as admin and as member, the empty create form, an edit
 form populated from a row, and the delete confirmation. Six tabs fit the bar.
-No horizontal page scroll and no console error in any of them.
+No horizontal page scroll (`scrollWidth` 420 = `innerWidth` 420) and no console
+error in any of them.
+
+Then the whole flow driven end to end: create a meeting — leaving the last
+field by tapping the header rather than pressing Enter — save, see it land in
+date order, edit its venue, save, and delete it through the confirmation. The
+page ends where it started. **Zero network requests left the page** in the
+whole run, which is the demo build's promise about the club's live project.
 
 ## Left undone
 - **Never run against the real database.** Every test mocks the client, and the

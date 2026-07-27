@@ -1,7 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
-import { DEMO, demoAttendances, demoEvents, demoNews, demoRecords, demoUpcoming } from './demo'
+import {
+  DEMO,
+  demoAttendances,
+  demoDelete,
+  demoEvents,
+  demoNews,
+  demoRecords,
+  demoSave,
+} from './demo'
+
+/** Newest first, the way all three content queries below ask the database for it. */
+const newestFirst = <T extends { date: string }>(rows: T[]) =>
+  [...rows].sort((a, b) => b.date.localeCompare(a.date))
 
 /** The columns every version of the club's database has had. */
 const RECORD_COLUMNS = 'id, meeting_number, lead, pre_location, main_location, post_location'
@@ -87,7 +99,7 @@ export function useNews() {
   return useQuery({
     queryKey: ['news'],
     queryFn: async () => {
-      if (DEMO) return demoNews
+      if (DEMO) return newestFirst(demoNews)
       const { data, error } = await supabase()
         .from('news')
         .select('id, title, excerpt, author, date')
@@ -133,8 +145,13 @@ export function useUpcoming() {
   return useQuery({
     queryKey: ['upcoming'],
     queryFn: async () => {
-      if (DEMO) return demoUpcoming
       const today = new Date().toISOString().slice(0, 10)
+      if (DEMO) {
+        return demoEvents
+          .filter((e) => e.date >= today)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .slice(0, 2)
+      }
       const { data, error } = await supabase()
         .from('events')
         .select('id, title, date, time, location, description')
@@ -163,7 +180,7 @@ export function useEvents() {
   return useQuery({
     queryKey: ['events'],
     queryFn: async () => {
-      if (DEMO) return demoEvents
+      if (DEMO) return newestFirst(demoEvents)
       const { data, error } = await supabase()
         .from('events')
         .select('id, title, date, time, location, description')
@@ -211,6 +228,10 @@ export function useSaveRow(table: EditableTable) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, values }: { id: string | null; values: Record<string, string> }) => {
+      // Before the client, not after: a demo build carries the club's real
+      // project URL, so falling through would fire a write at fifteen years of
+      // history from the build made for showing the app. See data/demo.
+      if (DEMO) return demoSave(table, id, values)
       const { error } = id
         ? await supabase().from(table).update(values).eq('id', id)
         : await supabase().from(table).insert(values)
@@ -229,6 +250,7 @@ export function useDeleteRow(table: EditableTable) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
+      if (DEMO) return demoDelete(table, id)
       const { error } = await supabase().from(table).delete().eq('id', id)
       if (error) throw error
     },

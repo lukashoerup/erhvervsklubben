@@ -86,13 +86,19 @@ export const demoNews: NewsItem[] = [
 ]
 
 /**
- * The two meetings §9 promises are always planned, neither with a venue yet.
+ * The whole calendar — two meetings planned, because §9 promises two, and two
+ * already held, because the Møder page's own point is that the past stays
+ * visible and correctable.
  *
- * Empty strings rather than the words "endnu ikke sat", which is what the data
- * used to say: a demo that writes the empty state into its own rows never
+ * One array, and the front page's "next two" is derived from it rather than
+ * kept beside it. Two lists would drift the moment the demo let anyone add a
+ * meeting: it would appear in the calendar and not on the front page.
+ *
+ * The unset venues are empty strings, not the words "endnu ikke sat" the data
+ * used to carry. A demo that writes the empty state into its own rows never
  * exercises the empty state, and every page has its own wording for it.
  */
-export const demoUpcoming: EventItem[] = [
+export const demoEvents: EventItem[] = [
   {
     id: 'u1',
     title: 'Møde #29',
@@ -109,17 +115,6 @@ export const demoUpcoming: EventItem[] = [
     location: '',
     description: 'Lukas lægger op.',
   },
-]
-
-/**
- * The whole calendar, held meetings included — what the Møder page reads.
- *
- * Two behind and two ahead, because §9 promises two ahead and the page's own
- * point is that the ones already held stay visible and correctable. A demo with
- * nothing in the past would show the empty half of the screen.
- */
-export const demoEvents: EventItem[] = [
-  ...demoUpcoming,
   {
     id: 'p1',
     title: 'Møde #28',
@@ -137,6 +132,43 @@ export const demoEvents: EventItem[] = [
     description: 'Kontingentet blev fordoblet med virkning fra juni.',
   },
 ]
+
+/**
+ * Writing, in a build with no database behind it.
+ *
+ * `build:demo` is a production build with VITE_DEMO=1 on top, so it carries the
+ * club's real Supabase URL and anon key. A save that fell through to the client
+ * would therefore send the live project a request — from the one build whose
+ * entire purpose is being clickable without pointing anything at real records.
+ * RLS would refuse it, since the demo holds no session at all, but "refused by
+ * the database" is a weaker promise than "never sent", and the club has fifteen
+ * years of history in that project.
+ *
+ * So the demo edits the arrays above. It also means the demo demonstrates the
+ * feature instead of showing a form that always fails. Nothing survives a
+ * reload, which is the honest lifetime for fabricated data.
+ */
+let written = 0
+
+/** Both tables' rows share the one field this needs, and only that field. */
+const rowsOf = (table: 'news' | 'events') =>
+  (table === 'news' ? demoNews : demoEvents) as { id: string }[]
+
+export function demoSave(table: 'news' | 'events', id: string | null, values: Record<string, string>) {
+  const rows = rowsOf(table)
+  if (!id) {
+    rows.unshift({ id: `demo-${++written}`, ...values })
+    return
+  }
+  const row = rows.find((r) => r.id === id)
+  if (row) Object.assign(row, values)
+}
+
+export function demoDelete(table: 'news' | 'events', id: string) {
+  const rows = rowsOf(table)
+  const at = rows.findIndex((r) => r.id === id)
+  if (at >= 0) rows.splice(at, 1)
+}
 
 export const demoFines = [
   { member_name: 'Mads', amount_kr: 200, record_id: 28 },
