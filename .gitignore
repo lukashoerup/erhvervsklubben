@@ -5,6 +5,13 @@
 *.tsbuildinfo
 .env
 .env.*
+# Exception, deliberate: the production build's three values are all public.
+# The Supabase URL and the *publishable* key are built to ship inside a browser
+# bundle — they are in every visitor's downloaded JavaScript either way — and
+# VITE_READONLY=1 is a safety setting, not a secret. Committing them is what
+# keeps the deployed build from depending on settings that live only in one
+# person's Vercel dashboard. The service-role key must NEVER appear here.
+!.env.production
 .venv/
 /backups/
 __pycache__/

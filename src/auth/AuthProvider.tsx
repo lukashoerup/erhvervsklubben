@@ -32,10 +32,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     }
 
-    supabase()
-      .auth.getSession()
-      .then(({ data }) => apply(data.session?.user.id ?? null))
-      .catch(() => { if (alive) setLoading(false) })
+    // try/catch, not only .catch(): a missing URL or key makes supabase() throw
+    // *before* it returns a promise, and an exception thrown here takes the
+    // whole tree down to a blank page — the least diagnosable failure there is.
+    // Treat it as "nobody is signed in" so the login screen still renders and
+    // says something.
+    try {
+      supabase()
+        .auth.getSession()
+        .then(({ data }) => apply(data.session?.user.id ?? null))
+        .catch(() => { if (alive) setLoading(false) })
+    } catch {
+      setLoading(false)
+    }
 
     // Keeps the session alive across reloads and tabs, and signs the app out
     // the moment the token is revoked rather than on next navigation.
