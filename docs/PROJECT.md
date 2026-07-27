@@ -103,6 +103,26 @@ without losing data and without taking the old site down until an approved cutov
   history. `VITE_READONLY` survives as a one-line switch, tested both ways, for
   any build that should read production without being able to change it.
 
+- **2026-07-27 — `/` is the club's public face, and the members' front page is
+  `/hjem`.** Lukas: *"There should be a landing page for both members and the
+  public. This is the page where the animation is. With some core details. Then
+  everything else should be behind the login page."* Until now a visitor
+  following a link met a password box, which is the wrong first impression for
+  a club whose own §4 Stk. 2 A. requires attending once as a guest before
+  membership can even go to a vote — people arrive before they have a login, by
+  design. A signed-in member opening `/` is forwarded to `/hjem`, so both
+  audiences use the URL people actually type and share.
+
+  Two rules the page is built on, and they are the ones to keep if it is ever
+  rewritten. It reads **only `news` and `events`** — not "omits the rest" but
+  never asks, so a future RLS change cannot turn an omission into a leak; a test
+  asserts the set of tables it queries. And **every claim about the club is
+  quoted from `vedtaegter.ts`** rather than written fresh, because a landing
+  page is exactly where copy nobody voted on starts drifting from what the club
+  is. The dues figure is deliberately absent too: public in the statutes, but a
+  price tag on a page someone is deciding about the club from, and that is
+  Lukas's call to make rather than a side effect of building the page.
+
 - **2026-07-26 — anciennitet revocation is not built.** §11 allows attendance to
   be revoked by a 2/3 vote; Lukas: it has never happened and has never been
   suggested. A voting flow plus a revoked state plus the screens to explain them

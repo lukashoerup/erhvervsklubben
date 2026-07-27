@@ -7,8 +7,9 @@ export default function Login() {
   const { userId, loading, signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  // Prefilled in the demo build only. A preview whose first screen is an empty
-  // login box, with no valid credentials existing anywhere, is a dead end.
+  // Prefilled in the demo build only. An empty login box, with no valid
+  // credentials existing anywhere, is a dead end — and in a preview meant for
+  // clicking through, the login is the one door there is.
   const [email, setEmail] = useState(DEMO ? 'demo@erhvervsklubben.dk' : '')
   const [password, setPassword] = useState(DEMO ? 'demo' : '')
   const [error, setError] = useState<string | null>(null)

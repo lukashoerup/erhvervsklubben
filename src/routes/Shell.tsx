@@ -15,7 +15,11 @@ export function Shell() {
 
   async function onSignOut() {
     await signOut()
-    navigate('/login', { replace: true })
+    // To the landing page, not back to the login form. Since 2026-07-27 `/` is
+    // the club's public face, so signing out now leaves you somewhere rather
+    // than facing the box you just chose to step away from — and signing back
+    // in is one tap from there.
+    navigate('/', { replace: true })
   }
 
   return (
