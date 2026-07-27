@@ -16,9 +16,10 @@ import { SectionTitle } from '../components/SectionTitle'
  * statutes where the people funding the club may not see what it collects. What
  * is still the treasurer's is gated inside the page, not at the door.
  *
- * Every figure here is derived from the fines and payments rows. The old
- * spreadsheet stored its totals, which is how it came to disagree with itself
- * by 50 kr.
+ * Every figure here is derived from the fines and payments rows. The sheet this
+ * replaces was blamed for a 50 kr discrepancy it never had — see ledger.ts and
+ * docs/finance-reconciliation.md. Deriving the totals is worth doing, but it is
+ * not what would have caught that.
  *
  * A fine belongs to the month its meeting happened in. Meetings recorded before
  * dates were captured have none, so those fines count towards what is owed but

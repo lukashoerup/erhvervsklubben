@@ -42,8 +42,9 @@ describe('what the curves are drawn from', () => {
     expect(points.map((p) => p.expected)).toEqual([1050, 2050, 3500, 4500, 6810])
     expect(points.map((p) => p.received)).toEqual([0, 0, 900, 1800, 3600])
     // The gap is the ledger's own `outstanding`, not a second calculation of
-    // it — two ways of working out the same number is how the old sheet came
-    // to disagree with itself.
+    // it: two ways of working out one number is how they drift apart. Good
+    // reason on its own — but not the story of the old sheet's 50 kr, which
+    // was a page never counted (docs/finance-reconciliation.md).
     expect(points.map((p) => p.expected - p.received)).toEqual(
       points.map((p) => p.outstanding),
     )

@@ -5,9 +5,20 @@ import { duesForMonth } from './rules'
  *
  * This replaces the spreadsheet's monthly ledger. Nothing here is stored: dues,
  * fines, expected balance and the gap against actual are all computed from the
- * fines and payments tables plus the active-member count. Storing a total is
- * how the old sheet came to disagree with itself by 50 kr — the monthly column
- * said 1,780 while the grid beneath it summed to 1,730.
+ * fines and payments tables plus the active-member count.
+ *
+ * The 50 kr the sheet was blamed for was never a disagreement, and it is worth
+ * correcting because the wrong lesson was drawn from it. Its monthly column said
+ * 1,780 and its per-member grid summed to 1,730; both were right. The grid
+ * breaks fines down across five dinners, the monthly list has six months with
+ * fines in them, and one Lead's evening — February 2026, 50 kr — never got a
+ * column in the grid. The money was charged and paid; a page simply never
+ * counted it. See docs/finance-reconciliation.md.
+ *
+ * So deriving totals does not immunise us against that class of error. If a
+ * meeting is never recorded here, every figure below is short by exactly the
+ * same amount, computed just as confidently. What protects the books is that a
+ * missing meeting is visible on Anciennitet, not that the arithmetic is live.
  */
 
 export type FineRecord = { month: string; member_name: string; amount_kr: number }
