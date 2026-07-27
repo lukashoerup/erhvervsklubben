@@ -35,9 +35,29 @@ Palette, most-used first — these are the values in `src/index.css`:
 | `#1f7a4d` on `#e7f3ec` | present / success |
 | `#b4453c` on `#fdecec` | absent / error |
 
-## Not done yet
+## The fonts, and where they came from
 
-The two Instrument fonts are inlined in the bundle but **not yet extracted into
-the app** — the app currently falls back to Georgia and the system sans, which
-is close in feel but not the real thing. Extracting them is the next step, and
-they must be self-hosted: the app has no external CDN access.
+Extracted 2026-07-27 (T064). The bundle carries an asset map keyed by UUID —
+`{"<uuid>": {"mime": "font/woff2", "compressed": false, "data": "<base64>"}}` —
+and its `@font-face` rules use those UUIDs as `url()`s. Nine woff2 faces are in
+there: Instrument Sans and Instrument Serif, each as latin and latin-ext,
+upright and italic, plus Material Symbols Outlined.
+
+Two of the nine are in the app, under `public/fonts/`:
+
+| File | From | Size |
+|---|---|---|
+| `instrument-sans-latin.woff2` | Sans, latin, variable wght 400–700 | 30 kB |
+| `instrument-serif-latin.woff2` | Serif, latin, 400 | 21 kB |
+
+**Latin only**, because no character this app renders is in latin-ext — every
+letter, every æ ø å, and § · × é are all in the latin subset. **Upright only**,
+because nothing in the app is italic. **Material Symbols is not extracted**: at
+339 kB it is seven times the two text faces together, and the app draws its
+icons as geometric characters (▤ ◆ ◇ ◈ ◷ ✦) that Instrument does not contain
+and that fall back to the system font per glyph, as they always have.
+
+They are self-hosted because they have to be: the export preconnects to
+fonts.gstatic.com, and the app has no CDN access. A Google Fonts link does not
+error — it just leaves the page in Georgia. `src/theme.test.ts` fails if one is
+ever added back.

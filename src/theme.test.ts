@@ -79,3 +79,42 @@ describe('the landing animation', () => {
     expect([...props].sort()).toEqual(['letter-spacing', 'opacity', 'transform'])
   })
 })
+
+/**
+ * The self-hosted typefaces, guarded because the failure is silent and the
+ * temptation to undo it is one line long.
+ *
+ * The app has no CDN access. A `<link>` to fonts.googleapis.com — which is what
+ * the design export itself carries, and what any copy-paste of it brings along
+ * — does not error: it fails to resolve, the page keeps rendering in Georgia
+ * and the system sans, and it looks close enough that nobody notices for
+ * another four months.
+ */
+describe('the typefaces', () => {
+  const faces = [...css.matchAll(/@font-face\s*\{([\s\S]*?)\n\}/g)].map((m) => m[1])
+
+  it('declares both of the design system’s families', () => {
+    const families = faces.map((f) => f.match(/font-family:\s*'([^']+)'/)?.[1])
+    expect(families).toContain('Instrument Sans')
+    expect(families).toContain('Instrument Serif')
+  })
+
+  it('serves them from this origin, never a CDN', () => {
+    expect(faces.length).toBeGreaterThan(0)
+    for (const f of faces) {
+      const url = f.match(/url\('([^']+)'\)/)?.[1]
+      expect(url, 'a @font-face with no src').toBeDefined()
+      expect(url!.startsWith('/fonts/'), `${url} is not served from this origin`).toBe(true)
+    }
+    // The whole stylesheet, not just the @font-face blocks: an @import would be
+    // just as fatal and would not appear above. Comments stripped first — the
+    // rules above are explained by naming the host they must never use, and a
+    // guard that its own reason for existing trips is a guard nobody keeps.
+    const rules = css.replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(rules).not.toMatch(/fonts\.(googleapis|gstatic)\.com/)
+  })
+
+  it('swaps rather than blocking on the download', () => {
+    for (const f of faces) expect(f).toMatch(/font-display:\s*swap/)
+  })
+})

@@ -21,10 +21,12 @@ behind the login; admins additionally edit news, events and attendance.
 **Next, in Lukas's priority order:**
 1. **The Claude Design system** — 🟡 **in the repo since 2026-07-27** as
    `design/erhvervsklubben-designsystem-v2.html`, exported by Lukas. Palette,
-   type pairing, the three surfaces and the logo intro are in the app. **Still
-   outstanding: the two Instrument fonts**, which are inlined in that bundle but
-   not extracted — the app falls back to Georgia and the system sans. They must
-   be self-hosted; there is no CDN access.
+   type pairing, the three surfaces and the logo intro are in the app, and as of
+   T064 so are **the two Instrument fonts** — decoded out of that bundle and
+   self-hosted under `public/fonts/`, 51 kB for both. There is no CDN access, so
+   a Google Fonts link would have failed silently; `src/theme.test.ts` fails if
+   one is added. **Still outstanding: the members' screens**, which have had
+   none of the system and read as a different product from the landing page.
 2. ~~**A public landing page**~~ ✅ **done 2026-07-27 (T060).** `/` is the club's
    face: the logo intro, the purpose and cadence quoted from the statutes,
    upcoming meetings and recent news. Everything else still needs a login, and
@@ -80,14 +82,14 @@ behind the login; admins additionally edit news, events and attendance.
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
 | 6 | Admin write flows | ✅ **done** — fines, meeting dates, and news/events create/edit/delete (T063). Attendance itself is still recorded outside the app. |
-| 7 | Design | 🟡 **tokens + landing done** — corporate blue, the design system's surfaces and its logo intro live in `src/index.css`. The dark palette was silently absent from the build until T058 — see its notes. Outstanding: self-host the two Instrument fonts, and apply the system to the members' screens. |
+| 7 | Design | 🟡 **tokens, landing and fonts done** — corporate blue, the design system's surfaces and its logo intro live in `src/index.css`; the two Instrument fonts are self-hosted (T064). The dark palette was silently absent from the build until T058 — see its notes. Outstanding: apply the system to the members' screens. |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
 
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 176 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 179 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -95,6 +97,9 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 - `npm run build`, `npm run lint` — clean.
 - `npm run build:demo` — the whole app as one HTML file with fabricated data
   (`dist-demo/index.html`), for showing the thing without hosting anything real.
+  Since T064 it inlines the two woff2 faces as data URIs: `public/fonts/` is a
+  path only a web server can answer, and left as a URL the standalone file 404s
+  on both and quietly renders in Georgia.
   See T058. It is not a deploy and touches no club record. **Its writes are
   in-memory** (T063): the demo bundle carries the live project's URL and anon
   key, so every mutation short-circuits in `data/demo` before the client, and a

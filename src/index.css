@@ -1,5 +1,56 @@
 @import 'tailwindcss';
 
+/* ------------------------------------------------------------ the typefaces
+   Instrument Serif and Instrument Sans, lifted out of the design export and
+   served from this origin.
+
+   They were always in `design/erhvervsklubben-designsystem-v2.html` — that
+   bundle carries an asset map keyed by UUID, and its own @font-face rules point
+   at nine woff2 blobs inside it. Nothing was downloaded to get these; they were
+   decoded out of the file already in the repo, which is the only reason
+   self-hosting them was possible at all.
+
+   Self-hosted because it is the only thing that works. The export's own rules
+   preconnect to fonts.gstatic.com, and the app has no network at runtime beyond
+   its own origin and Supabase — a Google Fonts link fails without an error and
+   the page silently keeps rendering in Georgia, which is exactly the state this
+   replaces.
+
+   Latin only, of the four subsets the export ships. The other two are
+   latin-ext, and not one character this app puts on screen lives there: every
+   letter, every æ ø å, § · × é — and the quotes, dashes and ellipsis — is in
+   the latin subset. What is in neither is the geometric run (→ ▤ ◆ ◇ ◈ ◷ ✦),
+   which Instrument does not draw at all; those already fall back per glyph to
+   the system font and still do. Shipping latin-ext would add 23 kB to buy
+   nothing, and in the one-file demo build — where everything is inlined and
+   `unicode-range` cannot defer a download that has already happened — it would
+   be 23 kB nobody can avoid paying.
+
+   One rule for 400–700 because Instrument Sans is a variable font with a wght
+   axis over exactly that range. The export declares it four times, once per
+   weight, each pointing at this same file; that is the same sentence said four
+   times, and it invites someone to add a fifth weight the axis does not have.
+   Instrument Serif has no bold — 400 is the whole family — so asking for one
+   gets a synthesised smear. It is display type at 26–52 px here and never
+   needs it.
+
+   swap, so the club's own words are readable while 51 kB arrives. */
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/instrument-sans-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-latin.woff2') format('woff2');
+}
+
 /* The agreed palette (Lukas, 2026-07-26). Replaces the placeholder tokens and
    closes the T031 seam: the design was settled here rather than arriving as a
    template.
@@ -43,11 +94,12 @@
   --color-brand-hi: #1d4fd7;
 
   /* Instrument Serif for display, Instrument Sans for everything else — the
-     design system's own pairing. The two are inlined in
-     design/erhvervsklubben-designsystem-v2.html but not yet extracted into the
-     app, so these fall back to Georgia and the system sans for now: close in
-     feel, not the real thing. They must be self-hosted when extracted — the
-     app has no CDN access. */
+     design system's own pairing, and since 2026-07-27 the real faces rather
+     than Georgia standing in for them (see the @font-face rules above).
+
+     The fallbacks stay. They are what renders for the moment before the woff2
+     lands, and what a browser that refuses the file falls back to — the same
+     near-miss as before, which is the right thing to be wrong with. */
   --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: 'Instrument Serif', Georgia, serif;
 }

@@ -26,7 +26,30 @@ const css = assets.find((f) => f.endsWith('.css'))
 if (!js || !css) throw new Error(`expected one .js and one .css in ${dist}/assets, got ${assets}`)
 
 const script = readFileSync(join(dist, 'assets', js), 'utf8')
-const style = readFileSync(join(dist, 'assets', css), 'utf8')
+const rawStyle = readFileSync(join(dist, 'assets', css), 'utf8')
+
+/**
+ * Fold the self-hosted typefaces into the stylesheet.
+ *
+ * `public/fonts` is a directory the real build serves over HTTP, and there is
+ * no HTTP here — one file, opened from a chat message. Left as `url(/fonts/…)`
+ * both faces 404 and the demo silently renders in Georgia and the system sans,
+ * which is precisely the state the fonts were extracted to end. Verified by
+ * serving dist-demo from a static server: two 404s, and Chrome painting the
+ * headings in Liberation Serif.
+ *
+ * base64 costs a third on top of 51 kB. Against a 900 kB bundle that is noise,
+ * and it is the only way this file keeps its promise of needing nothing.
+ */
+function inlineFonts(sheet) {
+  return sheet.replace(/url\(\/(fonts\/[^)]+\.woff2)\)/g, (_, rel) => {
+    const data = readFileSync(join(dist, rel)).toString('base64')
+    return `url(data:font/woff2;base64,${data})`
+  })
+}
+
+const style = inlineFonts(rawStyle)
+if (style.includes('url(/fonts/')) throw new Error('a font url survived inlining')
 
 // A bundle is allowed to contain the literal characters "</script>" inside a
 // string. Unescaped, the HTML parser would end the block there and the rest of
