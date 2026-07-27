@@ -1,7 +1,21 @@
 import { useState } from 'react'
 import { FINE_RULES, fineAmount } from '../data/rules'
+import { kr } from './FinanceChart'
 
 export type DraftFine = { member: string; ruleId: string; minutes: number; kr: number }
+
+/**
+ * The most minutes late that is still lateness.
+ *
+ * A club evening runs about four hours, so past that there is no arrival left to
+ * be late for — that is *udeblivelse*, which the regulation charges separately
+ * and at its own amount. Uncapped, the field took whatever was typed: 99999
+ * minutes was accepted without a murmur as a 500045 kr. fine, and -50 quietly
+ * became a 50 kr. one because the value was only ever read on keydown.
+ */
+const MAX_MINUTES = 240
+
+const REFUSED = `Angiv et helt antal minutter mellem 0 og ${MAX_MINUTES}. Intet er registreret.`
 
 /**
  * Recording a meeting's fines, in the time it takes to settle the bill.
@@ -24,6 +38,11 @@ export function FineCapture({
   onChange: (next: DraftFine[]) => void
 }) {
   const [minutesFor, setMinutesFor] = useState<string | null>(null)
+  // Which chip's entry was refused, not merely that one was — the message has
+  // to outlive the field it came from. Tapping straight on to the next member
+  // closes the panel, and a warning that goes with it would leave the Lead
+  // exactly where the dropped-minutes bug did: believing a fine was recorded.
+  const [refusedFor, setRefusedFor] = useState<string | null>(null)
 
   const has = (member: string, ruleId: string) =>
     value.find((f) => f.member === member && f.ruleId === ruleId)
@@ -39,6 +58,33 @@ export function FineCapture({
     }
     const next = value.filter((f) => !(f.member === member && f.ruleId === ruleId))
     onChange([...next, { member, ruleId, minutes, kr: fineAmount(rule, minutes) }])
+  }
+
+  /**
+   * What the minutes field does when the Lead stops typing — by any means.
+   *
+   * Enter used to be the only thing that committed. On a phone, tapping
+   * somewhere else is how the keyboard gets dismissed, so the gesture that threw
+   * the number away was the ordinary way of finishing with the field: the Lead
+   * put the phone down believing a fine was recorded, and it was not.
+   */
+  function commit(member: string, ruleId: string, key: string, raw: string) {
+    const typed = raw.trim()
+    // Nothing typed is a chip tapped by mistake, not a 50 kr. fine. Recording
+    // one here would be the same silent money, only in the other direction.
+    if (typed === '') {
+      setMinutesFor(null)
+      setRefusedFor(null)
+      return
+    }
+    const minutes = Number(typed)
+    if (!Number.isInteger(minutes) || minutes < 0 || minutes > MAX_MINUTES) {
+      setRefusedFor(key)
+      return
+    }
+    setRefusedFor(null)
+    toggle(member, ruleId, minutes)
+    setMinutesFor(null)
   }
 
   const total = value.reduce((n, f) => n + f.kr, 0)
@@ -58,22 +104,39 @@ export function FineCapture({
                   <button
                     type="button"
                     aria-pressed={Boolean(active)}
-                    onClick={() =>
-                      needsMinutes && !active
-                        ? setMinutesFor(minutesFor === key ? null : key)
-                        : toggle(member, rule.id)
-                    }
+                    onClick={() => {
+                      if (!needsMinutes || active) return toggle(member, rule.id)
+                      // Always opens, never toggles shut. Blur runs before the
+                      // click, so a chip that closed its own panel would find it
+                      // already closed and open it straight back up.
+                      setRefusedFor(null)
+                      setMinutesFor(key)
+                    }}
                     className={[
-                      'rounded-lg border px-2 py-1 text-[0.7rem]',
+                      // 48 px, the design system's touch floor. These are
+                      // tapped standing up, in a loud restaurant, with a bill
+                      // in the other hand; at 27 px they were a game of skill,
+                      // and a mis-tap here charges the wrong man 200 kr.
+                      'inline-flex min-h-12 items-center rounded-lg border px-3 text-left text-[0.7rem]',
                       active
                         ? 'border-accent bg-accent/15 text-accent'
                         : 'border-line text-muted',
                     ].join(' ')}
                   >
                     {rule.offence}
-                    <span className="tabular ml-1 font-semibold">
-                      {active ? `${active.kr}` : rule.kr}
-                      {needsMinutes && !active ? '+' : ''} kr.
+                    {/* The club's own formatter, so a chip and the card two
+                        screens up cannot write the same amount two ways. The
+                        per-minute rule states its rate rather than a bare "+",
+                        which is what the design system's own rules card does.
+                        nowrap because a long offence wraps to two lines, and
+                        the amount would break between the figure and its "kr."
+                        as though it were prose. */}
+                    <span className="tabular ml-1 font-semibold whitespace-nowrap">
+                      {active
+                        ? kr(active.kr)
+                        : needsMinutes
+                          ? `${kr(rule.kr)} +${rule.perMinute}/min`
+                          : kr(rule.kr)}
                     </span>
                   </button>
 
@@ -82,18 +145,32 @@ export function FineCapture({
                       Minutter for sent
                       <input
                         type="number"
+                        inputMode="numeric"
                         min={0}
+                        max={MAX_MINUTES}
                         autoFocus
                         aria-label={`Minutter for sent — ${member}`}
-                        className="tabular w-16 rounded border border-line bg-raised px-2 py-1"
+                        aria-invalid={refusedFor === key}
+                        className="tabular min-h-12 w-20 rounded border border-line bg-raised px-2 text-ink"
                         onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setMinutesFor(null)
+                            setRefusedFor(null)
+                            return
+                          }
                           if (e.key !== 'Enter') return
                           e.preventDefault()
-                          toggle(member, rule.id, Number((e.target as HTMLInputElement).value))
-                          setMinutesFor(null)
+                          commit(member, rule.id, key, (e.target as HTMLInputElement).value)
                         }}
+                        onBlur={(e) => commit(member, rule.id, key, e.target.value)}
                       />
                     </label>
+                  )}
+
+                  {refusedFor === key && (
+                    <span role="alert" className="mt-1 block text-[0.65rem] text-absent">
+                      {REFUSED}
+                    </span>
                   )}
                 </span>
               )
@@ -103,7 +180,7 @@ export function FineCapture({
       ))}
 
       <p className="tabular text-right text-sm">
-        I alt <span className="font-semibold text-accent">{total} kr.</span>
+        I alt <span className="font-semibold text-accent">{kr(total)}</span>
       </p>
     </div>
   )

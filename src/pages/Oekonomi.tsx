@@ -25,16 +25,21 @@ import { DEMO, demoFines, demoPayments } from '../data/demo'
  * rather than being quietly dropped or shoved into an arbitrary month, which
  * would misstate a quarter. The undated meetings are listed with a field to
  * fill in, so the gap is finite, visible and shrinking.
+ *
+ * A read-only build reads these two tables like any other. It used to answer
+ * empty without asking, because the live project genuinely had no `fines` or
+ * `payments` and a locked build could not have created them; both have existed
+ * in production since 2026-07-27. Short-circuiting now would only make a
+ * preview of the books report zeros — a lie about the club's money, told by the
+ * mode whose entire purpose is looking without touching. The client refuses the
+ * writes on its own (see lib/supabase), and the write-shaped UI below is not
+ * rendered, so nothing is protected by also refusing to read.
  */
 function useFinance() {
   return useQuery({
     queryKey: ['finance'],
     queryFn: async () => {
       if (DEMO) return { fines: demoFines, payments: demoPayments }
-      // The live project predates the club's books: it has no fines or
-      // payments tables, and this build may not create them. Empty is the
-      // truthful answer, and the page says so rather than erroring.
-      if (READONLY) return { fines: [], payments: [] }
       const [fines, payments] = await Promise.all([
         supabase().from('fines').select('member_name, amount_kr, record_id'),
         supabase().from('payments').select('month, amount_kr'),
@@ -52,6 +57,15 @@ function useFinance() {
     },
   })
 }
+
+/**
+ * Danish has a singular and a plural, and neither of them is "bøde(r)".
+ *
+ * The parenthesis is a note-to-self left in the interface: the club's own
+ * treasurer reads it every time he closes a meeting, and it says the app was
+ * not finished.
+ */
+const boeder = (n: number) => `${n} ${n === 1 ? 'bøde' : 'bøder'}`
 
 /** Save a meeting's fines. One row per fine; the database enforces the cap. */
 function useRecordFines() {
@@ -129,9 +143,13 @@ function RecordFines() {
             type="button"
             disabled={draft.length === 0 || record.isPending}
             onClick={() => record.mutate({ recordId: meeting.id, fines: draft })}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            /* bg-brand, not bg-accent: white on the accent measures 3.2:1 on
+               the dark ground and fails AA, and this is the button the whole
+               screen exists for. Same #2563eb the landing page's buttons use,
+               where white measures 5.1:1 on either ground. */
+            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hi disabled:opacity-50"
           >
-            {record.isPending ? 'Gemmer…' : `Gem ${draft.length} bøde(r)`}
+            {record.isPending ? 'Gemmer…' : `Gem ${boeder(draft.length)}`}
           </button>
           {record.isSuccess && (
             <p role="status" className="text-xs text-present">
@@ -274,9 +292,8 @@ export default function Oekonomi() {
             Skrivebeskyttet forhåndsvisning
           </h2>
           <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
-            Denne udgave læser klubbens rigtige data, men kan ikke ændre dem.
-            Bøder og indbetalinger findes endnu ikke i databasen, så tallene
-            herunder står på nul, indtil regnskabet flyttes ind.
+            Denne udgave læser klubbens rigtige tal, men kan ikke ændre dem. Der
+            kan hverken registreres bøder eller rettes datoer herfra.
           </p>
         </section>
       )}
