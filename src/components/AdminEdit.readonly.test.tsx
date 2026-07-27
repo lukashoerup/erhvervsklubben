@@ -21,14 +21,32 @@ vi.mock('../lib/supabase', () => ({ READONLY: true, supabase: () => client }))
 
 const { default: Nyheder } = await import('../pages/Nyheder')
 const { default: Moeder } = await import('../pages/Moeder')
+const { default: Anciennitet } = await import('../pages/Anciennitet')
 
-function renderAsAdmin(page: 'nyheder' | 'moeder') {
+const PAGES = { nyheder: Nyheder, moeder: Moeder, anciennitet: Anciennitet }
+
+function renderAsAdmin(page: keyof typeof PAGES) {
   reset({
     news: [
       { id: 'n1', title: 'Sommerfest 2026', excerpt: 'Hos Saaby.', author: 'Saaby', date: '2026-06-09' },
     ],
     events: [
       { id: 'e1', title: 'Møde #29', date: '2026-08-13', time: '18.30', location: 'Propaganda', description: '' },
+    ],
+    attendance_records: [
+      {
+        id: 1,
+        meeting_number: 28,
+        lead: 'Esben',
+        pre_location: null,
+        main_location: 'Propaganda',
+        post_location: null,
+        meeting_date: null,
+      },
+    ],
+    attendances: [
+      { record_id: 1, member_name: 'Anders', attended: true },
+      { record_id: 1, member_name: 'Mads', attended: false },
     ],
   })
   const value: AuthState = {
@@ -38,10 +56,11 @@ function renderAsAdmin(page: 'nyheder' | 'moeder') {
     signIn: async () => ({ error: null }),
     signOut: async () => {},
   }
+  const Page = PAGES[page]
   return render(
     withQuery(
       <AuthContext.Provider value={value}>
-        {page === 'nyheder' ? <Nyheder /> : <Moeder />}
+        <Page />
       </AuthContext.Provider>,
     ),
   )
@@ -60,6 +79,16 @@ describe('a read-only preview', () => {
     renderAsAdmin('moeder')
     expect(await screen.findByText('Møde #29')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Nyt møde' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
+  })
+
+  it('still shows the attendance history, and offers no way to change it', async () => {
+    // The one with the most to lose: a meeting carries ~10 attendance rows and
+    // its fines, and the club has fifteen years of them and no backup.
+    renderAsAdmin('anciennitet')
+    expect(await screen.findByText('Esben')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Registrér møde' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
   })

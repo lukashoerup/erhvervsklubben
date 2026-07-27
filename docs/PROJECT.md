@@ -171,13 +171,57 @@ without losing data and without taking the old site down until an approved cutov
   more private to a member than it is to a stranger reading the landing page.
   Only the buttons on it are the admin's.
 
+- **2026-07-27 — the attendance history is written in the app, and that closes
+  Lukas's list.** T065, the third of the three things he named. An admin records
+  a meeting and ticks off who came, and corrects one already recorded, on
+  `/anciennitet` — the page the history is read on. No migration: RLS has
+  allowed admins to write both tables since the initial migration, so this task
+  wrote no SQL either.
+
+  Four choices in it that should survive a rewrite.
+
+  **A new meeting starts with everyone present.** Eight or nine of ten turn up,
+  so ticking off the absentees is two taps where ticking on the attendees is
+  eight — and this gets used the morning after a meeting, on a phone. The count
+  sits above the buttons, so what is about to be written is on screen rather
+  than assumed.
+
+  **A member with no row keeps none.** The club's 235 attendance rows over 29
+  meetings are not ten per meeting: a (meeting, member) pair with no row is a
+  third state, and `total` — the denominator under "X deltagelser af Y" — is
+  counted from the rows that exist. A two-position toggle has to show that
+  member as absent, but saving writes nothing unless the tick is changed *to*
+  present. Otherwise opening a historical meeting and pressing Gem would grow
+  every member's denominator across 29 meetings as a side effect.
+
+  **The date is set in one place.** `/oekonomi` had a date field per undated
+  meeting, from the finance work; the meeting editor covers the same column with
+  the lead, the venues and the attendance beside it. Two inputs on one column
+  are two places for it to start behaving differently, so the field went and the
+  *count* stayed — how many meetings still lack a date is a fact about the
+  books, and it belongs on the page whose chart it blocks.
+
+  **The editor can name someone the club has never recorded.** The roster is
+  derived from the names already in `attendances`; there is no members table. An
+  eleventh member therefore has no row anywhere and could never be ticked, so
+  the one meeting that matters — their first — would be the one meeting the app
+  could not record.
+
+  Not built, and worth stating: no bulk backfill screen, no undo, no attendance
+  import. Deleting a meeting is guarded by naming it and counting the ~10
+  attendance rows and the fines that cascade with it, which is the same defence
+  T063 chose and for the same reason — one copy of everything and no backup
+  habit.
+
 - **2026-07-26 — anciennitet revocation is not built.** §11 allows attendance to
   be revoked by a 2/3 vote; Lukas: it has never happened and has never been
   suggested. A voting flow plus a revoked state plus the screens to explain them
   is permanent complexity in the most-used page for an event with no precedent.
   If it ever occurs, flipping `attendances.attended` to false is exactly what a
   revoked attendance means — no schema change and no UI needed. Revisit if it
-  happens twice.
+  happens twice. *(T065 makes that flip a tap on `/anciennitet` rather than a
+  hand-written statement. Still not revocation: no vote, no revoked state, and
+  in the data a revoked attendance and a typo are the same row.)*
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Meeting, RosterEntry } from '../data/derive'
 import { daDate } from '../lib/dates'
 
@@ -42,10 +43,14 @@ export function MeetingCard({
   meeting,
   labels,
   me,
+  actions,
 }: {
   meeting: Meeting
   labels: Record<string, string>
   me?: string | null
+  /** The admin's Rediger and Slet, below the strip. A member is passed none
+      and the card is exactly what it was. */
+  actions?: ReactNode
 }) {
   const pip = (name: string, present: boolean) => (
     <span
@@ -109,6 +114,8 @@ export function MeetingCard({
         {meeting.present.map((n) => pip(n, true))}
         {meeting.absent.map((n) => pip(n, false))}
       </div>
+
+      {actions && <div className="mt-3 flex flex-wrap items-start gap-2">{actions}</div>}
     </article>
   )
 }

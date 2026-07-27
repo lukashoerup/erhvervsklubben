@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { useDeleteRow, useSaveRow, type EditableTable } from '../data/useClubData'
+import { useState, type ReactNode } from 'react'
+import { useDeleteRow, useSaveRow, type ContentTable } from '../data/useClubData'
 
 /** One field of an admin form. One line unless it says otherwise. */
 export type Field = {
   name: string
   label: string
-  kind?: 'text' | 'date' | 'textarea'
+  /** `number` for the numeric keypad — a meeting number typed on a phone. */
+  kind?: 'text' | 'date' | 'textarea' | 'number'
   /** Shown under the label when the column's format is not obvious. */
   hint?: string
 }
@@ -47,6 +48,7 @@ export function EditForm({
   saving,
   failed,
   canSave,
+  children,
 }: {
   fields: Field[]
   draft: Draft
@@ -56,6 +58,10 @@ export function EditForm({
   saving: boolean
   failed: boolean
   canSave: boolean
+  /** Anything the row needs that is not a column of text — the attendance
+      ticker on a meeting. Inside the form, above Gem, so one submit saves the
+      whole thing rather than the fields and the ticks being two saves. */
+  children?: ReactNode
 }) {
   return (
     <form
@@ -87,6 +93,8 @@ export function EditForm({
         </label>
       ))}
 
+      {children}
+
       <div className="mt-1 flex flex-wrap gap-2">
         <button type="submit" disabled={!canSave || saving} className={FILLED}>
           {saving ? 'Gemmer…' : 'Gem'}
@@ -116,11 +124,16 @@ export function EditForm({
  */
 export function DeleteConfirm({
   what,
+  detail,
   onDelete,
   pending,
   failed,
 }: {
   what: string
+  /** What else goes with it. A meeting takes ~10 attendance rows and its fines
+      down with it (both foreign keys cascade), and "slet møde" reads like one
+      row — so the sentence has to count them. */
+  detail?: string
   onDelete: () => void
   pending: boolean
   failed: boolean
@@ -138,7 +151,7 @@ export function DeleteConfirm({
   return (
     <div className="flex flex-col gap-2">
       <p role="alert" className="text-xs text-absent">
-        Slet “{what}”? Det kan ikke fortrydes.
+        Slet “{what}”? {detail ? `${detail} ` : ''}Det kan ikke fortrydes.
       </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" className={DANGER} disabled={pending} onClick={onDelete}>
@@ -187,7 +200,7 @@ export function EditButton({ onClick }: { onClick: () => void }) {
  * *fields* are the only difference. Sharing the interaction is not a CMS; it is
  * refusing to write the same open/save/close three times and get it right twice.
  */
-export function useEditor(table: EditableTable) {
+export function useEditor(table: ContentTable) {
   const [open, setOpen] = useState<{ id: string | null; draft: Draft } | null>(null)
   const save = useSaveRow(table)
   const remove = useDeleteRow(table)

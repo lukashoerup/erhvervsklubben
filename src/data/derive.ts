@@ -33,6 +33,14 @@ export type Meeting = {
   month: string | null
   /** Før → Sted → Efter, with the empty steps dropped. */
   route: string[]
+  /**
+   * The three venue columns as stored, which `route` cannot be turned back
+   * into: dropping the empty steps loses *which* step was empty, so a meeting
+   * with no pre-drinks reads identically to one with no after-party. An editor
+   * rebuilding the columns from `route` would shift a venue up a column and
+   * write it back. `route` is for reading; this is for correcting.
+   */
+  venues: { pre: string | null; main: string; post: string | null }
   present: string[]
   absent: string[]
 }
@@ -133,6 +141,11 @@ export function buildMeetings(
         route: [r.pre_location, r.main_location, r.post_location].filter(
           (v): v is string => Boolean(v && v.trim()),
         ),
+        venues: {
+          pre: r.pre_location,
+          main: r.main_location,
+          post: r.post_location,
+        },
         present,
         absent,
       }
