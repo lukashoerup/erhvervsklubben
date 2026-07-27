@@ -138,7 +138,11 @@ function RecordFines() {
             type="button"
             disabled={draft.length === 0 || record.isPending}
             onClick={() => record.mutate({ recordId: meeting.id, fines: draft })}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            /* bg-brand, not bg-accent: white on the accent measures 3.2:1 on
+               the dark ground and fails AA, and this is the button the whole
+               screen exists for. Same #2563eb the landing page's buttons use,
+               where white measures 5.1:1 on either ground. */
+            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hi disabled:opacity-50"
           >
             {record.isPending ? 'Gemmer…' : `Gem ${boeder(draft.length)}`}
           </button>

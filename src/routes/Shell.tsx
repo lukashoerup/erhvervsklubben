@@ -38,7 +38,15 @@ export function Shell() {
           </span>
           <span className="text-xs font-bold tracking-[0.13em] uppercase">Erhvervsklubben</span>
         </span>
-        <button onClick={onSignOut} className="text-xs text-faint hover:text-accent">
+        {/* The word is 37 × 16 px of ink and used to be 37 × 16 px of button,
+            on every page in the app. The design system asks for 48 × 48; the
+            padding that buys it is pulled straight back out with negative
+            margins, so the target grows into the header's own padding and the
+            bar keeps the height it had. Nothing sits beside it to mis-tap. */}
+        <button
+          onClick={onSignOut}
+          className="-my-3 -mr-2 inline-flex min-h-12 items-center rounded-lg px-2 text-xs text-faint hover:text-accent"
+        >
           Log ud
         </button>
       </header>

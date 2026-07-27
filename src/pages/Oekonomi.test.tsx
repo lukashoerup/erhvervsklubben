@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthContext, type AuthState } from '../auth/AuthContext'
-import { withQuery } from '../test/harness'
+import { minTapHeightPx, withQuery } from '../test/harness'
 
 /**
  * The club's money, as a member sees it.
@@ -155,6 +155,23 @@ describe('recording a meeting’s fines', () => {
 
     await user.click(screen.getAllByRole('button', { name: /Skål før/ })[1])
     expect(screen.getByRole('button', { name: 'Gem 2 bøder' })).toBeInTheDocument()
+  })
+
+  it('saves behind a button that can be hit, and read', async () => {
+    const user = userEvent.setup()
+    aClubWithBooks()
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '1')
+    await user.click(screen.getAllByRole('button', { name: /Skål før/ })[0])
+
+    const save = screen.getByRole('button', { name: 'Gem 1 bøde' })
+    expect(minTapHeightPx(save)).toBeGreaterThanOrEqual(44)
+    // White on --color-accent measures 3.2:1 on the dark ground and fails AA.
+    // --color-brand is the landing page's #2563eb, where it measures 5.1:1 on
+    // either ground. Nothing in jsdom can see that, so the token is what there
+    // is to assert.
+    expect(save.className).toContain('bg-brand')
+    expect(save.className).not.toContain('bg-accent')
   })
 })
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FineCapture, type DraftFine } from './FineCapture'
+import { minTapHeightPx } from '../test/harness'
 
 /** Wraps the controlled component so the tests exercise it as it is used. */
 function Harness({ members = ['Mads', 'Saaby'] }: { members?: string[] }) {
@@ -179,6 +180,21 @@ test('the running total is the sum of what has been tapped', async () => {
   await user.click(screen.getAllByRole('button', { name: /Skål før/ })[1]) // 50
 
   expect(screen.getByText('250 kr.')).toBeInTheDocument()
+})
+
+test('every chip is big enough to hit standing up in a restaurant', async () => {
+  // 27 px, five to a member, ten members. A mis-tap here is not a nuisance, it
+  // charges the wrong man 200 kr.
+  const user = userEvent.setup()
+  render(<Harness />)
+  for (const chip of screen.getAllByRole('button')) {
+    expect(minTapHeightPx(chip)).toBeGreaterThanOrEqual(44)
+  }
+
+  await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
+  expect(minTapHeightPx(screen.getByLabelText('Minutter for sent — Mads'))).toBeGreaterThanOrEqual(
+    44,
+  )
 })
 
 test('a recorded fine reads as pressed, so the Lead can see what they logged', async () => {

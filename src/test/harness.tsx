@@ -17,3 +17,17 @@ export function withQuery(children: ReactNode) {
   })
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }
+
+/**
+ * The smallest this element can be, in px, according to its own classes.
+ *
+ * jsdom does no layout, so a tap target cannot be measured here — the class
+ * list is the only thing there is to read, which is honest about what this
+ * suite can and cannot prove. Tailwind's spacing scale is 0.25rem a step, so
+ * `min-h-12` is 48 px: the design system's own floor ("TOUCH Min. 48 × 48 px"),
+ * and past the 44 px everyone else asks for.
+ */
+export function minTapHeightPx(el: HTMLElement): number {
+  const found = el.className.match(/min-h-(\d+)/)
+  return found ? Number(found[1]) * 4 : 0
+}

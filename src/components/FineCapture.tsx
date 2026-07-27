@@ -113,7 +113,11 @@ export function FineCapture({
                       setMinutesFor(key)
                     }}
                     className={[
-                      'rounded-lg border px-2 py-1 text-[0.7rem]',
+                      // 48 px, the design system's touch floor. These are
+                      // tapped standing up, in a loud restaurant, with a bill
+                      // in the other hand; at 27 px they were a game of skill,
+                      // and a mis-tap here charges the wrong man 200 kr.
+                      'inline-flex min-h-12 items-center rounded-lg border px-3 text-left text-[0.7rem]',
                       active
                         ? 'border-accent bg-accent/15 text-accent'
                         : 'border-line text-muted',
@@ -144,7 +148,7 @@ export function FineCapture({
                         autoFocus
                         aria-label={`Minutter for sent — ${member}`}
                         aria-invalid={refusedFor === key}
-                        className="tabular w-16 rounded border border-line bg-raised px-2 py-1"
+                        className="tabular min-h-12 w-20 rounded border border-line bg-raised px-2 text-ink"
                         onKeyDown={(e) => {
                           if (e.key === 'Escape') {
                             setMinutesFor(null)
