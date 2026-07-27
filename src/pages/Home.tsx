@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { daDate } from '../lib/dates'
 import { useAttendance, useMyMemberName, useNews, useUpcoming } from '../data/useClubData'
 
 /**
@@ -36,11 +37,7 @@ export default function Home() {
           <>
             <h2 className="mt-1 text-xl leading-tight font-semibold">{next.title}</h2>
             <p className="mt-1 text-sm text-muted">
-              {new Date(next.date).toLocaleDateString('da-DK', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
+              {daDate(next.date, { weekday: 'long', day: 'numeric', month: 'long' })}
               {next.time ? ` · ${next.time}` : ''}
             </p>
             {next.location && (
@@ -76,7 +73,7 @@ export default function Home() {
       {latest && (
         <Link to="/nyheder" className="rounded-xl border border-line bg-surface p-3">
           <p className="tabular text-[0.6rem] tracking-[0.1em] text-accent uppercase">
-            {new Date(latest.date).toLocaleDateString('da-DK', { day: 'numeric', month: 'long' })}
+            {daDate(latest.date, { day: 'numeric', month: 'long' })}
           </p>
           <h3 className="mt-1 text-[0.95rem] leading-snug font-semibold">{latest.title}</h3>
           <p className="mt-1 text-xs text-muted">{latest.excerpt}</p>

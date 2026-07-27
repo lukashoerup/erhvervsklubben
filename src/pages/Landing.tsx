@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { LogoMark } from '../components/LogoMark'
 import { statute, stk } from '../data/vedtaegter'
+import { daDate } from '../lib/dates'
 import { useNews, useUpcoming } from '../data/useClubData'
 
 /**
@@ -425,12 +426,4 @@ function Chip({ children }: { children: ReactNode }) {
  */
 function rise(ms: number): CSSProperties {
   return { '--ek-rise-delay': `${ms}ms` } as CSSProperties
-}
-
-function daDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('da-DK', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
 }
