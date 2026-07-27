@@ -60,7 +60,13 @@ export default function Regler() {
         <div className="mt-2">
           {VEDTAEGTER.map((s) => (
             <details key={s.n} className="border-b border-line last:border-0">
-              <summary className="cursor-pointer list-none py-2 text-xs">
+              {/* 48 px, §03's touch floor. These fifteen rows are the whole
+                  interaction on this page — every statute is behind one — and
+                  they measured 32. The sweep in T062 caught the buttons and
+                  the chips; a <summary> looks like a heading in the source and
+                  was read as one. Flex rather than more padding, so the row is
+                  exactly the floor and not fifteen × 16 px of extra page. */}
+              <summary className="flex min-h-12 cursor-pointer list-none items-center py-2 text-xs">
                 <span className="tabular mr-2 font-semibold text-accent">§{s.n}</span>
                 <span className="text-ink">{s.title}</span>
               </summary>

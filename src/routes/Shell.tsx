@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { Icon } from '../components/Icon'
 import { LogoMark } from '../components/LogoMark'
 import { NAV_ROUTES } from './routes'
 
@@ -56,7 +57,7 @@ export function Shell() {
               bar keeps the height it had. Nothing sits beside it to mis-tap. */}
           <button
             onClick={onSignOut}
-            className="-my-3 -mr-2 inline-flex min-h-12 items-center rounded-lg px-2 text-xs text-faint hover:text-accent"
+            className="-my-3 -mr-2 inline-flex min-h-12 items-center rounded-btn px-2 text-xs text-faint hover:text-accent"
           >
             Log ud
           </button>
@@ -93,9 +94,11 @@ export function Shell() {
                 }`
               }
             >
-              <span aria-hidden="true" className="block text-base leading-tight">
-                {r.nav!.icon}
-              </span>
+              {/* 22 px, which is the size §04's own mobile bottom bar sets its
+                  icons at rather than §03's 24 px line — six columns on a
+                  420 px phone, where the label under it has to stay readable
+                  too. `block` so the label falls to its own line. */}
+              <Icon name={r.nav!.icon} className="mb-0.5 block text-[22px]" />
               {r.nav!.label}
             </NavLink>
           ))}

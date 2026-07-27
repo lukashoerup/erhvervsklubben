@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { Icon, type IconName } from '../components/Icon'
 import { LogoMark } from '../components/LogoMark'
 import { statute, stk } from '../data/vedtaegter'
 import { daDate } from '../lib/dates'
@@ -74,7 +75,7 @@ export default function Landing() {
           </span>
           <Link
             to="/login"
-            className="inline-flex min-h-12 items-center rounded-[9px] bg-brand px-[18px] text-[13px] font-semibold text-white hover:bg-brand-hi"
+            className="inline-flex min-h-12 items-center rounded-btn bg-brand px-[18px] text-[13px] font-semibold text-white hover:bg-brand-hi"
           >
             Log ind
           </Link>
@@ -162,13 +163,13 @@ function Hero() {
         >
           <Link
             to="/login"
-            className="inline-flex min-h-12 items-center rounded-[10px] bg-brand px-[22px] text-sm font-semibold text-white hover:bg-brand-hi"
+            className="inline-flex min-h-12 items-center rounded-btn bg-brand px-[22px] text-sm font-semibold text-white hover:bg-brand-hi"
           >
             Log ind som medlem
           </Link>
           <a
             href="#klubben"
-            className="inline-flex min-h-12 items-center rounded-[10px] border border-line-hi px-[22px] text-sm font-semibold text-ink hover:border-accent"
+            className="inline-flex min-h-12 items-center rounded-btn border border-line-hi px-[22px] text-sm font-semibold text-ink hover:border-accent"
           >
             Om klubben
           </a>
@@ -265,7 +266,7 @@ function Moedekalender({ events }: { events: { id: string; title: string; date: 
             <p className="mt-1.5 max-w-[520px] text-[13px] leading-[1.6] text-muted">
               {stk(statute(9).items[2])}
             </p>
-            <Chip>Indkaldes af mødets lead, senest 2 uger før · §9</Chip>
+            <Chip icon="calendar_month">Indkaldes af mødets lead, senest 2 uger før · §9</Chip>
           </Card>
         ) : (
           events.map((e, i) => (
@@ -282,7 +283,7 @@ function Moedekalender({ events }: { events: { id: string; title: string; date: 
                   is stated rather than left blank — the design system's own
                   wording for an unset field, and it keeps the two cards the
                   same height. */}
-              <Chip>{e.location || 'Sted endnu ikke sat'}</Chip>
+              <Chip icon="place">{e.location || 'Sted endnu ikke sat'}</Chip>
             </Card>
           ))
         )}
@@ -363,7 +364,7 @@ function Medlemskab() {
           </p>
           <Link
             to="/login"
-            className="mt-4 inline-flex min-h-12 items-center rounded-[10px] bg-brand px-[22px] text-sm font-semibold text-white hover:bg-brand-hi"
+            className="mt-4 inline-flex min-h-12 items-center rounded-btn bg-brand px-[22px] text-sm font-semibold text-white hover:bg-brand-hi"
           >
             Log ind
           </Link>
@@ -375,10 +376,17 @@ function Medlemskab() {
 
 // ------------------------------------------------------------------ pieces
 
-/** Baseline-aligned section number and serif title — the system's header. */
+/**
+ * Baseline-aligned section number and serif title — the system's header.
+ *
+ * `data-reveal` on the wrapper rather than on the three parts: §01 stages
+ * elements 60 ms apart, but a heading whose own lede arrives after it reads as
+ * a page still loading. The section is one gesture; the stagger down the page
+ * is the scroll itself.
+ */
 function SectionHead({ n, title, lede }: { n: string; title: string; lede: string }) {
   return (
-    <>
+    <div data-reveal>
       <div className="flex items-baseline gap-4">
         <span className="tabular text-xs tracking-[0.24em] text-faint">{n}</span>
         <h2 className="font-serif text-[1.75rem] tracking-[-0.01em] sm:text-[2.75rem]">
@@ -388,14 +396,29 @@ function SectionHead({ n, title, lede }: { n: string; title: string; lede: strin
       <p className="mt-3.5 max-w-[620px] text-[16px] leading-[1.7] text-muted sm:text-[17px]">
         {lede}
       </p>
-    </>
+    </div>
   )
 }
 
-/** Hairline and flat. The system puts shadows on the logo and nothing else. */
+/**
+ * Hairline and flat. The system puts shadows on the logo and nothing else.
+ *
+ * `data-reveal` here, which the members' screens have had since T064 and this
+ * page had not. §01 is not scoped to the login: "Indhold træder frem, når det
+ * kommer i syne", and the export marks every card in every section this way.
+ * The club's public page was the longest scroll in the app that did not move —
+ * four sections and nine cards, arriving all at once, under a hero that spends
+ * four seconds introducing itself.
+ *
+ * Nothing can strand here: the guards in index.css hand an old browser the
+ * finished page, and the 96 px foot under the last card is well past the
+ * `cover 12%` the range asks for.
+ */
 function Card({ className = '', children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={`rounded-2xl border border-line bg-surface ${className}`}>{children}</div>
+    <div data-reveal className={`rounded-2xl border border-line bg-surface ${className}`}>
+      {children}
+    </div>
   )
 }
 
@@ -405,15 +428,20 @@ function Label({ children }: { children: ReactNode }) {
   )
 }
 
-/** An unset or pending value, stated rather than hidden. */
-function Chip({ children }: { children: ReactNode }) {
+/**
+ * An unset or pending value, stated rather than hidden.
+ *
+ * The icon is chosen per chip rather than fixed, because §03 gives each of them
+ * a job and "an unset value" is not one of them — a chip about the venue takes
+ * `place`, a chip about convening the meeting takes `calendar_month`. It was a
+ * ◇ for both, which said neither and which Instrument does not draw.
+ */
+function Chip({ icon, children }: { icon: IconName; children: ReactNode }) {
   return (
     <span className="mt-3.5 inline-flex items-center gap-2 rounded-full border border-line px-3.5 py-2 text-xs text-muted">
       {/* Left fully saturated while the text stays muted — the system's way of
           keeping an empty state alive rather than greying it out. */}
-      <span aria-hidden="true" className="text-accent">
-        ◇
-      </span>
+      <Icon name={icon} className="text-base text-accent" />
       {children}
     </span>
   )

@@ -116,7 +116,7 @@ function RecordFines() {
         Møde
         <select
           aria-label="Møde"
-          className="mt-1 block w-full rounded-lg border border-line bg-raised px-2 py-2 text-ink"
+          className="mt-1 block min-h-12 w-full rounded-btn border border-line bg-raised px-2 py-2 text-ink"
           value={meetingId ?? ''}
           onChange={(e) => {
             setMeetingId(e.target.value ? Number(e.target.value) : null)
@@ -149,7 +149,7 @@ function RecordFines() {
                the dark ground and fails AA, and this is the button the whole
                screen exists for. Same #2563eb the landing page's buttons use,
                where white measures 5.1:1 on either ground. */
-            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hi disabled:opacity-50"
+            className="inline-flex min-h-12 items-center justify-center rounded-btn bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hi disabled:opacity-50"
           >
             {record.isPending ? 'Gemmer…' : `Gem ${boeder(draft.length)}`}
           </button>

@@ -95,10 +95,13 @@ describe('the landing animation', () => {
 describe('the typefaces', () => {
   const faces = [...css.matchAll(/@font-face\s*\{([\s\S]*?)\n\}/g)].map((m) => m[1])
 
-  it('declares both of the design system’s families', () => {
+  it('declares all three of the design system’s families', () => {
     const families = faces.map((f) => f.match(/font-family:\s*'([^']+)'/)?.[1])
     expect(families).toContain('Instrument Sans')
     expect(families).toContain('Instrument Serif')
+    // §03's icon set. Left out until T066 because the whole face is 339 kB;
+    // subset to the nine glyphs the app draws it is 1072 bytes.
+    expect(families).toContain('Material Symbols Outlined')
   })
 
   it('serves them from this origin, never a CDN', () => {
@@ -116,8 +119,70 @@ describe('the typefaces', () => {
     expect(rules).not.toMatch(/fonts\.(googleapis|gstatic)\.com/)
   })
 
-  it('swaps rather than blocking on the download', () => {
-    for (const f of faces) expect(f).toMatch(/font-display:\s*swap/)
+  it('swaps on the text faces and blocks on the icon face', () => {
+    for (const f of faces) {
+      const family = f.match(/font-family:\s*'([^']+)'/)?.[1]
+      // swap exists so the club's own words stay readable while the typeface
+      // arrives. The icon face has no words: what a fallback paints for a
+      // Private Use Area codepoint is a tofu box, so swapping there would buy
+      // a flash of empty rectangles across the tab bar in exchange for nothing.
+      const wanted = family === 'Material Symbols Outlined' ? 'block' : 'swap'
+      expect(f, `${family} should be font-display: ${wanted}`).toMatch(
+        new RegExp(`font-display:\\s*${wanted}`),
+      )
+    }
+  })
+})
+
+/**
+ * The icon glyphs, guarded because the ways this goes wrong are all silent.
+ *
+ * They are Private Use Area codepoints, so a wrong one paints an empty box
+ * rather than raising anything, and the tab bar has a readable label under it
+ * either way — the screen looks *deliberate* while showing six blanks.
+ *
+ * What is asserted here is what a jsdom test can actually know. Whether the
+ * codepoints exist in `public/fonts/material-symbols-subset.woff2` is a
+ * question about a binary file this suite has no way to open; it is measured in
+ * a browser instead, the same way T064 proved the two text faces, and the
+ * subset recipe is written down in `design/README.md`.
+ */
+describe('the icon set', () => {
+  it('inherits none of the letter-spacing or casing around it', () => {
+    // The tab bar sets `tracking-wide` and the section labels set `uppercase`,
+    // and both inherit. Letter-spacing adds a phantom right margin inside the
+    // glyph's own box and walks it off centre — six columns, six different
+    // offsets, and nothing in the markup to suggest why.
+    const rule = css.match(/\.ek-icon\s*\{([^}]*)\}/)
+    expect(rule, 'no .ek-icon rule').not.toBeNull()
+    expect(rule![1]).toMatch(/letter-spacing:\s*normal/)
+    expect(rule![1]).toMatch(/text-transform:\s*none/)
+    expect(rule![1]).toMatch(/font-family:\s*'Material Symbols Outlined'/)
+    // The subset is the Light cut, which is the one the export's own `.ms`
+    // rule asks for. Any other weight here is a synthesised smear.
+    expect(rule![1]).toMatch(/font-weight:\s*300/)
+  })
+
+  it('draws every icon from the set, and no geometric stand-ins survive', async () => {
+    const { ICON } = await import('./components/Icon')
+    const { ROUTES } = await import('./routes/routes')
+
+    for (const [name, glyph] of Object.entries(ICON)) {
+      expect(glyph, `${name} is not one codepoint`).toHaveLength(1)
+      // U+E000–U+F8FF. A codepoint outside it is a character some real font
+      // draws, which is how one of these silently becomes legible nonsense.
+      const cp = glyph.codePointAt(0)!
+      expect(cp, `${name} is not in the Private Use Area`).toBeGreaterThanOrEqual(0xe000)
+      expect(cp, `${name} is not in the Private Use Area`).toBeLessThanOrEqual(0xf8ff)
+    }
+
+    // Every tab takes its icon from the set rather than from a character
+    // chosen for its shape. The type already says so; this says it after a
+    // refactor has changed the type.
+    for (const r of ROUTES) {
+      if (!r.nav) continue
+      expect(Object.keys(ICON), `${r.path} has an icon outside the set`).toContain(r.nav.icon)
+    }
   })
 })
 

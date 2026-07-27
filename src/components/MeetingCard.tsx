@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Meeting, RosterEntry } from '../data/derive'
 import { daDate } from '../lib/dates'
+import { Icon } from './Icon'
 
 /** Short month, because 29 of these stack down a phone. The year stays. */
 const SHORT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
@@ -86,11 +87,18 @@ export function MeetingCard({
         </span>
       </div>
 
+      {/* The step between venues was a literal → — which is how §04's own
+          Anciennitet mock writes it, and which neither Instrument subset
+          contains, so it fell back per glyph and the club's evening was drawn
+          by whichever font the phone reached for. `arrow_right_alt` is the
+          set's long arrow: the same mark, from the shipped file. */}
       {meeting.route.length > 0 && (
         <p className="mt-1 text-xs text-muted">
           {meeting.route.map((stop, i) => (
             <span key={stop + i}>
-              {i > 0 && ' → '}
+              {i > 0 && (
+                <Icon name="arrow_right_alt" className="mx-1 align-[-0.15em] text-sm text-faint" />
+              )}
               <span className={i === meeting.route.length - 1 ? 'font-semibold text-ink' : ''}>
                 {stop}
               </span>

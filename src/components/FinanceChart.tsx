@@ -390,13 +390,20 @@ function NothingToPlot({ books }: { books: BooksState }) {
         Der er ingen kurve at tegne endnu — ikke fordi klubben hverken har opkrævet
         eller modtaget noget, men fordi tallene ikke er her.
       </p>
+      {/* The bullet is drawn rather than set. It was a ◇, which Instrument does
+          not contain and which therefore arrived from whatever font the phone
+          reached for; and the icon set is ten named jobs (§03) with no entry
+          for "item in a list", so borrowing a pin or a gavel to mean nothing at
+          all would be worse than the character was. A rotated square is the
+          same blue lozenge with nothing left to fall back from. */}
       {reasons.length > 0 && (
         <ul className="mt-2 flex flex-col gap-1.5">
           {reasons.map((r) => (
             <li key={r} className="flex gap-2 text-[0.72rem] leading-relaxed text-faint">
-              <span aria-hidden="true" className="text-accent">
-                ◇
-              </span>
+              <span
+                aria-hidden="true"
+                className="mt-[0.45em] size-1.5 shrink-0 rotate-45 bg-accent"
+              />
               {r}
             </li>
           ))}
