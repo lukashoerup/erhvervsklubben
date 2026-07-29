@@ -188,39 +188,90 @@ describe('the icon set', () => {
 
 /**
  * The members' reveals. Same reasoning as the landing intro above — a browser
- * is the only place this shows — but the failure mode is worse: these rules
- * start elements at `opacity: 0`, so a guard removed here does not make the app
+ * is the only place this shows — but the failure mode is worse: an element in
+ * its start state is at `opacity: 0`, so a mistake here does not make the app
  * look wrong, it makes the club's records invisible.
  *
- * Two guards, and both are load-bearing. `prefers-reduced-motion: no-preference`
- * is what gives someone who asked for less motion the finished page rather than
- * a faster version of the movement. `@supports (animation-timeline: view())` is
- * what stops a browser that cannot run the animation from being handed its
- * start state with no way to leave it — without it, every card on every screen
- * would be permanently blank on older Safari.
+ * T064 guarded that with `@supports (animation-timeline: view())`, which was
+ * sound and cost the whole club its motion: that feature is Safari 26 and the
+ * members are on iPhones. The guarantee now comes from the selector instead.
+ * `[data-reveal]` is what React renders and what a browser with no JavaScript
+ * is left holding, and it must select nothing — only the values lib/reveal.ts
+ * writes may hide anything, and it writes them only after an observer is
+ * already watching that element (see lib/reveal.test.ts, which asserts the
+ * behaviour rather than the stylesheet).
  */
 describe('the members’ reveals', () => {
-  const guarded = css.match(
-    /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*@supports \(animation-timeline: view\(\)\)\s*\{([\s\S]*?)\n {2}\}\n\}/,
-  )
+  /**
+   * The stylesheet as a browser sees it: comments gone, keyframes gone.
+   *
+   * Both removals are load-bearing rather than tidying. Half of this file is
+   * prose that names the very things these tests forbid — the paragraph above
+   * `ek-reveal` explains the switch away from a scroll timeline by writing one
+   * out — and a guard that its own explanation trips is a guard nobody keeps.
+   * A `@keyframes` block is the one place `opacity: 0` is the entire point.
+   */
+  const sheet = css
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '')
 
-  it('sits behind both the motion preference and the feature check', () => {
-    expect(guarded, 'the scroll-linked rules are not inside both guards').not.toBeNull()
+  /**
+   * Every innermost rule, selector and body. `[^{}]+` cannot cross a brace, so
+   * this matches the rules themselves and never the `@media` wrappers holding
+   * them — which is what makes it safe to read a selector as a selector.
+   */
+  const rules = [...sheet.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+    selector: m[1].trim().replace(/\s+/g, ' '),
+    body: m[2],
+  }))
+
+  it('leaves the bare attribute selecting nothing that could hide content', () => {
+    // The one property that can make the club's history disappear, and the one
+    // selector a browser reaches without any script having run.
+    const bare = rules.filter((r) =>
+      /(^|,\s*)\[data-(reveal|bar)\](\s|,|$)/.test(r.selector),
+    )
+    for (const r of bare) {
+      expect(r.body, `${r.selector} hides content with no script involved`).not.toMatch(
+        /opacity:\s*0|scale[XY]?\(0|animation(-name)?:\s*ek-/,
+      )
+    }
   })
 
-  it('declares the reveal and the bar growth only in there', () => {
-    expect(guarded![1]).toMatch(/\[data-reveal\]/)
-    expect(guarded![1]).toMatch(/\[data-bar\]/)
-    // One occurrence each, so a second copy cannot escape the guards.
-    expect(css.match(/\[data-reveal\]\s*\{/g)).toHaveLength(1)
-    expect(css.match(/\[data-bar\]\s*\{/g)).toHaveLength(1)
+  it('hides only in a state something has to have set', () => {
+    const hiding = rules.filter((r) => /opacity:\s*0[;\s}]/.test(r.body))
+    // If this ever finds none, the sweep has stopped seeing the stylesheet.
+    expect(hiding.length).toBeGreaterThan(0)
+    for (const r of hiding) {
+      expect(r.selector, `${r.selector} starts content invisible on its own`).toMatch(
+        /\[data-(reveal|bar)='armed'\]/,
+      )
+    }
   })
 
-  it('drives them from scroll position, not a clock', () => {
-    // A length here would play the reveal on a timer whether or not the reader
-    // ever scrolled to it — and on a phone that means content animating
-    // off-screen and arriving already finished.
-    expect(guarded![1]).not.toMatch(/animation-duration:\s*\d/)
-    expect(guarded![1].match(/animation-timeline:\s*view\(\)/g)).toHaveLength(2)
+  it('plays on a clock now, not a scroll timeline', () => {
+    // The reverse of what T064 asserted, and deliberately. A scroll timeline is
+    // the thing that did not exist on the club's phones; if one comes back it
+    // brings its @supports guard and its silent no-op with it.
+    expect(sheet).not.toMatch(/animation-timeline/)
+    expect(sheet).not.toMatch(/@supports \(animation-timeline/)
+    for (const state of ["[data-reveal='in']", "[data-bar='in']"]) {
+      const rule = rules.find((r) => r.selector === state)
+      expect(rule, `no rule for ${state}`).toBeDefined()
+      // §01: "Element · reveal 700 ms", "Kurve .16, 1, .3, 1".
+      expect(rule!.body).toMatch(/animation:\s*ek-\w+ \d+ms cubic-bezier\(0\.16, 1, 0\.3, 1\) both/)
+    }
+  })
+
+  it('turns the whole of it off for someone who asked for less motion', () => {
+    const block = sheet.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/)!
+    // Not only the animations: an element already armed when the preference is
+    // switched on mid-session has to land on the finished state, not stay at
+    // opacity 0 waiting for an observer that will now never move it.
+    const rule = block[1].match(/\[data-reveal\],[\s\S]*?\{([^}]*)\}/)
+    expect(rule, 'the reveal states keep their start state under reduced motion').not.toBeNull()
+    expect(rule![1]).toMatch(/animation:\s*none/)
+    expect(rule![1]).toMatch(/opacity:\s*1/)
+    expect(rule![1]).toMatch(/transform:\s*none/)
   })
 })

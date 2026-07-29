@@ -73,7 +73,8 @@ export default function Home() {
         <section data-reveal className="grid grid-cols-3 gap-2">
           <Stat n={mine.attended} label="Fremmøde" />
           <Stat
-            n={meetings ? `${Math.round((mine.attended / meetings) * 100)}%` : '—'}
+            n={meetings ? Math.round((mine.attended / meetings) * 100) : null}
+            suffix="%"
             label={`Af ${meetings}`}
           />
           <Stat n={mine.total - mine.attended} label="Misset" />
@@ -109,14 +110,25 @@ export default function Home() {
   )
 }
 
-/* The three counts, as the system's mobile Hjem lays them out. They stay in
-   Sans at 700 — "tal i 700" (§03) — and the row reveals as one block rather
-   than three, because three cards arriving 60 ms apart across 380 px reads as
-   a stutter rather than a stagger. */
-function Stat({ n, label }: { n: number | string; label: string }) {
+/* The three counts, as the system's mobile Hjem lays them out — its own mock
+   sets exactly these three, "19 / 68% / 9", and captions the screen "tal tæller
+   op ved indlæsning". They stay in Sans at 700 — "tal i 700" (§03) — and the
+   row reveals as one block rather than three, because three cards arriving
+   60 ms apart across 380 px reads as a stutter rather than a stagger.
+
+   `data-count` is what makes them count up (§01: 900 ms, easeOutExpo); see
+   lib/reveal.ts. Only when there is a number to count to — a dash is the
+   honest answer for a member the club has recorded no meetings against, and
+   there is nothing to animate about it. */
+function Stat({ n, suffix = '', label }: { n: number | null; suffix?: string; label: string }) {
   return (
     <div className="rounded-2xl border border-line bg-surface px-2 py-3 text-center">
-      <div className="tabular text-[1.375rem] leading-none font-bold">{n}</div>
+      <div
+        data-count={n ?? undefined}
+        className="tabular text-[1.375rem] leading-none font-bold"
+      >
+        {n === null ? '—' : `${n.toLocaleString('da-DK')}${suffix}`}
+      </div>
       <div className="mt-1.5 text-[0.55rem] tracking-wider text-faint uppercase">{label}</div>
     </div>
   )

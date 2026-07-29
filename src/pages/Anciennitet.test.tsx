@@ -391,3 +391,62 @@ describe('deleting a meeting', () => {
     expect(writes[0]).toMatchObject({ table: 'attendance_records', verb: 'delete', id: '1' })
   })
 })
+
+/**
+ * The page with none of its motion running — which is where every iPhone in
+ * this club stood until T067, and where jsdom stands permanently.
+ *
+ * T064 got that from a CSS feature check, and the price was that the screens
+ * did not move on the phones the club actually uses. It now comes from
+ * lib/reveal.ts hiding nothing it is not already watching, and that is a
+ * behaviour rather than a stylesheet — so this page can be asked directly
+ * whether its records are readable with no observer in the room.
+ */
+describe('the club’s history with no observer at all', () => {
+  it('renders the whole page, with nothing left in a start state', async () => {
+    // jsdom has no IntersectionObserver, so this is the fallback path by
+    // default rather than by arrangement.
+    expect('IntersectionObserver' in window).toBe(false)
+    renderPage('user')
+
+    // The card, the route, the counts and the strip — the four things the page
+    // is for, all of them present and none of them waiting on a script.
+    expect(await screen.findByText('Esben')).toBeInTheDocument()
+    expect(screen.getByText('Le Petit Rouge')).toBeInTheDocument()
+    expect(screen.getByText('9. apr. 2026')).toBeInTheDocument()
+    expect(screen.getAllByTitle('Anders').length).toBeGreaterThan(0)
+
+    // There are reveals and bars on this page to speak of at all.
+    expect(document.querySelectorAll('[data-reveal], [data-bar]').length).toBeGreaterThan(3)
+    // …and not one of them is in a state lib/reveal.ts set. `armed` is the only
+    // thing in the app that puts content at opacity 0 and `in` is the only
+    // thing that animates it; neither may happen with no observer in the room.
+    expect(
+      document.querySelectorAll(
+        '[data-reveal="armed"], [data-reveal="in"], [data-bar="armed"], [data-bar="in"]',
+      ),
+    ).toHaveLength(0)
+  })
+
+  it('shows every anciennitet figure as its final number', async () => {
+    renderPage('user')
+    await screen.findByText('Esben')
+
+    // The count-up is the home page's; this page prints its figures straight
+    // from React. Asserting it here anyway is the point — the guarantee is
+    // "no observer, no missing numbers", and it has to hold on the screen the
+    // club actually reads, count-up or not. Anders is at two of two, and a
+    // figure that had been animated from zero would still read 0 here.
+    expect(screen.getAllByLabelText(/Anders: \d+ af \d+/).length).toBeGreaterThan(0)
+    for (const el of screen.getAllByLabelText(/: \d+ af \d+$/)) {
+      const [, shown, total] = el.getAttribute('aria-label')!.match(/: (\d+) af (\d+)$/)!
+      expect(el.textContent).toContain(shown)
+      expect(Number(shown)).toBeLessThanOrEqual(Number(total))
+    }
+
+    // And where the count-up *does* run, its elements rest on their target.
+    for (const f of document.querySelectorAll<HTMLElement>('[data-count]')) {
+      expect(f.textContent).toBe(f.dataset.count)
+    }
+  })
+})

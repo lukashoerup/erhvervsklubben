@@ -425,32 +425,23 @@ body {
    "Alt bevæger sig af samme grund: at vise hierarki. Indhold træder frem, når
    det kommer i syne — aldrig for at pynte." (§01 Bevægelse.)
 
-   The system gives this twice, and they are one gesture told two ways. §01
-   states it — 22 px up and a fade, 700 ms, the .16/1/.3/1 curve — and the
-   export's own stylesheet then binds it to scroll position rather than to a
-   clock: `animation-timeline: view()` over `entry 4% cover 26%`. That binding
-   is the part worth having. A timed reveal plays whether or not anyone is
-   looking; a scroll-linked one is driven by the thumb, so a card sits
-   half-arrived when the thumb stops half-way and the page feels attached to the
-   hand holding it.
+   §01 states the gesture — 22 px up and a fade, 700 ms, the .16/1/.3/1 curve —
+   and §05 Implementering states how to build it: "Én observer for hele siden,
+   tærskel 0.18, unobserve efter første visning." T064 built it on the export's
+   other answer instead, `animation-timeline: view()`, and paid for it with the
+   whole club: that feature is Safari 26, essentially no iPhone in this club has
+   it, and behind the `@supports` guard the members' screens simply did not move
+   (Lukas, 2026-07-28, having looked on both his phone and his computer). One
+   code path now, in lib/reveal.ts, and it runs everywhere.
 
-   No JavaScript, and that is the decision rather than the omission. §05 offers
-   an IntersectionObserver at threshold 0.18 as the way to build this, and the
-   export itself does not use one — it ships the CSS above. Three reasons to
-   follow what the export does over what it says. Anciennitet is 29 cards over
-   ~3400 px, and this keeps the scroll path free of a callback that fires 29
-   times. Nothing can strand content: with no script in it there is no state
-   where a reveal is armed and never fires, which is the one failure a reveal
-   must not have. And a browser too old for `animation-timeline` gets the
-   finished page rather than a second code path to keep correct — the @supports
-   guard means it is never handed a start state it has no way to leave.
+   **Nothing below hides anything on its own.** `[data-reveal]` with no value —
+   which is what React renders — matches none of these rules, so every card on
+   every screen is at full opacity from the first frame. The value is set only
+   by lib/reveal.ts, and only after it has an observer watching that element, so
+   the start state cannot outlive the thing that ends it. No script, an old
+   browser, a thrown observer: all of them get the finished page.
 
-   The cost is real and worth stating plainly: on a browser without scroll-driven
-   animations — iOS before Safari 26 — these screens do not move at all. They
-   are complete, readable and correct; they are simply static. Of the things
-   that could break, that is the right one to lose first.
-
-   Both properties composite, so 29 of these touch neither layout nor paint.
+   Opacity and transform only, so 29 of these touch neither layout nor paint.
    Deliberately no `will-change`: it would promote 29 cards to their own layers
    for the whole session to save a millisecond on one of them. */
 @keyframes ek-reveal {
@@ -469,60 +460,76 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    /* `auto` duration, not a length: with a scroll timeline the range *is* the
-       duration, and a 700 ms clock would compete with the thumb rather than
-       follow it. §01's 700 ms describes how far the gesture travels; the range
-       below is that distance expressed as scroll.
+/* The attendance strip. Ten pips to a meeting, twenty-nine meetings: this is
+   the club's most-looked-at object, and it arrives a beat behind the meeting's
+   own name rather than with it — "whose evening was it" first, "who was there"
+   second, which is the order the card is read in.
 
-       `cover 12%`, where the export says `cover 26%`, and the difference is a
-       bug the export cannot have. A scroll-linked animation only finishes if
-       the page can still scroll, and the *last* element on a page cannot: at
-       full scroll Anciennitet's oldest meeting had 171 px of travel left
-       against the 265 px that 26% asks for, and it came to rest — permanently —
-       at 72 % opacity, 6 px low. Møder's last held meeting sat at 86 %. The
-       export is one long desktop page whose sections are never last, so nothing
-       there ever runs out of scroll; six phone screens that each end in a card
-       do, every time.
-
-       12 % is the largest value that still settles the smallest card this app
-       can end a page with, given the trailing space `main` now reserves
-       (see Shell.tsx). The measurement, at 420 × 900: a card is ~121 px, the
-       cover range is viewport + card = 1021 px, and 12 % of it is 123 px
-       against the 203 px available. tests/… has no way to catch this — jsdom
-       has no layout and no scroll — so it is checked in a browser instead.
-
-       Kept in `cover` rather than switched to `entry`, which would also settle:
-       an entry range is the element's own height, and the cards on these
-       screens run from 67 px to 578 px, so the statutes card would fade in over
-       nine times the scroll distance the stat row does — and would still be
-       half transparent while being read. A cover range is mostly viewport, so
-       the tall card and the short one arrive at the same rate. */
-    [data-reveal] {
-      animation-name: ek-reveal;
-      animation-duration: auto;
-      animation-timing-function: linear;
-      animation-fill-mode: both;
-      animation-timeline: view();
-      animation-range: entry 4% cover 12%;
-    }
-
-    /* The export's range, verbatim, and it is safe here for a reason worth
-       writing down: a cover range is mostly viewport, so ten bars between 2 px
-       and 56 px tall all grow at the same rate rather than the short ones
-       snapping. It also sits at the top of Anciennitet and so is never the
-       element that runs out of scroll. */
-    [data-bar] {
-      animation-name: ek-bar;
-      animation-duration: auto;
-      animation-timing-function: linear;
-      animation-fill-mode: both;
-      animation-timeline: view();
-      animation-range: entry 6% cover 30%;
-      transform-origin: bottom;
-    }
+   As one element, and that is a measurement rather than a preference. The
+   better gesture is the ten pips counting themselves in left to right, which is
+   §01's "60 ms forskudt pr. element" applied where the elements really are a
+   sequence. Built that way it cost Anciennitet 26 fps at a 4× CPU throttle —
+   60 down to 34 — because ten more animating elements on each of 29 cards is
+   ten more style invalidations and ten more layers every time a card enters.
+   §04 asks this screen above all others to stay cheap. */
+@keyframes ek-strip {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
+}
+
+[data-reveal='armed'] {
+  opacity: 0;
+  transform: translateY(22px);
+}
+
+/* 700 ms and the system's curve — §01's "Element · reveal 700 ms" and
+   "Kurve .16, 1, .3, 1". `both`, and no `to` in the keyframe, so the finished
+   state is the element's own ordinary CSS: switch the animation off at any
+   point and the page is already correct. */
+[data-reveal='in'] {
+  animation: ek-reveal 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-bar] {
+  transform-origin: bottom;
+}
+
+[data-bar='armed'] {
+  transform: scaleY(0);
+}
+
+/* 900 ms against the reveal's 700, because §01 pairs the bars with the count-up
+   rather than with the cards — "Nøgletal tæller op i 900 ms med easeOutExpo.
+   Søjler vokser fra baseline med samme kurve." The ten of them are one figure
+   being read, not ten elements arriving. */
+[data-bar='in'] {
+  animation: ek-bar 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The strip rides its card's own state — no second observer, no second
+   attribute, nothing to keep in step. 140 ms behind it, which is §01's own
+   stagger rounded to something a card-sized gap can carry.
+
+   This is the only descendant the card animates, and that is a budget rather
+   than a taste. Every animating element inside a card is one more layer and one
+   more style invalidation each time a card enters, twenty-nine times down the
+   longest page in the app: ten (the pips one by one) cost 26 fps at a 4× CPU
+   throttle, and two (the strip plus a drawn rule under the meeting's name) cost
+   7 at 6×. One is free. */
+[data-reveal='in'] .ek-strip {
+  animation: ek-strip 520ms cubic-bezier(0.16, 1, 0.3, 1) 140ms both;
+}
+
+/* The scroll indicator, from the export's own `#ek-progress`. scaleX rather
+   than its `width`, for §01's reason: width is layout and this recomputes on
+   every scroll frame of a 3400 px page. Starts at zero, which is also what it
+   shows on a page too short to scroll and what it stays at with no script —
+   an index of the thumb is not content. */
+.ek-progress {
+  transform: scaleX(0);
+  transform-origin: left;
 }
 
 /* ------------------------------------------------------ the section headers
@@ -560,7 +567,15 @@ body {
    usually vestibular, and a quick slide is still a slide. "prefers-reduced-
    motion slår alt fra og viser indhold med det samme. Ingen bevægelse blokerer
    læsning." Because the finished state is the elements' plain CSS, switching
-   the animations off leaves the finished lockup rather than a half-built one. */
+   the animations off leaves the finished lockup rather than a half-built one.
+
+   lib/reveal.ts checks the same preference and arms nothing, so on a phone that
+   has it set none of the members' rules are ever selected. The block below is
+   for the case the script cannot cover: the preference being switched on
+   *during* a session, with cards already armed and their observer not yet
+   fired. It is the finished state, immediately, with no frame in between —
+   which is what the rule asks for and is the reason it is stated in CSS rather
+   than left to a media-query listener. */
 @media (prefers-reduced-motion: reduce) {
   .ek-square,
   .ek-e,
@@ -574,5 +589,13 @@ body {
   .ek-rule,
   .ek-rise {
     animation: none;
+  }
+
+  [data-reveal],
+  [data-bar],
+  [data-reveal] .ek-strip {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }

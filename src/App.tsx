@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { useReveal } from './lib/reveal'
 import { RequireAccess } from './routes/RequireAccess'
 import { Shell } from './routes/Shell'
 import Login from './pages/Login'
@@ -21,6 +22,11 @@ import Oekonomi from './pages/Oekonomi'
  * a browser or a database.
  */
 export default function App() {
+  // Here rather than in the Shell, because the landing page sits outside it and
+  // reveals too — and here rather than in main.tsx, so the observers are torn
+  // down with the tree that owns them instead of outliving it.
+  useReveal()
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />

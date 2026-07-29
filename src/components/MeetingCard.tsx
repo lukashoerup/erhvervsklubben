@@ -79,12 +79,22 @@ export function MeetingCard({
        scroll itself: the cards enter one after another because they are
        stacked, so the thumb supplies the offset. */
     <article data-reveal className="rounded-2xl border border-line bg-surface p-3">
-      <div className="flex items-baseline gap-2">
+      <div className="relative flex items-baseline gap-2">
         <span className="tabular text-[0.95rem] font-semibold text-accent">{meeting.number}</span>
         <h3 className="text-[0.92rem] font-semibold">{meeting.lead || 'Ukendt lead'}</h3>
         <span className="tabular ml-auto text-[0.65rem] text-faint">
           {meeting.date ? daDate(meeting.date, SHORT) : 'uden dato'}
         </span>
+        {/* The club's signature blue streg — "én blå streg som signatur" (§01)
+            — under the meeting's name, giving each of the twenty-nine cards a
+            masthead. Absolute, so it costs no height on the longest page in the
+            app: it lands in the gap the route line already leaves.
+
+            Not drawn, though the drawing was built and measured. Animating this
+            one extra element per card cost Anciennitet 7 fps at a 6× CPU
+            throttle, and almost all of what the rule gives the card it gives by
+            being there. */}
+        <span aria-hidden="true" className="absolute -bottom-1 inset-x-0 h-px bg-accent/30" />
       </div>
 
       {/* The step between venues was a literal → — which is how §04's own
@@ -118,7 +128,14 @@ export function MeetingCard({
         </span>
       </p>
 
-      <div className="mt-1.5 flex flex-wrap gap-1">
+      {/* The strip settles a beat after the meeting's name — one element, not
+          ten. The ten pips arriving in sequence was the nicer gesture and it
+          was measured off the page: ten extra animating elements on each of 29
+          cards took Anciennitet from 60 fps to 34 at a 4× CPU throttle, on the
+          one screen §04 asks to stay cheap. The whole strip as one thing costs
+          nothing and still says "who was there" arrives after "whose evening it
+          was". See .ek-strip in index.css. */}
+      <div className="ek-strip mt-1.5 flex flex-wrap gap-1">
         {meeting.present.map((n) => pip(n, true))}
         {meeting.absent.map((n) => pip(n, false))}
       </div>
@@ -155,6 +172,15 @@ export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
             title={`${r.name}: ${r.attended} af ${r.total}`}
             className="flex flex-1 flex-col items-center gap-0.5"
           >
+            {/* No count-up on these ten, and §04's own Anciennitet mock agrees:
+                it marks the bars as growing and leaves the figures above them
+                as plain text, where its Hjem mock counts all three of its stats.
+                Measured, that is the right way round — ten figures rewriting
+                their text for 900 ms sit at the top of the club's longest page,
+                so the cost lands on exactly the scroll that has to stay cheap
+                (60 → 41 fps at a 4× CPU throttle). The bar growing under the
+                number is the gesture here; the number arriving as well says the
+                same thing twice and charges the page for it. */}
             <span className="tabular text-[0.6rem] leading-none font-semibold text-ink">
               {r.attended}
             </span>
