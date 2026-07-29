@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { useMyMemberName } from '../data/useClubData'
 import { Icon } from '../components/Icon'
 import { LogoMark } from '../components/LogoMark'
 import { useScrollProgress } from '../lib/reveal'
@@ -16,7 +17,8 @@ import { NAV_ROUTES } from './routes'
  * the count moves; six of them fit a 420 px phone, and a seventh would not.
  */
 export function Shell() {
-  const { signOut } = useAuth()
+  const { signOut, userId } = useAuth()
+  const { data: me } = useMyMemberName(userId)
   const navigate = useNavigate()
   const progress = useRef<HTMLDivElement>(null)
   useScrollProgress(progress)
@@ -66,7 +68,18 @@ export function Shell() {
                 størrelser". 26 px matches the landing header and clears the
                 24 px floor. */}
             <LogoMark size={26} />
-            <span className="text-xs font-bold tracking-[0.13em] uppercase">Erhvervsklubben</span>
+            <span className="flex flex-col leading-none">
+              <span className="text-xs font-bold tracking-[0.13em] uppercase">Erhvervsklubben</span>
+              {/* Who is signed in, on every page rather than only the front one.
+                  Without it the app never says you are logged in at all, and a
+                  page of the club's own attendance reads as somebody's data
+                  rather than yours. Falls back to nothing — two of the ten
+                  members have no row in user_member_mapping, and a blank line
+                  is better than the word "medlem" pretending to be a name. */}
+              {me && (
+                <span className="mt-0.5 text-[0.62rem] tracking-wide text-muted">{me}</span>
+              )}
+            </span>
           </span>
           {/* The word is 37 × 16 px of ink and used to be 37 × 16 px of button,
               on every page in the app. The design system asks for 48 × 48; the

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { Shell } from './Shell'
 import { AuthContext, type AuthState } from '../auth/AuthContext'
-import { minTapHeightPx } from '../test/harness'
+import { minTapHeightPx, withQuery } from '../test/harness'
 
 /**
  * The furniture every signed-in page sits in. Whatever is wrong here is wrong
@@ -18,17 +18,22 @@ function renderShell(over: Partial<AuthState> = {}) {
     signOut: async () => {},
     ...over,
   }
+  // withQuery, because the app bar now names the signed-in member and that
+  // name comes from a query. The Shell stopped being pure furniture the moment
+  // it started saying who you are.
   return render(
-    <AuthContext.Provider value={value}>
-      <MemoryRouter initialEntries={['/hjem']}>
-        <Routes>
-          <Route path="/" element={<p>Forsiden</p>} />
-          <Route element={<Shell />}>
-            <Route path="/hjem" element={<p>Hjem</p>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </AuthContext.Provider>,
+    withQuery(
+      <AuthContext.Provider value={value}>
+        <MemoryRouter initialEntries={['/hjem']}>
+          <Routes>
+            <Route path="/" element={<p>Forsiden</p>} />
+            <Route element={<Shell />}>
+              <Route path="/hjem" element={<p>Hjem</p>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    ),
   )
 }
 
