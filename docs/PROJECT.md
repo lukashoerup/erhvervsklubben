@@ -260,6 +260,35 @@ without losing data and without taking the old site down until an approved cutov
   `tests/rls/rules.ts` as a shared table: members read, admins write — a member
   who could edit his own row could set himself inactive and stop being charged.
 
+- **2026-07-29 — the club budgets fines per *meeting*, and the budget is never
+  money** (T070). Lukas asked for the spreadsheet's `Forventede bøder` back and
+  suggested a rolling average. A rolling average **per month** is the one shape
+  it must not have: §9 puts a dinner on the calendar every other month and fines
+  are charged at the table, so a monthly mean divides a burst by the empty
+  months around it and — the part that decides it — gives a different answer
+  depending on how wide the window is. The same five dinners are 133 kr. a month
+  across 13 months and 216 kr. across 8. Dividing by *meetings* makes the empty
+  months irrelevant, which is what they are, and it is also the only thing
+  computable at all while every meeting is undated: a fine's evening is known
+  even when its month is not.
+  The average is taken over meetings from the first fine-bearing one to the
+  last, inclusive, so quiet evenings inside the recording period count and the
+  club's undated prehistory does not. The cadence is §9's rule until three dated
+  meetings can measure it. `src/data/projection.ts`, `docs/RULES.md`.
+  **Nothing was stored and no migration was written** — the budget is derived
+  from `fines` and `attendance_records` like every other figure on `/oekonomi`,
+  so there is no new column to keep in step with the arithmetic, and nothing that
+  could misbehave on a database without this club's data.
+
+- **2026-07-29 — the club is ahead by about 100 kr., not 680** (T070). The
+  investigation is `docs/finance-reconciliation.md` §13. The reported 680 is two
+  errors nearly cancelling: dues charged to nine payers where the club charged
+  eight (+1.200 kr.), against 1.780 kr. of fines that never enter the expected
+  line because all 28 meetings are undated and one fine was never imported. Put
+  the fines back and the club reads 1.050 kr. **behind**. The fix is not more
+  arithmetic — it is §9 Q8 (when did the ninth member join) and the meeting
+  dates, both of which need Lukas.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

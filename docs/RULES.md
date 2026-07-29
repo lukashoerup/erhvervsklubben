@@ -153,9 +153,55 @@ paragraph above stands.
 
 ---
 
+### Budgeting fines the club has not been charged yet
+
+**Not a rule the club voted — a practice it had, and the app lost.** *Klubbens
+finanser* carried a `Forventede bøder` column beside `Faktiske bøder`, and a
+`Forventet beholdning` column that added both to the kontingent. Lukas asked for
+it back on 2026-07-29: *"her har vi tidligere lavet en fremskrivning i forventet
+antal bøder per måned … det synes jeg at vi skal fortsætte med."*
+
+The sheet had the **structure** and no **method**: the four `Forventede bøder`
+cells (Marts 26 146, April 132, Maj 118, Juni 107 — 503 kr. in all) are typed
+constants with no formula behind them, the table definition declares no
+calculated column, and every projected row after Juni 26 budgets **zero** fines
+out to August 2027. So the column was not a forecast running ahead of the club;
+it was four numbers entered on the day the sheet was last saved, covering the
+months since the last fine anybody recorded. See
+`docs/finance-reconciliation.md` §12.
+
+What the app does instead, and why it is not a per-month average:
+
+- **The unit is the meeting, not the month.** Fines are charged at the table
+  (Bødekasseregulativ) and §9 puts a dinner on the calendar roughly every other
+  month, so fines arrive in bursts. A mean over months divides a dinner by the
+  empty months around it, and — worse — its answer moves when the *window*
+  moves. The club's 1.730 kr. over five dinners is 133 kr. a month across a
+  13-month window and 216 kr. across an 8-month one. Same five evenings.
+- **The average is taken over the meetings from the first fine-bearing one to
+  the last, inclusive.** Quiet evenings inside that span count as zero; meetings
+  outside it do not count at all. A meeting with no fine rows is either an
+  evening where nobody offended or one whose Lead never told the Kasserer, and
+  the database cannot tell them apart (§9 Q10 of the reconciliation, still open).
+  This window is the reading that does not have to guess which.
+- **The cadence comes from §9 until the club's own dates can carry it.** Three
+  dated meetings are the minimum before it is measured — one interval is an
+  anecdote, and §9 lets the frequency be decided meeting by meeting. All 28
+  meetings are undated today, so the rule is what is in use.
+- **A budget is never money.** It is drawn as a dashed line in the same colour
+  as the expected curve — the same quantity continued, not a fourth thing
+  measured — labelled `Forventede bøder · budget`, and it says in Danish on the
+  page that it is not money the club holds. It is never added to `Modtaget`, to
+  `Faktiske bøder` or to any figure the treasurer reports.
+- **The forecast never runs longer than the record behind it**, capped at a
+  financial year (§8). Five months of books cannot support a year of curve.
+
+---
+
 ## Meetings — `§9`
 
 - Every other month, as a rule; frequency is decided meeting by meeting.
+  This is also the fallback cadence the fine budget uses — see above.
 - **Two meetings are always planned ahead**, so a date always exists in advance.
   This is why capturing meeting dates going forward is realistic — the club
   already works that way, the app simply never recorded it.

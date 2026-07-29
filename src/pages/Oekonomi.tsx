@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { READONLY, supabase } from '../lib/supabase'
 import { balancesByMember, buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
+import { budgetFines, budgetHorizon, budgetLimits, projectBudget } from '../data/projection'
 import { canBeFined, paysDues, STATUS_LABEL, STATUS_NOTE } from '../data/members'
 import type { RosterEntry } from '../data/derive'
 import { Loading, Problem } from '../components/State'
@@ -310,6 +311,40 @@ export default function Oekonomi() {
       })
     : []
 
+  // The club's own budgeting of fines it has not been charged yet — the
+  // `Forventede bøder` column *Klubbens finanser* had and this app dropped
+  // (Lukas, 2026-07-29). The average is per meeting, not per month, which is
+  // the only reason it can be computed at all here: every one of the club's
+  // meetings is undated, so a fine's *month* is unknown while its *evening* is
+  // not. See data/projection.ts for why that distinction is the whole design.
+  const finesByMeeting = new Map<number, number>()
+  for (const f of data.fines) {
+    finesByMeeting.set(f.record_id, (finesByMeeting.get(f.record_id) ?? 0) + f.amount_kr)
+  }
+  const budget = budgetFines({
+    meetings: meetings.map((m) => ({ number: m.number, kr: finesByMeeting.get(m.id) ?? 0 })),
+    meetingDates: meetings.map((m) => m.date).filter((d): d is string => !!d),
+  })
+  const budgetNotes = budgetLimits({
+    meetings: meetings.length,
+    undatedMeetings: meetings.filter((m) => !m.month).length,
+    budget,
+  })
+  const budgetMonths =
+    ledger.length > 0 && budget.basis !== 'none'
+      ? projectBudget({
+          after: ledger[ledger.length - 1].month,
+          // Never a longer forecast than the record behind it. The sheet ran
+          // fourteen months past its last real row, and on a curve that means
+          // the club's actual history becomes a squiggle in the corner while
+          // the guess becomes the picture.
+          months: budgetHorizon(ledger.length),
+          openingBalance: ledger[ledger.length - 1].expectedBalance,
+          budget,
+          payingMembers: () => payers.length,
+        })
+      : []
+
   return (
     <div className="flex flex-col gap-3">
       {/* The balance itself stays with the treasurer (Lukas, 2026-07-26: "not
@@ -351,6 +386,9 @@ export default function Oekonomi() {
           meetings: meetings.length,
           undatedMeetings: meetings.filter((m) => !m.month).length,
         }}
+        budget={budget}
+        budgetMonths={budgetMonths}
+        budgetNotes={budgetNotes}
       />
 
       <DuesBasis roster={roster} payers={payers} />
@@ -439,6 +477,42 @@ export default function Oekonomi() {
               ikke i månedsoversigten. De tælles stadig med i totalen.
             </p>
           )}
+        </section>
+      )}
+
+      {/* The dashed line's table view, and a separate table on purpose: the one
+          above is money, this one is a plan. The column names are the
+          spreadsheet's own — `Forventede bøder`, `Forventet beholdning` — so a
+          member who knew *Klubbens finanser* recognises what came back. */}
+      {budgetMonths.length > 0 && (
+        <section data-reveal className="rounded-2xl border border-dashed border-accent-d bg-surface p-3">
+          <SectionTitle onCard>Budget · forventede bøder</SectionTitle>
+          <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
+            Ikke penge klubben har. Det er, hvad kontingentet og et gennemsnitligt
+            møde giver, hvis klubben fortsætter som hidtil.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="mt-2 w-full text-xs">
+              <thead>
+                <tr className="text-faint">
+                  <th className="text-left font-normal">Måned</th>
+                  <th className="text-right font-normal">Kontingent</th>
+                  <th className="text-right font-normal">Forventede bøder</th>
+                  <th className="text-right font-normal">Forventet beholdning</th>
+                </tr>
+              </thead>
+              <tbody className="tabular">
+                {budgetMonths.map((m) => (
+                  <tr key={m.month} className="border-t border-line">
+                    <td className="py-1">{m.month}</td>
+                    <td className="py-1 text-right">{kr(m.dues)}</td>
+                    <td className="py-1 text-right text-accent">{kr(m.budgetedFines)}</td>
+                    <td className="py-1 text-right">{kr(m.expectedBalance)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 

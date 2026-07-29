@@ -724,3 +724,121 @@ Questions **5 and 6 are now answered** and were used.
 accurately, and the junk `attendance_records` row id 28 has been deleted — the
 table now holds 28 rows with ids 1–27 and 29, which is why the fines could be
 hung off records 21–25 without ambiguity.
+
+---
+
+## 12. What the sheet's own budgeting actually was — T070, 2026-07-29
+
+Investigated because Lukas asked for the club's fine budgeting back (2026-07-29,
+his words in `docs/RULES.md`), and because a projection built on a
+misremembered method is worse than none.
+
+Read as `.xlsx` again, per §1 — and the base64 hazard §11.1 warns about bit a
+second time. The transcription dropped ~33 bytes inside `xl/worksheets/sheet1.xml`
+alone; every other zip member inflated to a clean deflate EOF. **Feeding the
+stream to `zlib` a byte at a time recovers everything before the damage** —
+9.994 of 10.637 bytes here, which was all of `Faktiske bøder`, `Forventede
+bøder`, `Indbetalinger` and `Forventet beholdning`. The value grid was
+cross-checked independently against a `text/csv` export of the same sheet, which
+preserves column alignment where the plain-text rendering does not. Both agree.
+
+### 12.1 The `Forventede bøder` column has no formula
+
+| Cell | Month | Content |
+|---|---|---|
+| D11 | Marts 26 | typed `146` |
+| D12 | April 26 | typed `132` |
+| D13 | Maj 26 | typed `118` |
+| D14 | Juni 26 | typed `107` |
+| D28 | Total | `SUM(Finanser[Forventede bøder])` → 503 |
+
+None of D11–D14 carries an `<f>` element, and `xl/tables/table1.xml` declares
+`Forventede bøder` with `totalsRowFunction="custom"` and **no
+`calculatedColumnFormula`**. The four numbers were typed.
+
+They decline by roughly 10 % a month — a constant ratio in the band 0,899–0,902
+reproduces all four under rounding — but nothing in the workbook says so, and no
+combination of the sheet's own history reproduces them: a mean over the nine
+fine-months is 197,78, over twelve months 148,33, and neither rounds to 146.
+**The intent is not recoverable, and it is not worth guessing.**
+
+### 12.2 The column that *does* have a formula
+
+```
+G2 = B2+C2+D2            → 1.075
+G3 = G2+C3+B3+D3         → 1.875
+```
+
+`Forventet beholdning` is a running total of **Kontigenter + Faktiske bøder +
+Forventede bøder**, kept strictly apart from `Faktisk beholdning`, which is the
+running total of `Indbetalinger` alone. That separation — a budgeted balance
+beside a real one, never mixed — is the club's own design and is what T070
+rebuilt.
+
+### 12.3 The forward projection budgets no fines at all
+
+`Forventede bøder` is empty for every month from Juli 26 to August 27, and
+`Forventet beholdning` in those rows advances by exactly the kontingent:
+13.683 → 15.483 → 17.283 … → 38.883, i.e. +1.800 a month. So the column was
+never a forecast running ahead of the club. **It covered the four months between
+the last recorded fine (Februar 26) and the day the sheet was last saved
+(2026-06-09)** — an accrual for evenings that had happened and never been
+written down, not a projection of evenings to come.
+
+That matters for what "continue doing this" means: the club's *structure* is
+worth keeping and its *arithmetic* has to be supplied. See `src/data/projection.ts`.
+
+---
+
+## 13. Why the club reads as 680 kr. ahead — T070, 2026-07-29
+
+Lukas's hypothesis was that fines explain it. **They do not, and they push the
+other way.** Measured against production `urlabzyihqrsdeasvrfe` (SELECT only).
+
+| | kr. |
+|---|---:|
+| What `/oekonomi` expects (9 payers × the §4 rate, 13 months) | 12.600 |
+| Fines inside that expectation | **0** |
+| Received (`sum(payments.amount_kr)`) | 13.280 |
+| **What the page reports** | **680 ahead** |
+
+Against what the club actually charged, from the sheet's own columns:
+
+| | kr. |
+|---|---:|
+| `Kontigenter` charged, Juni 25 – Juni 26 (800 × 12 + 1.800) | 11.400 |
+| `Faktiske bøder` | 1.780 |
+| Truly owed | 13.180 |
+| Received | 13.280 |
+| **Truly ahead** | **100** |
+
+The 580 kr. between the two figures is two bookkeeping gaps pulling in opposite
+directions, and they very nearly cancel:
+
+| | kr. effect on the reported gap |
+|---|---:|
+| Dues charged to **9** payers where the club charged **8**, 12 months × 100 kr. | +1.200 |
+| The 1.730 kr. of imported fines, kept out of every month because all 28 meetings are undated | −1.730 |
+| The Februar 26 fine of 50 kr., never imported (§11.4) | −50 |
+| **Net** | **−580** |
+
+Two consequences worth stating plainly:
+
+1. **If the fines could be placed in months, the club would read as 1.050 kr.
+   *behind*, not ahead** (14.330 expected against 13.280 received). Fines are
+   the single largest thing missing from the expected line, and putting them
+   back moves the club from ahead to behind.
+2. **The real surplus is about 100 kr.**, and the sheet says where it came from:
+   Februar 26 collected 700 against 800 charged (−100), while April and Maj 26
+   each collected 900 against 800 (+100 each).
+
+The **ninth payer is the cause of the +1.200**. §9 Q8 already noticed the club
+receiving 900 from April 26 and asked when the ninth member joined; `/oekonomi`
+charges today's nine members across the whole history because the club has never
+recorded a joining date, and the page says as much in `Hvem betaler kontingent`.
+Answering Q8 is what fixes it — a per-month paying count, not more arithmetic.
+
+**Still open and untouched by this:** §5.3's 400 kr. The Juni 26 row is the
+2026-06-09 snapshot. If two more dues payments landed in June rather than on
+1 July, received is 13.680 and the page would report 1.080 kr. ahead instead of
+680. Neither reading changes the decomposition above.
