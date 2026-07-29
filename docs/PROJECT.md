@@ -41,7 +41,7 @@ without losing data and without taking the old site down until an approved cutov
   Lukas's rule: members read everything, only admins write, personal rows are
   owner-only. Enumerating the grid mostly re-tested the same three ideas; deriving
   from the rule means the tests cannot drift from it, and a new table forces a
-  bucket decision instead of shipping untested. 40 assertions, ~1s.
+  bucket decision instead of shipping untested. 54 assertions, ~1s.
   Why RLS matters here at all, recorded because it will be asked again: the
   browser talks straight to the database, and the initial migration grants
   `authenticated` full access to every table. The policies are not one layer

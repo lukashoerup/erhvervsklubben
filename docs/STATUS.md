@@ -150,7 +150,7 @@ behind the login; admins additionally edit news, events and attendance.
 |---|---|---|
 | 0 | Repo + app scaffold + green pipeline | ✅ **done** (T001) |
 | 1 | Schema-as-migration, seed, local stack | ✅ **done** (T010, T012) |
-| 2 | RLS test suite | ✅ **done** (T020) — 40 assertions generated from the rule, green in CI |
+| 2 | RLS test suite | ✅ **done** (T020) — 54 assertions generated from the rule, green in CI |
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
@@ -186,13 +186,16 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
   Verified in a browser both times: creating, correcting and deleting a news
   item, a calendar entry or a whole meeting with its attendance makes no network
   request at all. The demo is now ~984 kB.
-- `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
+- `npm run test:rls` — 54 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,
   and the `rls` job is proven to go red on a real policy regression — see
   T022's working notes for the evidence.
 - Migrations apply clean: 8 tables / 8 RLS-enabled / **24** policies / 2 SECURITY
-  DEFINER functions / 1 signup trigger. The initial migration is faithful to prod
+  DEFINER functions / 1 signup trigger. Verified by CI's `rls` job on a fresh
+  stack, which is also what proves the `members` seed is safe on a database
+  that is not this club's: the guard inserts none of the ten there, and the
+  four synthetic members come from `seed.sql`. The initial migration is faithful to prod
   (verified 2026-07-24); the 22nd policy is the deliberate 2026-07-26 deviation
   letting admins read member feedback — see PROJECT.md. It must be applied to
   prod at cutover.
