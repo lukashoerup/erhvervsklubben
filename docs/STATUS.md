@@ -13,22 +13,42 @@ end of every working session._
 (added 2026-07-27) and, since 2026-07-29, **`members`** (T069) — all additive,
 no existing row touched. **28** meetings and 235
 attendance rows intact — the junk duplicate of meeting #27 has since been
-removed, so record ids run 1–27 and 29. **Every meeting is undated** — the
-backfill refused to guess.
+removed, so record ids run 1–27 and 29. **17 of the 28 meetings now carry a
+date** (2026-07-29, T071) — see below.
 
 **The sheet's history is imported** (2026-07-29, T068): 13 `payments` rows
-summing to **13.280 kr.** and 17 `fines` rows summing to **1.730 kr.**, both
-reconciled against *Klubbens finanser* to the krone, in both directions of the
-grid. Insert-only and re-runnable; the statements are committed as
-`supabase/migrations/20260729120000_finance_history_import.sql`.
+summing to **13.280 kr.** and, since T071, **18** `fines` rows summing to
+**1.780 kr.**, reconciled against *Klubbens finanser* to the krone, in both
+directions of the grid. Insert-only and re-runnable; the statements are
+committed as `supabase/migrations/20260729120000_finance_history_import.sql`
+and `..._20260729200000_meeting_dates_from_calendar.sql`.
 
-Two things are deliberately **not** in there, and are what is left of finance:
-the **Februar 26 fine of 50 kr.** — real and paid, but the sheet never recorded
-whose it was or which dinner it belonged to — and every fine's **offence**. The
+**The meetings have dates** (2026-07-29, T071), from Lukas's Outlook calendar:
+**17 written, 11 left null on purpose.** The trap anyone repeating this must
+know: **`#N` in a calendar subject is not `meeting_number`** — the club's own
+numbering ran one ahead of the database's through the middle of the history and
+closed the gap again later, proved by two invitations whose bodies name the
+venues (`Erhvervsklub #18` is record **17**, Aamanns/St. Pauli/ÅBEN;
+`Erhvervsklub #13` is record **12**, Restaurant Hos in Odense). Every date was
+matched on **lead + venue + ordering** instead. The 11 refused are 1–4 (nothing
+club-shaped in the calendar that far back), 8 (the one candidate names the wrong
+lead), 14–16 (three meetings, one calendar event — two are simply missing), 18
+(certainly the London trip, certainly January 2025, but the block spans two days
+and nothing decides which), and 19–20 (bare all-day blocks matching only by
+position in a run the 2024 gap proves is not complete). Full evidence table:
+`docs/finance-reconciliation.md` §14.
+
+**The Februar 26 fine of 50 kr. is in** (T071). Lukas answered it on 2026-07-29:
+it was **his own**, a voluntary fine he transferred himself, as treasurer,
+because a year in which the treasurer incurred no fine looked implausible — which
+is also why he is the one member with no row in the sheet's grid. The dating
+supplied the other half: exactly one meeting falls in February 2026, record 26
+on 2026-02-21. Fines now total **1.780 kr.** and match the annual report, and all
+of it sits inside the month-by-month ledger.
+
+One thing is still deliberately **not** in there: every fine's **offence**. The
 sheet stored amounts only and most amounts have several valid readings, so all
-17 carry `rule_id = 'historisk'` rather than a guessed rule. Because the
-meetings are undated, `/oekonomi` counts all 1.730 kr. in the totals and states
-that it belongs to meetings without a date, which is what it should do.
+18 carry `rule_id = 'historisk'` rather than a guessed rule.
 
 **The club now has a member list** (2026-07-29, T069), and the finance page
 charges only the members who pay. Ten members in `members`, **nine of them
@@ -46,12 +66,16 @@ ahead**. The exemptions are stated once, in `src/data/members.ts`. See RULES.md.
 above is now explained rather than reported. **Fines are not why the club looks
 ahead** — they push the other way. `/oekonomi` charges nine payers across the
 whole history where the club charged eight before June 2026 (+1.200 kr. too
-much), while 1.780 kr. of fines never enter the expected line at all: 1.730 kr.
-because all 28 meetings are undated, and 50 kr. because that fine was never
+much), while 1.780 kr. of fines never entered the expected line at all: 1.730 kr.
+because all 28 meetings were undated, and 50 kr. because that fine was never
 imported. The two nearly cancel. Against the club's own books the real surplus
 is about **100 kr.**, and if the fines could be placed in months the club would
-read **1.050 kr. behind**. Nothing here is a code bug to fix — it needs §9 Q8
-(when the ninth member joined) and the meeting dates, both Lukas's.
+read **1.050 kr. behind**. **T071 did exactly that**: all 1.780 kr. now sits on
+dated meetings, so that half is closed and the club should now read behind rather
+than ahead. Nothing here is a code bug to fix — what is left is the payer count,
+and it needs a schema change Lukas has to approve first (T071 §14.5).
+§9 Q8 is **answered**: nine members since June 2026, eight before, and the ninth
+still owes a retroactive buy-in the app cannot model.
 Full workings in `docs/finance-reconciliation.md` §13.
 The budget itself is `src/data/projection.ts`: *Klubbens finanser* had the
 `Forventede bøder` / `Forventet beholdning` structure and **no method** — those
@@ -96,8 +120,10 @@ behind the login; admins additionally edit news, events and attendance.
    what the club has charged against what has actually arrived, running totals,
    for every member rather than the treasurer alone. It drew nothing in
    production until T068 put the sheet's history behind it; **since 2026-07-29
-   it draws the real thirteen months.** The meetings are still undated, so the
-   fines sit outside the month-by-month view and the page says how much.
+   it draws the real thirteen months.** Since T071 the meetings are dated where
+   the calendar could prove it, so all 1.780 kr. of fines sits *inside* the
+   month-by-month view; the 11 meetings still without a date carry no fines at
+   all, and the page still says how many are missing.
 4. ~~**Admin editing of news, events and attendance**~~ ✅ **done 2026-07-27
    (T063 + T065).** This was Lukas's whole list — *"add and edit news, events,
    and the anciennitet events"* — and all three are now in the app. Neither task
@@ -225,24 +251,29 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
 1. **Decide whether Leads can record fines** — the one thing blocking the
    finance flow from matching the regulation. See T050's "Capture is built"
    note; it is an access-rule change, so it needs Lukas.
-2. **Fill in the missing meeting dates.** All 29 are undated. Since T065 the
-   date is set on the meeting's own card under Anciennitet, beside its lead, its
-   venues and who attended; `/oekonomi` counts how many are still missing and
-   the monthly ledger says how much it is therefore leaving out. The backfill
-   from the events table handled the unambiguous ones and refused to guess the
-   rest, so the remaining ones need Lukas's agendas rather than more code.
-3. ~~**Import the sheet's history**~~ ✅ **done 2026-07-29 (T068)** — though not
-   because dates existed to hang it on. They still do not: the fines hang off
-   meeting *records*, and `/oekonomi` reports the 1.730 kr. as belonging to
-   undated meetings until Lukas's agendas supply the dates.
-   **The dates are now worth more than they were** (T070): they are the one
-   thing that would move 1.730 kr. from outside the monthly ledger into it, and
-   they would also let the fine budget measure the club's real meeting cadence
-   instead of falling back to §9's rule.
-   **Ask Lukas when the ninth member joined** (§9 Q8). It is 1.200 kr. of the
-   680 kr. the page reports, and `/oekonomi` cannot get the expected-income line
-   right for the club's own history without it — it charges today's nine members
-   across every month, because no joining date has ever been recorded.
+2. ~~**Fill in the missing meeting dates**~~ ✅ **mostly done 2026-07-29 (T071).**
+   **17 of 28 dated from Lukas's Outlook calendar, 11 refused.** All 1.780 kr. of
+   fines is now inside the monthly ledger. What is left needs Lukas himself, and
+   it is small and specific — not more searching:
+   - **Meetings 1–4** — nothing club-shaped exists in his calendar before
+     2022-10-29. If he has the old invitations anywhere else, four dates follow.
+   - **Meeting 18, the London trip** — certainly 18 or 19 January 2025; he only
+     has to say which day the dinner was.
+   - **Meetings 8, 14–16, 19–20** — the calendar has fewer events than the club
+     has meetings in those stretches, so a Lead's agenda is the only source.
+   Since T065 the date is set on the meeting's own card under Anciennitet, which
+   is where he can add any of these himself.
+3. ~~**Import the sheet's history**~~ ✅ **done 2026-07-29 (T068)**, and since
+   T071 it hangs off real dates: the fines hang off meeting *records*, 17 of
+   which are now dated, and every one of the six fine-bearing meetings is among
+   them. `/oekonomi` no longer reports any of the 1.780 kr. as belonging to an
+   undated meeting.
+   ~~**Ask Lukas when the ninth member joined**~~ ✅ **answered 2026-07-29**:
+   June 2026, so eight paid before that — and the ninth still owes a
+   **retroactive buy-in he has not paid**, which is a receivable the schema
+   cannot express. Fixing the expected-income line therefore needs a
+   `joined_on` column on `members`, i.e. a schema change, i.e. Lukas's approval
+   before anyone writes it. Scope in `docs/finance-reconciliation.md` §14.5.
 4. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
 5. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,

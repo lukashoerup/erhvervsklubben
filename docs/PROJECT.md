@@ -287,7 +287,41 @@ without losing data and without taking the old site down until an approved cutov
   line because all 28 meetings are undated and one fine was never imported. Put
   the fines back and the club reads 1.050 kr. **behind**. The fix is not more
   arithmetic — it is §9 Q8 (when did the ninth member join) and the meeting
-  dates, both of which need Lukas.
+  dates, both of which need Lukas. **Both were answered on 2026-07-29** — see the
+  next two entries; 17 of the 28 meetings are dated as of T071.
+
+- **2026-07-29 — the club became nine members in June 2026, and the ninth has
+  not yet paid his buy-in** (Lukas, same day). This closes §9 Q8. Two separate
+  facts, and the second is the one the app does not model:
+  1. **Before 2026-06 the club had eight paying members**, not nine. `/oekonomi`
+     charges today's nine across the whole history, which is the +1.200 kr. in
+     §13's decomposition.
+  2. **The ninth buys in retroactively** — he is treated as though he had paid
+     kontingent all along, but **he has not actually paid it yet**. So it is a
+     *receivable*: money the club is owed and has not received. Nothing in the
+     schema can express that. `payments` records money that moved, by month, with
+     no member on it; `members` carries `name`, `status` and `note` and no dates
+     or amounts at all.
+  **Not fixed here, deliberately.** Making the historical payer count right needs
+  a joining date per member, and `members` cannot carry one — it has no date
+  column beyond `created_at`, which is when the row was written, not when the man
+  joined. Adding one is a schema change, which by CLAUDE.md's autonomy boundary
+  needs Lukas first. What it would take: a nullable `joined_on date` on `members`
+  (additive, so RLS and the CI seed are untouched), `buildLedger` counting payers
+  per month from it instead of being handed one roster length, the buy-in modelled
+  as a receivable rather than smuggled into `payments` — which records money that
+  moved and must keep meaning that — and the ledger's tests extended to a roster
+  that changes size mid-history. Until then `/oekonomi` keeps naming who it
+  charges, in `Hvem betaler kontingent`, which is the honest version of being
+  wrong.
+
+- **2026-07-29 — the unattributed 50 kr. of Februar 26 was Lukas's own** (T071).
+  A voluntary fine he transferred himself, as treasurer, because a year in which
+  the treasurer incurred no fine looked implausible — which is also why he is the
+  one member with no row in the sheet's fines grid. Closes §9 Q1 and the last
+  open item in the reconciliation. Imported against meeting record 26, the club's
+  only February 2026 dinner, so `fines` now total **1.780 kr.** and match the
+  annual report.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
