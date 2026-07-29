@@ -102,7 +102,16 @@ on conflict (month) do nothing;
 -- evening against the wrong member is worse than a fine not yet entered.
 -- That is why these rows total 1.730 and the year's fines were 1.780.
 
-insert into public.fines (record_id, member_name, rule_id, minutes, amount_kr) values
+-- Selected through an existence check rather than inserted straight, because a
+-- migration runs on every database, not only the one it was written against.
+-- These record ids are the *production* meetings; a fresh local stack and the
+-- CI runner have `seed.sql`'s three, so a plain insert fails the foreign key
+-- and takes `db:reset` — and with it the entire RLS job — down. On a database
+-- that does not hold these meetings the right answer is to import nothing, not
+-- to error: this is one club's history, not part of the schema.
+insert into public.fines (record_id, member_name, rule_id, minutes, amount_kr)
+select v.record_id, v.member_name, v.rule_id, v.minutes, v.amount_kr
+from (values
   -- record 21 — møde #21, Esben Lead, Bjælkehuset (Juni 25, sum 275)
   (21, 'Kasper',  'historisk', 0, 100),
   (21, 'Rasmus',  'historisk', 0,  95),   -- sheet: "Holst"
@@ -135,6 +144,8 @@ insert into public.fines (record_id, member_name, rule_id, minutes, amount_kr) v
   (25, 'Mads',    'historisk', 0, 185),
   (25, 'Saaby',   'historisk', 0,  60),
   (25, 'Esben',   'historisk', 0,  60)
+) as v (record_id, member_name, rule_id, minutes, amount_kr)
+where exists (select 1 from public.attendance_records ar where ar.id = v.record_id)
 on conflict (record_id, member_name, rule_id) do nothing;
 
 -- Sheet2 name -> database member_name. `Holst` = Rasmus and `Tørring` = Anders
