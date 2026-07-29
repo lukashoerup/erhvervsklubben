@@ -89,12 +89,15 @@ export default function Nyheder() {
         mayEdit && editor.editing(n.id) ? (
           form(n.id)
         ) : (
-          <article key={n.id} data-reveal className="rounded-2xl border border-line bg-surface p-3">
-            <p className="tabular text-[0.6rem] tracking-[0.1em] text-accent uppercase">
+          <article key={n.id} data-reveal className="rounded-2xl border border-line bg-surface p-4">
+            {/* Muted, where every one of these dates used to be blue. Nothing
+                on this card is tappable to a member, so nothing on it is the
+                accent — the headline leads by weight and by being ink. */}
+            <p className="tabular text-[0.6rem] tracking-[0.1em] text-muted uppercase">
               {daDate(n.date, { day: 'numeric', month: 'long' })}
             </p>
-            <h3 className="mt-1 text-[0.95rem] leading-snug font-semibold">{n.title}</h3>
-            <p className="mt-1 text-xs leading-relaxed text-muted">{n.excerpt}</p>
+            <h3 className="mt-1.5 text-[0.95rem] leading-snug font-semibold">{n.title}</h3>
+            <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{n.excerpt}</p>
 
             {mayEdit && (
               <div className="mt-3 flex flex-wrap items-start gap-2">

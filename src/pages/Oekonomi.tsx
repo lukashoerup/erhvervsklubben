@@ -3,15 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { READONLY, supabase } from '../lib/supabase'
 import { balancesByMember, buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
 import { budgetFines, budgetHorizon, budgetLimits, projectBudget } from '../data/projection'
-import { canBeFined, paysDues, STATUS_LABEL, STATUS_NOTE } from '../data/members'
-import type { RosterEntry } from '../data/derive'
+import { canBeFined, paysDues } from '../data/members'
 import { Loading, Problem } from '../components/State'
 import { FineCapture, type DraftFine } from '../components/FineCapture'
 import { FinanceChart, kr } from '../components/FinanceChart'
 import { useAttendance } from '../data/useClubData'
 import { useAuth } from '../auth/AuthContext'
 import { DEMO, demoFines, demoPayments } from '../data/demo'
-import { SectionTitle } from '../components/SectionTitle'
+import { Eyebrow, SectionTitle } from '../components/SectionTitle'
 
 /**
  * The club's money. A member route since 2026-07-27 — §8 puts the accounts in
@@ -113,10 +112,10 @@ function RecordFines() {
   const statusOf = new Map(attendance.data.roster.map((r) => [r.name, r.status]))
 
   return (
-    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
       <SectionTitle onCard>Registrér bøder</SectionTitle>
 
-      <label className="mt-2 block text-xs text-muted">
+      <label className="mt-3 block text-xs text-muted">
         Møde
         <select
           aria-label="Møde"
@@ -210,52 +209,6 @@ function MissingDates() {
   )
 }
 
-/**
- * Who the expected-income line is actually charged to.
- *
- * The curve above it is one number a month, and until 2026-07-29 that number
- * was the size of the roster — wrong, and wrong invisibly, because nothing on
- * the page said what it was counting. Naming the base and naming every member
- * left out of it makes the same mistake loud the next time: a member who has
- * stopped paying and is still in the count, or one who pays and is missing from
- * it, is now a line of text on the club's own finance page rather than a
- * discrepancy somebody has to derive.
- */
-function DuesBasis({ roster, payers }: { roster: RosterEntry[]; payers: RosterEntry[] }) {
-  if (roster.length === 0) return null
-  const exempt = roster.filter((r) => !paysDues(r.status))
-
-  return (
-    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
-      <SectionTitle onCard>Hvem betaler kontingent</SectionTitle>
-      <p className="mt-1 text-xs leading-relaxed text-muted">
-        Kontingentet opkræves hos <span className="tabular font-semibold">{payers.length}</span>{' '}
-        af klubbens <span className="tabular">{roster.length}</span> medlemmer. Det er det tal,
-        den forventede indtægt er regnet ud fra — ikke hele mødelisten.
-      </p>
-      {exempt.length > 0 && (
-        <ul className="mt-2">
-          {exempt.map((m) => (
-            <li key={m.name} className="border-b border-line py-1.5 last:border-0">
-              <p className="flex justify-between text-xs">
-                <span>{m.name}</span>
-                <span className="text-accent">
-                  {m.status ? STATUS_LABEL[m.status] : 'Ikke registreret som medlem'}
-                </span>
-              </p>
-              <p className="mt-0.5 text-[0.68rem] leading-relaxed text-faint">
-                {m.status
-                  ? STATUS_NOTE[m.status]
-                  : 'Navnet står i mødehistorikken, men klubben har ingen medlemsregistrering på det. Der opkræves intet.'}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
 export default function Oekonomi() {
   const { data, isPending, error } = useFinance()
   const attendance = useAttendance()
@@ -346,7 +299,7 @@ export default function Oekonomi() {
       : []
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {/* The balance itself stays with the treasurer (Lukas, 2026-07-26: "not
           everyone should know how much money is in the bank account"), while
           the club's income against what it should have collected is for every
@@ -354,20 +307,21 @@ export default function Oekonomi() {
           balance, the other is whether the club collects what it is owed. */}
       {isTreasurer && (
         <section data-reveal className="rounded-2xl border border-accent-d bg-surface p-4">
-          <p className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">
-            Klubkassen · kun kassereren
-          </p>
-          <p className="tabular mt-1 text-2xl font-semibold">{kr(received)}</p>
-          <p className="mt-1 text-xs text-muted">
+          <Eyebrow>Klubkassen · kun kassereren</Eyebrow>
+          {/* The one figure on the page that is a balance rather than a series,
+              so it is the one set as display type — §04's scroll-scene does
+              exactly this with "13.150 kr." at 34 px in Instrument Serif. */}
+          <p className="ek-figure mt-2 text-[1.75rem] leading-none">{kr(received)}</p>
+          <p className="mt-2 text-xs leading-relaxed text-muted">
             Indbetalt i alt. Udestående bøder: <span className="tabular">{kr(totalOwed)}</span>
           </p>
         </section>
       )}
 
       {READONLY && (
-        <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+        <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
           <SectionTitle onCard>Skrivebeskyttet forhåndsvisning</SectionTitle>
-          <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
+          <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
             Denne udgave læser klubbens rigtige tal, men kan ikke ændre dem. Der
             kan hverken registreres bøder eller rettes datoer herfra.
           </p>
@@ -381,6 +335,15 @@ export default function Oekonomi() {
       <FinanceChart
         ledger={ledger}
         books={{
+          // What the expected curve is built from, so it can be checked rather
+          // than trusted. The card that used to say it — "Hvem betaler
+          // kontingent", nine of ten, and Oskar named as founding father — is
+          // gone at Lukas's word (2026-07-29): "Det ved alle godt." He is
+          // right, in a club of ten. What he was not saying is that the blue
+          // line is nine times the rate and not ten, and a member checking it
+          // on his fingers gets a different number — so the count survives as
+          // a clause in the chart's own caption, with no names and no card.
+          payers: payers.length,
           fines: data.fines.length,
           payments: data.payments.length,
           meetings: meetings.length,
@@ -391,25 +354,23 @@ export default function Oekonomi() {
         budgetNotes={budgetNotes}
       />
 
-      <DuesBasis roster={roster} payers={payers} />
-
       <RecordFines />
       <MissingDates />
 
       {isTreasurer && (
-        <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+        <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
           <SectionTitle onCard>Bøder pr. medlem · kun kassereren</SectionTitle>
           {owed.length === 0 ? (
-            <p className="mt-2 text-xs text-muted">Ingen bøder registreret endnu.</p>
+            <p className="mt-3 text-xs text-muted">Ingen bøder registreret endnu.</p>
           ) : (
-            <ul className="mt-1">
+            <ul className="mt-2">
               {owed.map((o) => (
                 <li
                   key={o.member}
-                  className="flex justify-between border-b border-line py-1.5 text-xs last:border-0"
+                  className="flex items-baseline justify-between border-b border-line py-2 text-xs last:border-0"
                 >
                   <span>{o.member}</span>
-                  <span className="tabular font-semibold text-accent">{kr(o.kr)}</span>
+                  <span className="ek-figure text-[0.95rem]">{kr(o.kr)}</span>
                 </li>
               ))}
             </ul>
@@ -418,16 +379,16 @@ export default function Oekonomi() {
       )}
 
       {quarters.length > 0 && (
-        <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+        <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
           <SectionTitle onCard>Kvartalsvis opkrævning</SectionTitle>
-          <ul className="mt-1">
+          <ul className="mt-2">
             {quarters.map((q) => (
               <li
                 key={q.quarter}
-                className="flex justify-between border-b border-line py-1.5 text-xs last:border-0"
+                className="flex items-baseline justify-between border-b border-line py-2 text-xs last:border-0"
               >
                 <span className="tabular">{q.quarter}</span>
-                <span className="tabular font-semibold">{kr(q.kr)}</span>
+                <span className="ek-figure text-[0.95rem]">{kr(q.kr)}</span>
               </li>
             ))}
           </ul>
@@ -435,12 +396,12 @@ export default function Oekonomi() {
       )}
 
       {ledger.length > 0 && (
-        <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+        <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
           {/* Also the chart's table view: every value the curves and the hover
               readout show is here in text, so nothing on this page can only be
               read by having a mouse or seeing a colour. */}
           <SectionTitle onCard>Måned for måned</SectionTitle>
-          <p className="mt-1 text-[0.68rem] text-faint">
+          <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
             De samme tal som kurven, måned for måned frem for lagt sammen.
           </p>
           <div className="overflow-x-auto">
@@ -462,10 +423,15 @@ export default function Oekonomi() {
                     out that they are the same kind of number first. */}
                 {ledger.map((m) => (
                   <tr key={m.month} className="border-t border-line">
-                    <td className="py-1">{m.month}</td>
-                    <td className="py-1 text-right">{kr(m.expected)}</td>
-                    <td className="py-1 text-right">{kr(m.received)}</td>
-                    <td className="py-1 text-right text-accent">{kr(m.outstanding)}</td>
+                    <td className="py-1.5">{m.month}</td>
+                    <td className="py-1.5 text-right">{kr(m.expected)}</td>
+                    <td className="py-1.5 text-right">{kr(m.received)}</td>
+                    {/* Ink and semibold rather than blue: the running balance
+                        is the column that matters and it says so by weight, on
+                        a page where blue now means the curve and the buttons. */}
+                    <td className="py-1.5 text-right font-semibold text-ink">
+                      {kr(m.outstanding)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -485,9 +451,9 @@ export default function Oekonomi() {
           spreadsheet's own — `Forventede bøder`, `Forventet beholdning` — so a
           member who knew *Klubbens finanser* recognises what came back. */}
       {budgetMonths.length > 0 && (
-        <section data-reveal className="rounded-2xl border border-dashed border-accent-d bg-surface p-3">
+        <section data-reveal className="rounded-2xl border border-dashed border-accent-d bg-surface p-4">
           <SectionTitle onCard>Budget · forventede bøder</SectionTitle>
-          <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
+          <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
             Ikke penge klubben har. Det er, hvad kontingentet og et gennemsnitligt
             møde giver, hvis klubben fortsætter som hidtil.
           </p>
@@ -504,10 +470,12 @@ export default function Oekonomi() {
               <tbody className="tabular">
                 {budgetMonths.map((m) => (
                   <tr key={m.month} className="border-t border-line">
-                    <td className="py-1">{m.month}</td>
-                    <td className="py-1 text-right">{kr(m.dues)}</td>
-                    <td className="py-1 text-right text-accent">{kr(m.budgetedFines)}</td>
-                    <td className="py-1 text-right">{kr(m.expectedBalance)}</td>
+                    <td className="py-1.5">{m.month}</td>
+                    <td className="py-1.5 text-right">{kr(m.dues)}</td>
+                    <td className="py-1.5 text-right font-semibold text-ink">
+                      {kr(m.budgetedFines)}
+                    </td>
+                    <td className="py-1.5 text-right">{kr(m.expectedBalance)}</td>
                   </tr>
                 ))}
               </tbody>

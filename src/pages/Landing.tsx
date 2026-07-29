@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Icon, type IconName } from '../components/Icon'
 import { LogoMark } from '../components/LogoMark'
@@ -32,12 +32,25 @@ export default function Landing() {
   const { userId, loading } = useAuth()
   const upcoming = useUpcoming()
   const news = useNews()
+  // Set by the logo in the app bar and on the login screen, and by nothing
+  // else. See ASKED_FOR below.
+  const asked = (useLocation().state as { forside?: boolean } | null)?.forside === true
 
-  // A signed-in member gets /hjem, not this. Both audiences reach the club at
-  // the same URL — the one people type, bookmark and share — and neither has
-  // to know which page is theirs. Deciding it here rather than at the route
-  // table keeps `/` genuinely public: the guard is a redirect for people who
-  // have somewhere better to be, not a gate.
+  // A signed-in member gets /hjem, not this — unless he asked for this. Both
+  // audiences reach the club at the same URL, the one people type, bookmark and
+  // share, and neither has to know which page is theirs. Deciding it here
+  // rather than at the route table keeps `/` genuinely public: the guard is a
+  // redirect for people who have somewhere better to be, not a gate.
+  //
+  // ASKED_FOR. The redirect made the club's own front door unreachable from
+  // inside the app: it fires on *every* visit to `/`, so a member tapping a
+  // link to it arrived at /hjem and nothing he could do would show him the
+  // page (Lukas, 2026-07-29: "Der er ingen måde at man kan navigere tilbage
+  // til animationsforsiden"). It fires on arrival now, not on request — the
+  // two logo lockups navigate with `state={{ forside: true }}`, which is a
+  // property of that one history entry, so it survives a reload and a Back
+  // without ever attaching itself to the URL somebody types or shares. A
+  // typed, bookmarked or shared `/` carries no state and still forwards.
   //
   // Nothing renders until the session is known, which is the opposite of what
   // a public page usually wants. It is cheap here and it buys a lot: reading
@@ -47,7 +60,7 @@ export default function Landing() {
   // start the four-second intro under them every single time they open the
   // app, only to swap it for /hjem.
   if (loading) return <div aria-busy="true" aria-label="Indlæser" />
-  if (userId) return <Navigate to="/hjem" replace />
+  if (userId && !asked) return <Navigate to="/hjem" replace />
 
   // Two, because §9 Stk. 3 says two are always in the calendar.
   const events = upcoming.data ?? []
@@ -318,7 +331,10 @@ function Nyt({ stories }: { stories: { id: string; title: string; excerpt: strin
               key={s.id}
               className="border-b border-line py-4 first:pt-0 last:border-0 last:pb-0"
             >
-              <p className="tabular text-[10px] tracking-[0.18em] text-accent uppercase">
+              {/* Muted, matching /nyheder behind the login: a date is not a
+                   destination, and the accent on this page belongs to the two
+                   buttons and the rules that separate the sections. */}
+              <p className="tabular text-[10px] tracking-[0.18em] text-muted uppercase">
                 {daDate(s.date)}
               </p>
               <h3 className="mt-1.5 text-[16px] leading-snug font-semibold">{s.title}</h3>
@@ -349,9 +365,7 @@ function Medlemskab() {
         <ol className="flex flex-col gap-4">
           {[s4.items[2], s4.items[1]].map((item, i) => (
             <li key={i} className="flex gap-4">
-              <span className="tabular shrink-0 text-[13px] font-bold text-accent">
-                {i + 1}
-              </span>
+              <span className="ek-figure w-4 shrink-0 text-[17px] leading-[1.4]">{i + 1}</span>
               <p className="text-[15px] leading-[1.7] text-muted">{stk(item)}</p>
             </li>
           ))}

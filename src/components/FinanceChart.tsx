@@ -143,6 +143,8 @@ export function niceTicks(max: number, count = 4): number[] {
 
 /** What the club has recorded, for a chart that has to explain its own absence. */
 export type BooksState = {
+  /** How many members the expected line is charged to. */
+  payers: number
   fines: number
   payments: number
   meetings: number
@@ -208,16 +210,25 @@ export function FinanceChart({
         : 'klubben har fået præcis det ind, den har opkrævet'
 
   return (
-    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
       <SectionTitle onCard>Forventet mod modtaget</SectionTitle>
-      <p className="mt-1 text-[0.68rem] leading-relaxed text-faint">
-        Akkumuleret, {span}. Afstanden mellem kurverne er det, klubben har opkrævet
-        og ikke fået ind.
+      {/* What the blue line is made of, in one clause. `/oekonomi` used to
+          carry a whole card for it — who pays, who does not, and why — and it
+          is gone at Lukas's word (2026-07-29): "Det ved alle godt." He is right
+          that a club of ten knows its own members. What nobody can know by
+          looking is that the expected line is nine times the rate rather than
+          ten, so a member checking the curve against his own arithmetic lands
+          somewhere else. The count stays; the names, the reason and the card do
+          not. */}
+      <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
+        Akkumuleret, {span}. Forventet er kontingent fra{' '}
+        <span className="tabular">{books.payers}</span> betalende medlemmer plus bøder;
+        afstanden mellem kurverne er det, klubben har opkrævet og ikke fået ind.
       </p>
 
       {/* The legend, and the numbers, in one row — so no value on this screen is
           only reachable by hovering a curve, which on a phone means not at all. */}
-      <dl className="mt-3 grid grid-cols-3 gap-2">
+      <dl className="mt-4 grid grid-cols-3 gap-2">
         <Figure keyClass="h-[2px] w-3 rounded-full bg-accent" label="Forventet" kr={last.expected ?? 0} />
         <Figure keyClass="h-[2px] w-3 rounded-full bg-present" label="Modtaget" kr={last.received ?? 0} />
         <Figure
@@ -383,12 +394,15 @@ function BudgetNote({
   notes: string[]
 }) {
   return (
-    <div className="mt-3 border-l-2 border-dashed border-accent pl-2.5">
-      <p className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">
+    <div className="mt-4 border-l-2 border-dashed border-accent pl-3">
+      {/* Muted, and no streg on this one: the dashed rule down its side is
+          already the mark, and two blue marks on one four-line block is the
+          uniformity this pass exists to undo. */}
+      <p className="text-[0.6rem] tracking-[0.14em] text-muted uppercase">
         Forventede bøder · budget
       </p>
-      <p className="mt-1 text-sm leading-snug text-ink">
-        <span className="tabular font-semibold">{kr(budget.perMeetingKr)}</span> pr. møde
+      <p className="mt-1.5 text-sm leading-snug text-ink">
+        <span className="ek-figure text-[1.05rem]">{kr(budget.perMeetingKr)}</span> pr. møde
         {' — '}
         <span className="tabular">{kr(budget.perMonthKr)}</span> pr. måned i gennemsnit
         {until && `, frem til ${until}`}.
@@ -429,11 +443,13 @@ function Figure({
         <span aria-hidden="true" className={keyClass} />
         {label}
       </dt>
-      {/* Ink, not the series colour — a curve's colour is unreadable as 11px
-          text, and the swatch beside the label already carries the identity.
-          The gap leads by weight instead, which is the one thing on this card
-          that should be read first. */}
-      <dd className={`mt-0.5 ${lead ? 'text-[1.05rem] font-semibold' : 'text-[0.85rem]'} text-ink`}>
+      {/* The three figures the curve resolves to, and the page's own face:
+          /oekonomi is about the curve, so what the curve *says* is set as
+          display type directly under it rather than as three more Sans values
+          in a card of Sans values. Ink, not the series colour — a curve's
+          colour is unreadable as 11 px text, and the swatch beside the label
+          already carries the identity. The gap leads by size. */}
+      <dd className={`ek-figure mt-1 ${lead ? 'text-[1.15rem]' : 'text-[1rem]'} text-ink`}>
         {kr(amount)}
       </dd>
     </div>
@@ -548,9 +564,9 @@ function NothingToPlot({ books }: { books: BooksState }) {
   }
 
   return (
-    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
       <SectionTitle onCard>Forventet mod modtaget</SectionTitle>
-      <p className="mt-2 text-sm leading-relaxed text-muted">
+      <p className="mt-3 text-sm leading-relaxed text-muted">
         Der er ingen kurve at tegne endnu — ikke fordi klubben hverken har opkrævet
         eller modtaget noget, men fordi tallene ikke er her.
       </p>

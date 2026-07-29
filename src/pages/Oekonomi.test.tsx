@@ -347,17 +347,23 @@ describe('the imported spreadsheet history (T068)', () => {
  * and who it will let the Lead fine.
  */
 describe('who the club charges', () => {
-  it('says how many of its members pay, and names the ones it does not', async () => {
+  it('says how many members the expected line is charged to', async () => {
+    // This used to assert a card — "Hvem betaler kontingent", nine of ten,
+    // Oskar named as founding father and §12 quoted under him. Lukas had it
+    // removed on 2026-07-29: "Det ved alle godt." What replaced it is the
+    // count alone, in the chart's own caption, because the height of the blue
+    // curve is the one thing on this page a member cannot derive from knowing
+    // his own club. The names and the reason live in data/members.ts, which is
+    // what actually stops the money being charged.
     aClubWithBooks()
     renderPage('user')
     await screen.findByRole('img')
-    const card = screen.getByText(/Hvem betaler kontingent/).closest('section')!
-    expect(card).toHaveTextContent(/9\s*af klubbens\s*10 medlemmer/)
-    expect(within(card).getByText('Oskar')).toBeInTheDocument()
-    expect(within(card).getByText('Founding father')).toBeInTheDocument()
-    // The exemption in the club's own words, on the page it costs money on —
-    // not in a chat message somebody has to remember.
-    expect(card).toHaveTextContent(/betaler hverken kontingent eller bøder/)
+    expect(screen.getByText(/betalende medlemmer/)).toHaveTextContent(
+      /kontingent fra\s*9\s*betalende medlemmer/,
+    )
+    // Gone, and not reinstated in smaller type somewhere else on the page.
+    expect(screen.queryByText(/Hvem betaler kontingent/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Founding father')).not.toBeInTheDocument()
   })
 
   it('does not offer a founding father to be fined', async () => {
