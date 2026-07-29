@@ -42,6 +42,27 @@ the club has ever had. Against the real books it read **14.000 kr. charged where
 12.600 kr. was owed**, which reported the club **720 kr. short when it is 680 kr.
 ahead**. The exemptions are stated once, in `src/data/members.ts`. See RULES.md.
 
+**The club's own fine budgeting is back** (2026-07-29, T070), and the 680 kr.
+above is now explained rather than reported. **Fines are not why the club looks
+ahead** — they push the other way. `/oekonomi` charges nine payers across the
+whole history where the club charged eight before June 2026 (+1.200 kr. too
+much), while 1.780 kr. of fines never enter the expected line at all: 1.730 kr.
+because all 28 meetings are undated, and 50 kr. because that fine was never
+imported. The two nearly cancel. Against the club's own books the real surplus
+is about **100 kr.**, and if the fines could be placed in months the club would
+read **1.050 kr. behind**. Nothing here is a code bug to fix — it needs §9 Q8
+(when the ninth member joined) and the meeting dates, both Lukas's.
+Full workings in `docs/finance-reconciliation.md` §13.
+The budget itself is `src/data/projection.ts`: *Klubbens finanser* had the
+`Forventede bøder` / `Forventet beholdning` structure and **no method** — those
+four cells are typed constants, and the sheet's own forward rows budget zero
+fines to August 2027 (§12). So the structure came back and the arithmetic is
+new: the average is **per meeting**, not per month, because §9 puts a dinner on
+the calendar every other month and a monthly mean's answer depends on how wide
+the window is. It is drawn as a dashed line, labelled `Forventede bøder ·
+budget`, and says on the page that it is not money the club holds. **No
+migration, nothing stored.**
+
 **Two roles, and only two** (see PROJECT.md 2026-07-27): members read everything
 behind the login; admins additionally edit news, events and attendance.
 
@@ -162,7 +183,7 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 248 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 283 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -214,6 +235,14 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    because dates existed to hang it on. They still do not: the fines hang off
    meeting *records*, and `/oekonomi` reports the 1.730 kr. as belonging to
    undated meetings until Lukas's agendas supply the dates.
+   **The dates are now worth more than they were** (T070): they are the one
+   thing that would move 1.730 kr. from outside the monthly ledger into it, and
+   they would also let the fine budget measure the club's real meeting cadence
+   instead of falling back to §9's rule.
+   **Ask Lukas when the ninth member joined** (§9 Q8). It is 1.200 kr. of the
+   680 kr. the page reports, and `/oekonomi` cannot get the expected-income line
+   right for the club's own history without it — it charges today's nine members
+   across every month, because no joining date has ever been recorded.
 4. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
 5. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,

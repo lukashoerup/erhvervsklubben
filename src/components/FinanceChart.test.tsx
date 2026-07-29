@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { buildLedger, type LedgerMonth } from '../data/ledger'
+import { budgetFines, projectBudget } from '../data/projection'
 import { FinanceChart, financeSeries, kr, niceTicks, type BooksState } from './FinanceChart'
 
 /**
@@ -45,7 +46,7 @@ describe('what the curves are drawn from', () => {
     // it: two ways of working out one number is how they drift apart. Good
     // reason on its own — but not the story of the old sheet's 50 kr, which
     // was a page never counted (docs/finance-reconciliation.md).
-    expect(points.map((p) => p.expected - p.received)).toEqual(
+    expect(points.map((p) => (p.expected ?? 0) - (p.received ?? 0))).toEqual(
       points.map((p) => p.outstanding),
     )
   })
@@ -175,5 +176,101 @@ describe('money on the page', () => {
     expect(kr(1050)).toBe('1.050 kr.')
     expect(kr(0)).toBe('0 kr.')
     expect(kr(11500)).toBe('11.500 kr.')
+  })
+})
+
+/**
+ * The budget line, and the one thing it must never do.
+ *
+ * `Forventede bøder` is a plan; everything else on this card is money that
+ * moved. These are about keeping the two apart on a phone a member glances at.
+ * The arithmetic behind the figure is data/projection.test.ts.
+ */
+describe('the fine budget', () => {
+  const budget = budgetFines({
+    meetings: [
+      { number: 1, kr: 300 },
+      { number: 2, kr: 0 },
+      { number: 3, kr: 300 },
+    ],
+    meetingDates: [],
+  })
+  const months = projectBudget({
+    after: '2026-06',
+    months: 3,
+    openingBalance: 6810,
+    budget,
+    payingMembers: () => 9,
+  })
+
+  const draw = () =>
+    render(
+      <FinanceChart
+        ledger={demoLedger()}
+        books={NO_BOOKS}
+        budget={budget}
+        budgetMonths={months}
+        budgetNotes={['En note om hvad budgettet ikke ved.']}
+      />,
+    )
+
+  it('calls itself a budget, in the same breath as the figure', () => {
+    draw()
+    expect(screen.getByText(/forventede bøder · budget/i)).toBeInTheDocument()
+    expect(screen.getByText(/det er et budget, ikke penge klubben har/i)).toBeInTheDocument()
+  })
+
+  it('leads with the per-meeting figure, which is the measured one', () => {
+    draw()
+    // 600 kr. over the 3 meetings in the window = 200 kr. an evening; §9's
+    // cadence halves it to 100 kr. a month. Both are on the card, evening first.
+    expect(screen.getByText('200 kr.')).toBeInTheDocument()
+    expect(screen.getByText('100 kr.')).toBeInTheDocument()
+    expect(screen.getByText(/pr\. møde/)).toBeInTheDocument()
+  })
+
+  it('adds no krone to the three figures that are money', () => {
+    draw()
+    expect(screen.getByText('6.810 kr.')).toBeInTheDocument()
+    expect(screen.getByText('3.600 kr.')).toBeInTheDocument()
+    expect(screen.getByText('3.210 kr.')).toBeInTheDocument()
+  })
+
+  it('does not lengthen the period the real curves claim to cover', () => {
+    draw()
+    const chart = screen.getByRole('img')
+    expect(chart).toHaveAccessibleName(/februar 2026 – juni 2026/)
+    expect(chart).toHaveAccessibleName(/stiplede linje er et budget/)
+    expect(chart).toHaveAccessibleName(/ikke penge klubben har/)
+  })
+
+  it('passes the club’s own caveats through instead of stating certainty', () => {
+    draw()
+    expect(screen.getByText('En note om hvad budgettet ikke ved.')).toBeInTheDocument()
+  })
+
+  it('is absent entirely when there is nothing to budget', () => {
+    const nothing = budgetFines({ meetings: [{ number: 1, kr: 0 }], meetingDates: [] })
+    render(<FinanceChart ledger={demoLedger()} books={NO_BOOKS} budget={nothing} budgetMonths={[]} />)
+    // Not a 0 kr. budget line, which would claim the club expects no fines.
+    expect(screen.queryByText(/forventede bøder · budget/i)).not.toBeInTheDocument()
+    expect(financeSeries(demoLedger(), []).every((p) => !p.isBudget)).toBe(true)
+  })
+
+  it('starts the dashed line on the solid one rather than a month later', () => {
+    const points = financeSeries(demoLedger(), months)
+    const lastReal = points.filter((p) => !p.isBudget).at(-1)!
+    // The same balance said twice — the join, not an extra krone.
+    expect(lastReal.budgeted).toBe(lastReal.expected)
+    expect(points.filter((p) => p.isBudget)).toHaveLength(3)
+  })
+
+  it('leaves the real curves null in a month that has not happened', () => {
+    const projected = financeSeries(demoLedger(), months).filter((p) => p.isBudget)
+    // Zero would draw both curves diving to the axis, reporting a month with no
+    // records as a month where nothing was collected.
+    expect(projected.map((p) => p.expected)).toEqual([null, null, null])
+    expect(projected.map((p) => p.received)).toEqual([null, null, null])
+    expect(projected.map((p) => p.behind)).toEqual([undefined, undefined, undefined])
   })
 })
