@@ -32,7 +32,7 @@ function demoLedger(): LedgerMonth[] {
       { month: '2026-05', amount_kr: 900 },
       { month: '2026-06', amount_kr: 1800 },
     ],
-    activeMembers: () => 10,
+    payingMembers: () => 10,
   })
 }
 
@@ -72,7 +72,7 @@ describe('what the curves are drawn from', () => {
         { month: '2026-01', amount_kr: 800 },
         { month: '2026-02', amount_kr: 2480 },
       ],
-      activeMembers: () => 8,
+      payingMembers: () => 8,
     })
     const feb = financeSeries(ledger)[1]
     expect(feb.outstanding).toBe(-1155)
@@ -85,7 +85,7 @@ describe('what the curves are drawn from', () => {
     // middle — where the one naming the new year lives. Two unqualified "jun."
     // ticks two years apart is the failure this avoids.
     const across = financeSeries(
-      buildLedger({ from: '2025-11', to: '2026-02', fines: [], payments: [], activeMembers: () => 0 }),
+      buildLedger({ from: '2025-11', to: '2026-02', fines: [], payments: [], payingMembers: () => 0 }),
     )
     expect(across.map((p) => p.label)).toEqual(['nov. 25', 'dec. 25', 'jan. 26', 'feb. 26'])
   })
@@ -124,7 +124,7 @@ describe('the figures beside the curves', () => {
       to: '2026-01',
       fines: [],
       payments: [{ month: '2026-01', amount_kr: 1000 }],
-      activeMembers: () => 8,
+      payingMembers: () => 8,
     })
     render(<FinanceChart ledger={ledger} books={NO_BOOKS} />)
     expect(screen.getByText('Forud')).toBeInTheDocument()

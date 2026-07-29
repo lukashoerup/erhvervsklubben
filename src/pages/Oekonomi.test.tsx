@@ -37,6 +37,19 @@ const { default: Oekonomi } = await import('./Oekonomi')
 
 const ROSTER = ['Anders', 'Rasmus', 'Esben', 'Oskar', 'Emil', 'Saaby', 'Lukas', 'Mads', 'Kasper', 'Have']
 
+/**
+ * The club's membership as it stands (T069): ten members, nine of whom pay.
+ *
+ * Every fixture below carries it, because this page's central figure is now a
+ * function of it. Before there was a members table the roster *was* the member
+ * list, so the ledger charged all ten — the founding father included, who has
+ * never paid a krone.
+ */
+const MEMBERS = ROSTER.map((name) => ({
+  name,
+  status: name === 'Oskar' ? 'founding-father' : 'aktiv',
+}))
+
 /** Three dated meetings, ten members, and the demo build's fines and payments. */
 function aClubWithBooks() {
   const meetings = [
@@ -57,6 +70,7 @@ function aClubWithBooks() {
     attendances: meetings.flatMap((m) =>
       ROSTER.map((name) => ({ record_id: m.id, member_name: name, attended: true })),
     ),
+    members: MEMBERS,
     fines: [
       { member_name: 'Esben', amount_kr: 50, record_id: 1 },
       { member_name: 'Mads', amount_kr: 185, record_id: 2 },
@@ -85,6 +99,7 @@ function theClubAsItIsToday() {
       meeting_date: null,
     })),
     attendances: ROSTER.map((name) => ({ record_id: 1, member_name: name, attended: true })),
+    members: MEMBERS,
     fines: [],
     payments: [],
   }
@@ -117,8 +132,10 @@ describe('who the finance graph is for', () => {
     aClubWithBooks()
     renderPage('user')
     const chart = await screen.findByRole('img')
-    expect(chart).toHaveAccessibleName(/Opkrævet i alt 6\.810 kr\., modtaget 3\.600 kr\./)
-    expect(chart).toHaveAccessibleName(/klubben mangler 3\.210 kr\./)
+    // 6.210, not 6.810: the nine paying members, not the roster's ten. The
+    // extra 600 kr. was a founding father being invoiced by arithmetic.
+    expect(chart).toHaveAccessibleName(/Opkrævet i alt 6\.210 kr\., modtaget 3\.600 kr\./)
+    expect(chart).toHaveAccessibleName(/klubben mangler 2\.610 kr\./)
   })
 
   it('still keeps the bank balance and the debtor list with the treasurer', async () => {
@@ -137,13 +154,13 @@ describe('the figures in the monthly table', () => {
     aClubWithBooks()
     renderPage('user')
     await screen.findByRole('img')
-    // February: ten members at 100 kr. plus one 50 kr. fine. It used to render
-    // as a bare 1050 next to cards printing 3.600 kr.
-    expect(screen.getByText('2026-02').closest('tr')).toHaveTextContent('1.050 kr.')
-    expect(screen.queryByText('1050')).not.toBeInTheDocument()
-    // June, when the dues doubled: 10 × 200 + 310 in fines, 1.800 kr. paid.
+    // February: the nine paying members at 100 kr. plus one 50 kr. fine. It
+    // used to render as a bare 950 next to cards printing 3.600 kr.
+    expect(screen.getByText('2026-02').closest('tr')).toHaveTextContent('950 kr.')
+    expect(screen.queryByText('950')).not.toBeInTheDocument()
+    // June, when the dues doubled: 9 × 200 + 310 in fines, 1.800 kr. paid.
     const june = screen.getByText('2026-06').closest('tr')
-    expect(june).toHaveTextContent('2.310 kr.')
+    expect(june).toHaveTextContent('2.110 kr.')
     expect(june).toHaveTextContent('1.800 kr.')
   })
 })
@@ -269,6 +286,7 @@ function theImportedBooks() {
       meeting_date: null,
     })),
     attendances: ROSTER.map((name) => ({ record_id: 21, member_name: name, attended: true })),
+    members: MEMBERS,
     fines: grid.map(([record_id, member_name, amount_kr]) => ({
       member_name,
       amount_kr,
@@ -317,5 +335,43 @@ describe('the imported spreadsheet history (T068)', () => {
       expect(screen.getByText(member)).toBeInTheDocument()
       expect(screen.getByText(total)).toBeInTheDocument()
     }
+  })
+})
+
+/**
+ * Membership status, on the page whose figures depend on it (T069).
+ *
+ * The expected-income curve was the size of the roster times the rate, so a
+ * founding father who has never paid a krone was billed by arithmetic in every
+ * month the club has ever had. These pin both directions: what the page charges
+ * and who it will let the Lead fine.
+ */
+describe('who the club charges', () => {
+  it('says how many of its members pay, and names the ones it does not', async () => {
+    aClubWithBooks()
+    renderPage('user')
+    await screen.findByRole('img')
+    const card = screen.getByText(/Hvem betaler kontingent/).closest('section')!
+    expect(card).toHaveTextContent(/9\s*af klubbens\s*10 medlemmer/)
+    expect(within(card).getByText('Oskar')).toBeInTheDocument()
+    expect(within(card).getByText('Founding father')).toBeInTheDocument()
+    // The exemption in the club's own words, on the page it costs money on —
+    // not in a chat message somebody has to remember.
+    expect(card).toHaveTextContent(/betaler hverken kontingent eller bøder/)
+  })
+
+  it('does not offer a founding father to be fined', async () => {
+    const user = userEvent.setup()
+    aClubWithBooks()
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '1')
+
+    // One heading per member the Lead can fine. He attended — all ten did — so
+    // this is membership status doing the work and not the attendance filter
+    // that was already there.
+    const offered = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    expect(offered).toHaveLength(9)
+    expect(offered).not.toContain('Oskar')
+    expect(offered).toContain('Anders')
   })
 })

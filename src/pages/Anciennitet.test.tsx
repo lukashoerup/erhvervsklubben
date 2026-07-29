@@ -216,8 +216,9 @@ describe('recording a meeting', () => {
   })
 
   it('can record someone the club has never written down before', async () => {
-    // The roster is every name already in `attendances` — there is no members
-    // table — so without this an eleventh member could never be ticked, and
+    // The roster is the members table plus every name in `attendances`, and
+    // this fixture holds no members — so without this field a guest, or anyone
+    // admitted between meetings, could never be ticked off on the night, and
     // the club would be back to typing rows into the database by hand.
     const user = userEvent.setup()
     renderPage('admin')

@@ -9,8 +9,9 @@ end of every working session._
 `main` by Vercel's GitHub integration on every push. Build config is in
 `vercel.json` and `.env.production` — both committed, nothing in the dashboard.
 
-**Production now has** `fines`, `payments` and `attendance_records.meeting_date`
-(added 2026-07-27, additive, no existing row touched). **28** meetings and 235
+**Production now has** `fines`, `payments`, `attendance_records.meeting_date`
+(added 2026-07-27) and, since 2026-07-29, **`members`** (T069) — all additive,
+no existing row touched. **28** meetings and 235
 attendance rows intact — the junk duplicate of meeting #27 has since been
 removed, so record ids run 1–27 and 29. **Every meeting is undated** — the
 backfill refused to guess.
@@ -28,6 +29,18 @@ sheet stored amounts only and most amounts have several valid readings, so all
 17 carry `rule_id = 'historisk'` rather than a guessed rule. Because the
 meetings are undated, `/oekonomi` counts all 1.730 kr. in the totals and states
 that it belongs to meetings without a date, which is what it should do.
+
+**The club now has a member list** (2026-07-29, T069), and the finance page
+charges only the members who pay. Ten members in `members`, **nine of them
+`aktiv`** and **Oskar `founding-father`** — Lukas's ruling of the same date: he
+attends, but pays no kontingent, incurs no fines and does not vote on the use of
+the club's funds (§12). Not "inactive", because §3 says an inactive member may
+not attend; his anciennitet is untouched, because §11 earns it by attendance
+alone. Before this, `buildLedger` was handed `roster.length` — everyone who had
+ever turned up — so the blue expected-income curve was too high in every month
+the club has ever had. Against the real books it read **14.000 kr. charged where
+12.600 kr. was owed**, which reported the club **720 kr. short when it is 680 kr.
+ahead**. The exemptions are stated once, in `src/data/members.ts`. See RULES.md.
 
 **Two roles, and only two** (see PROJECT.md 2026-07-27): members read everything
 behind the login; admins additionally edit news, events and attendance.
@@ -80,8 +93,10 @@ behind the login; admins additionally edit news, events and attendance.
    the morning after a meeting, not at a desk. A member with no row for a
    meeting keeps none unless he is ticked present, because 235 rows over 29
    meetings is not ten per meeting and `total` is counted from the rows that
-   exist. The editor can also name someone the club has never recorded, which is
-   the only way an eleventh member ever enters a database with no members table.
+   exist. The editor can also name someone the club has never recorded — which
+   was the only way an eleventh member could enter a database with no members
+   table, and since T069 is what covers a guest or a member admitted between
+   meetings.
    **A meeting's date is now set in one place** — that editor. The date field on
    `/oekonomi`'s "Møder uden dato" is gone and its *count* stayed: how many
    meetings lack a date is a fact about those books, but two inputs on one
@@ -135,7 +150,7 @@ behind the login; admins additionally edit news, events and attendance.
 |---|---|---|
 | 0 | Repo + app scaffold + green pipeline | ✅ **done** (T001) |
 | 1 | Schema-as-migration, seed, local stack | ✅ **done** (T010, T012) |
-| 2 | RLS test suite | ✅ **done** (T020) — 40 assertions generated from the rule, green in CI |
+| 2 | RLS test suite | ✅ **done** (T020) — 54 assertions generated from the rule, green in CI |
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
@@ -147,7 +162,7 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 234 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 248 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -171,13 +186,16 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
   Verified in a browser both times: creating, correcting and deleting a news
   item, a calendar entry or a whole meeting with its attendance makes no network
   request at all. The demo is now ~984 kB.
-- `npm run test:rls` — 40 RLS assertions vs the local Supabase stack (~1s).
+- `npm run test:rls` — 54 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,
   and the `rls` job is proven to go red on a real policy regression — see
   T022's working notes for the evidence.
-- Migrations apply clean: 7 tables / 7 RLS-enabled / **22** policies / 2 SECURITY
-  DEFINER functions / 1 signup trigger. The initial migration is faithful to prod
+- Migrations apply clean: 8 tables / 8 RLS-enabled / **24** policies / 2 SECURITY
+  DEFINER functions / 1 signup trigger. Verified by CI's `rls` job on a fresh
+  stack, which is also what proves the `members` seed is safe on a database
+  that is not this club's: the guard inserts none of the ten there, and the
+  four synthetic members come from `seed.sql`. The initial migration is faithful to prod
   (verified 2026-07-24); the 22nd policy is the deliberate 2026-07-26 deviation
   letting admins read member feedback — see PROJECT.md. It must be applied to
   prod at cutover.

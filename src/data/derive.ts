@@ -5,6 +5,7 @@
  * actual logic in it — and it can then be tested exhaustively without a
  * database, which is what keeps the fast suite offline.
  */
+import type { Member, MemberStatus } from './members'
 
 export type RecordRow = {
   id: number
@@ -51,6 +52,12 @@ export type RosterEntry = {
   attended: number
   total: number
   label: string
+  /**
+   * §3 membership status — what every money question in the app is asked of.
+   * Null for a name the attendance history holds and no member row claims; see
+   * `rightsOf` in members.ts for why the absence of a record grants nothing.
+   */
+  status: MemberStatus | null
 }
 
 /**
@@ -77,10 +84,29 @@ export function shortLabels(names: string[]): Record<string, string> {
   return out
 }
 
-/** Every member who has ever appeared, ranked by anciennitet. */
-export function buildRoster(records: RecordRow[], rows: AttendanceRow[]): RosterEntry[] {
+/**
+ * The club's people, ranked by anciennitet.
+ *
+ * Two sources, and they answer different questions. `members` says who the club
+ * *is* and what each of them owes; the attendance rows say what each of them has
+ * turned up to. Neither can stand in for the other — the roster used to be the
+ * attendance names alone, which made "member" mean "has been to a meeting" and
+ * sent the finance page an invoice list ten names long.
+ *
+ * So the union is deliberate in both directions. A member with no attendance yet
+ * appears at once, on nought, which is what a newly admitted member is. And a
+ * name in the history that no member row claims keeps its history — the club's
+ * records are older than its member list, and losing an evening off a chart to
+ * tidy up a table would be a bad trade.
+ */
+export function buildRoster(
+  records: RecordRow[],
+  rows: AttendanceRow[],
+  members: Member[] = [],
+): RosterEntry[] {
   const seen = new Map<string, { attended: number; total: number }>()
   const validIds = new Set(records.map((r) => r.id))
+  for (const m of members) seen.set(m.name, { attended: 0, total: 0 })
 
   for (const row of rows) {
     // A row pointing at a deleted meeting would otherwise inflate the totals.
@@ -91,11 +117,17 @@ export function buildRoster(records: RecordRow[], rows: AttendanceRow[]): Roster
     seen.set(row.member_name, entry)
   }
 
+  const status = new Map(members.map((m) => [m.name, m.status]))
   const names = [...seen.keys()]
   const labels = shortLabels(names)
 
   return names
-    .map((name) => ({ name, ...seen.get(name)!, label: labels[name] }))
+    .map((name) => ({
+      name,
+      ...seen.get(name)!,
+      label: labels[name],
+      status: status.get(name) ?? null,
+    }))
     // Most attendances first; ties alphabetical so the order never jitters
     // between renders, which would make the bar chart look alive when it isn't.
     .sort((a, b) => b.attended - a.attended || a.name.localeCompare(b.name, 'da'))

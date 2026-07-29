@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { READONLY, supabase } from '../lib/supabase'
 import { balancesByMember, buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
+import { canBeFined, paysDues, STATUS_LABEL, STATUS_NOTE } from '../data/members'
+import type { RosterEntry } from '../data/derive'
 import { Loading, Problem } from '../components/State'
 import { FineCapture, type DraftFine } from '../components/FineCapture'
 import { FinanceChart, kr } from '../components/FinanceChart'
@@ -107,6 +109,7 @@ function RecordFines() {
   if (!attendance.data || attendance.data.meetings.length === 0) return null
   const meetings = attendance.data.meetings
   const meeting = meetings.find((m) => m.id === meetingId)
+  const statusOf = new Map(attendance.data.roster.map((r) => [r.name, r.status]))
 
   return (
     <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
@@ -135,9 +138,14 @@ function RecordFines() {
       {meeting && (
         <div className="mt-3 flex flex-col gap-2">
           <FineCapture
-            // Everyone who was at the meeting — you cannot be fined for
-            // toasting early at a meeting you did not attend.
-            members={meeting.present}
+            // Everyone at the meeting who can be fined. Attending is the first
+            // condition — you cannot toast early at a dinner you missed — and
+            // membership status is the second: the founding father incurs no
+            // fines (§12, Lukas 2026-07-29) and attends nearly everything, so
+            // without this he would be the most frequently offered name on the
+            // screen. Left out rather than shown-and-refused: a chip that
+            // cannot be tapped invites the Lead to work out why mid-clean-up.
+            members={meeting.present.filter((n) => canBeFined(statusOf.get(n) ?? null))}
             value={draft}
             onChange={setDraft}
           />
@@ -201,6 +209,52 @@ function MissingDates() {
   )
 }
 
+/**
+ * Who the expected-income line is actually charged to.
+ *
+ * The curve above it is one number a month, and until 2026-07-29 that number
+ * was the size of the roster — wrong, and wrong invisibly, because nothing on
+ * the page said what it was counting. Naming the base and naming every member
+ * left out of it makes the same mistake loud the next time: a member who has
+ * stopped paying and is still in the count, or one who pays and is missing from
+ * it, is now a line of text on the club's own finance page rather than a
+ * discrepancy somebody has to derive.
+ */
+function DuesBasis({ roster, payers }: { roster: RosterEntry[]; payers: RosterEntry[] }) {
+  if (roster.length === 0) return null
+  const exempt = roster.filter((r) => !paysDues(r.status))
+
+  return (
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
+      <SectionTitle onCard>Hvem betaler kontingent</SectionTitle>
+      <p className="mt-1 text-xs leading-relaxed text-muted">
+        Kontingentet opkræves hos <span className="tabular font-semibold">{payers.length}</span>{' '}
+        af klubbens <span className="tabular">{roster.length}</span> medlemmer. Det er det tal,
+        den forventede indtægt er regnet ud fra — ikke hele mødelisten.
+      </p>
+      {exempt.length > 0 && (
+        <ul className="mt-2">
+          {exempt.map((m) => (
+            <li key={m.name} className="border-b border-line py-1.5 last:border-0">
+              <p className="flex justify-between text-xs">
+                <span>{m.name}</span>
+                <span className="text-accent">
+                  {m.status ? STATUS_LABEL[m.status] : 'Ikke registreret som medlem'}
+                </span>
+              </p>
+              <p className="mt-0.5 text-[0.68rem] leading-relaxed text-faint">
+                {m.status
+                  ? STATUS_NOTE[m.status]
+                  : 'Navnet står i mødehistorikken, men klubben har ingen medlemsregistrering på det. Der opkræves intet.'}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 export default function Oekonomi() {
   const { data, isPending, error } = useFinance()
   const attendance = useAttendance()
@@ -238,13 +292,21 @@ export default function Oekonomi() {
     ...dated.map((f) => f.month),
     ...data.payments.map((p) => p.month.slice(0, 7)),
   ].sort()
+  // Who the club charges, from membership status. This was `roster.length`
+  // until 2026-07-29 — everyone who had ever attended a meeting, member or
+  // not, exempt or not — which is why the blue curve has always sat too high.
+  // A flat count across the whole history, not a per-month one: the club has
+  // never recorded when a member joined, and inventing a joining date to make
+  // the early months land would be a guess dressed as a figure.
+  const roster = attendance.data?.roster ?? []
+  const payers = roster.filter((r) => paysDues(r.status))
   const ledger = months.length
     ? buildLedger({
         from: months[0],
         to: months[months.length - 1],
         fines: dated,
         payments: data.payments.map((p) => ({ ...p, month: p.month.slice(0, 7) })),
-        activeMembers: () => attendance.data?.roster.length ?? 0,
+        payingMembers: () => payers.length,
       })
     : []
 
@@ -290,6 +352,8 @@ export default function Oekonomi() {
           undatedMeetings: meetings.filter((m) => !m.month).length,
         }}
       />
+
+      <DuesBasis roster={roster} payers={payers} />
 
       <RecordFines />
       <MissingDates />

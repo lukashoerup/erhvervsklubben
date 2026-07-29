@@ -81,9 +81,40 @@ turns on:
 - **Aktive medlemmer** pay kontingent and hold voting rights.
 - **Inaktive medlemmer** are on pause, pay nothing, and may not attend.
 
-So membership income is **active members × rate**, never all members. Going
+So membership income is **the members who pay × rate**, never all members. Going
 inactive requires 3 months' notice; 2 years inactive triggers a vote on
 returning or moving to alumni status.
+
+Until 2026-07-29 the app could not tell them apart: there was no members table,
+the roster was every distinct `attendances.member_name`, and the ledger charged
+all of it. `public.members` now carries a status per member and `buildLedger` is
+handed the count of those who pay. **Membership status is the source of truth,
+not "has ever appeared in attendances."**
+
+### Founding father — the club's own exemption
+
+**Not in the statutes, and written down here because the app charges money on
+it.** Lukas, 2026-07-29: **Oskar** is a real member and attends, but as a
+*founding father* he
+
+- pays **no kontingent**,
+- incurs **no fines**, and
+- does **not vote on the use of the club's funds** (§12).
+
+He is **not** an inactive member. §3 says an inactive member may not attend, and
+he attends — 22 of the club's meetings. And his **anciennitet is unaffected**:
+§11 earns it by attendance alone, so paying nothing costs him no evenings.
+
+The three exemptions live in one place, the rights table in
+`src/data/members.ts` — one row per status — so the finance code asks rather
+than each screen remembering. `/oekonomi` leaves him out of the expected income
+*and* out of the fine-capture screen from that same fact, and states on the page
+how many members it is charging and who it is not.
+
+**`alumne` (§4 Stk. 5 A) is deliberately not implemented.** It only arises after
+two years of inactivity and a vote, and the club has never had an inactive
+member. Same reasoning as the anciennitet revocation below: it is a check
+constraint and a label the day the club votes one.
 
 **§4 Stk. 2** — admission needs 2/3 approval of active members, and the person
 must first have attended one event as a guest.

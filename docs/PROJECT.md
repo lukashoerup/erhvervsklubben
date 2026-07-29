@@ -41,7 +41,7 @@ without losing data and without taking the old site down until an approved cutov
   Lukas's rule: members read everything, only admins write, personal rows are
   owner-only. Enumerating the grid mostly re-tested the same three ideas; deriving
   from the rule means the tests cannot drift from it, and a new table forces a
-  bucket decision instead of shipping untested. 40 assertions, ~1s.
+  bucket decision instead of shipping untested. 54 assertions, ~1s.
   Why RLS matters here at all, recorded because it will be asked again: the
   browser talks straight to the database, and the initial migration grants
   `authenticated` full access to every table. The policies are not one layer
@@ -201,11 +201,13 @@ without losing data and without taking the old site down until an approved cutov
   *count* stayed — how many meetings still lack a date is a fact about the
   books, and it belongs on the page whose chart it blocks.
 
-  **The editor can name someone the club has never recorded.** The roster is
-  derived from the names already in `attendances`; there is no members table. An
-  eleventh member therefore has no row anywhere and could never be ticked, so
+  **The editor can name someone the club has never recorded.** The roster was
+  derived from the names already in `attendances`; there was no members table.
+  An eleventh member therefore had no row anywhere and could never be ticked, so
   the one meeting that matters — their first — would be the one meeting the app
-  could not record.
+  could not record. *(T069 gave the club a members table, so an admitted member
+  is on the roster before he has attended anything. The field stays, for the
+  guest and for the member admitted between meetings.)*
 
   Not built, and worth stating: no bulk backfill screen, no undo, no attendance
   import. Deleting a meeting is guarded by naming it and counting the ~10
@@ -222,6 +224,41 @@ without losing data and without taking the old site down until an approved cutov
   happens twice. *(T065 makes that flip a tap on `/anciennitet` rather than a
   hand-written statement. Still not revocation: no vote, no revoked state, and
   in the data a revoked attendance and a typo are the same row.)*
+
+- **2026-07-29 — the club has a members table, and only the members who pay are
+  charged (T069).** Until this, "member" meant "appears in `attendances`", which
+  is free text. Two consequences, and the second cost money. §3's active/inactive
+  split existed nowhere in the app, and `buildLedger` was handed `roster.length`
+  — everyone who had ever turned up — so the expected-income curve on `/oekonomi`
+  has been too high since the day it was drawn. Against the club's real books
+  that was **14.000 kr. charged where 12.600 kr. was owed**: the page reported
+  the club 720 kr. short when it is in fact 680 kr. ahead.
+
+  **Statuses: `aktiv`, `inaktiv`, `founding-father`.** The first two are §3
+  verbatim. The third is Lukas's ruling of this date about **Oskar**: a real
+  member who attends, but who **pays no kontingent, incurs no fines and does not
+  vote on the use of the club's funds** (§12). Deliberately not "inactive" —
+  §3 says an inactive member may not attend, and he does. His anciennitet is
+  untouched: §11 earns it by attendance alone.
+
+  **`alumne` (§4 Stk. 5 A) is not built.** It is the far end of a road nobody
+  has walked — two years inactive, then a vote — and the club has never had an
+  inactive member. Same reasoning as anciennitet revocation below. It is a check
+  constraint and a label the day the club votes one.
+
+  **The exemptions are stated once**, in `src/data/members.ts`, as a rights table
+  per status that the finance code asks rather than each screen remembering. The
+  founding father is therefore left out of the income base *and* out of the
+  fine-capture screen from the same fact.
+
+  **The migration is additive.** A `members` table keyed by the existing
+  `member_name` text — no foreign key, no rewrite of `attendances`, and the 235
+  attendances / 28 meetings / 17 fines / 13 payments verified untouched after it
+  ran. Its ten seed rows are guarded by `where exists` against `attendances`, so
+  a database that is not this club's gets the table and no rows; the local
+  stack's four members come from `seed.sql` instead. Classified in
+  `tests/rls/rules.ts` as a shared table: members read, admins write — a member
+  who could edit his own row could set himself inactive and stop being charged.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod

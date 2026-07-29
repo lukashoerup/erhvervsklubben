@@ -1,4 +1,5 @@
 import type { AttendanceRow, RecordRow } from './derive'
+import type { Member } from './members'
 import type { EventItem, NewsItem } from './useClubData'
 
 /**
@@ -28,6 +29,18 @@ const VENUES: [string | null, string, string | null][] = [
 export const DEMO_ROSTER = [
   'Anders', 'Rasmus', 'Esben', 'Oskar', 'Emil', 'Saaby', 'Lukas', 'Mads', 'Kasper', 'Have',
 ]
+
+/**
+ * The statuses, carried into the demo because the finance page now turns on
+ * them: without a member list the demo would charge nobody kontingent and draw
+ * a curve made of fines, which is a worse advertisement than a wrong one.
+ * Oskar's exemption is the club's real one — it is the case the page has to
+ * show working, not a shape.
+ */
+export const demoMembers: Member[] = DEMO_ROSTER.map((name) => ({
+  name,
+  status: name === 'Oskar' ? 'founding-father' : 'aktiv',
+}))
 
 /** Deterministic, so the demo looks the same every time it is opened. */
 function attended(meeting: number, member: number): boolean {
