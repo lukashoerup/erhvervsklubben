@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-27. Single source of truth for "where are we". Update this at the
+_Updated 2026-07-29. Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -10,10 +10,24 @@ end of every working session._
 `vercel.json` and `.env.production` — both committed, nothing in the dashboard.
 
 **Production now has** `fines`, `payments` and `attendance_records.meeting_date`
-(added 2026-07-27, additive, no existing row touched). All 29 meetings and 235
-attendance rows intact. **Every meeting is undated** — the backfill refused to
-guess. `fines` and `payments` are empty; the real figures are in Lukas's Drive
-sheet *Klubbens finanser* and have not been imported.
+(added 2026-07-27, additive, no existing row touched). **28** meetings and 235
+attendance rows intact — the junk duplicate of meeting #27 has since been
+removed, so record ids run 1–27 and 29. **Every meeting is undated** — the
+backfill refused to guess.
+
+**The sheet's history is imported** (2026-07-29, T068): 13 `payments` rows
+summing to **13.280 kr.** and 17 `fines` rows summing to **1.730 kr.**, both
+reconciled against *Klubbens finanser* to the krone, in both directions of the
+grid. Insert-only and re-runnable; the statements are committed as
+`supabase/migrations/20260729120000_finance_history_import.sql`.
+
+Two things are deliberately **not** in there, and are what is left of finance:
+the **Februar 26 fine of 50 kr.** — real and paid, but the sheet never recorded
+whose it was or which dinner it belonged to — and every fine's **offence**. The
+sheet stored amounts only and most amounts have several valid readings, so all
+17 carry `rule_id = 'historisk'` rather than a guessed rule. Because the
+meetings are undated, `/oekonomi` counts all 1.730 kr. in the totals and states
+that it belongs to meetings without a date, which is what it should do.
 
 **Two roles, and only two** (see PROJECT.md 2026-07-27): members read everything
 behind the login; admins additionally edit news, events and attendance.
@@ -46,9 +60,10 @@ behind the login; admins additionally edit news, events and attendance.
    anon-readable tables, and a test asserts it asks for nothing else.
 3. ~~**The finance graph**~~ ✅ **done 2026-07-27 (T061).** `/oekonomi` now draws
    what the club has charged against what has actually arrived, running totals,
-   for every member rather than the treasurer alone. **In production it draws
-   nothing and says why** — no fines, no payments, no meeting dates — which is
-   the honest state and the thing item 5 below fixes.
+   for every member rather than the treasurer alone. It drew nothing in
+   production until T068 put the sheet's history behind it; **since 2026-07-29
+   it draws the real thirteen months.** The meetings are still undated, so the
+   fines sit outside the month-by-month view and the page says how much.
 4. ~~**Admin editing of news, events and attendance**~~ ✅ **done 2026-07-27
    (T063 + T065).** This was Lukas's whole list — *"add and edit news, events,
    and the anciennitet events"* — and all three are now in the app. Neither task
@@ -74,10 +89,16 @@ behind the login; admins additionally edit news, events and attendance.
    Deleting asks a second time and names what will go; for a meeting that
    includes counting the ~10 attendance rows and the fines that cascade with it.
    The club has no backup habit.
-5. **Import the finance figures** from *Klubbens finanser*. Unresolved first:
-   its fine total reads 1.730 kr. against 1.780 kr. in the annual report, and
-   the per-member breakdown loses which Lead's column some fines belong to.
-   Do not import a number that cannot be stood behind.
+5. ~~**Import the finance figures**~~ ✅ **done 2026-07-29 (T068).** Both of the
+   blockers listed here turned out to be answerable. The 1.730 / 1.780 split was
+   never a disagreement — 1.730 is five dinners, 1.780 is six months, and the
+   sixth (Februar 26, 50 kr.) simply never got a column in the grid. And the
+   per-member breakdown does *not* lose which Lead's column a fine belongs to:
+   two formulas in the sheet, `C2 = 100+95+80` and `C4 = 105+50+50+200`, are
+   Lead columns typed verbatim into month cells, which pins the mapping as fact
+   and lets the other three follow uniquely. 13.280 kr. of payments and 1.730 kr.
+   of fines are in. The rule still held: the 50 kr. has no member and no meeting,
+   so it was **not** imported. See `docs/finance-reconciliation.md` §11.
 6. **Known defects** from the 2026-07-27 browser test — cleared in T062, except
    the last one.
    ✅ **Late-arrival minutes** no longer need Enter: the field commits when it
@@ -126,7 +147,7 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 208 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 234 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -171,7 +192,10 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    the monthly ledger says how much it is therefore leaving out. The backfill
    from the events table handled the unambiguous ones and refused to guess the
    rest, so the remaining ones need Lukas's agendas rather than more code.
-3. **Import the sheet's history**, now that dates exist to hang it on.
+3. ~~**Import the sheet's history**~~ ✅ **done 2026-07-29 (T068)** — though not
+   because dates existed to hang it on. They still do not: the fines hang off
+   meeting *records*, and `/oekonomi` reports the 1.730 kr. as belonging to
+   undated meetings until Lukas's agendas supply the dates.
 4. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
 5. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,

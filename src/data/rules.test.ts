@@ -1,4 +1,12 @@
-import { DUES_SCHEDULE, FINE_RULES, duesFor, duesForMonth, fineAmount } from './rules'
+import {
+  DUES_SCHEDULE,
+  FINE_RULES,
+  HISTORIC_RULE_ID,
+  describeRule,
+  duesFor,
+  duesForMonth,
+  fineAmount,
+} from './rules'
 
 describe('fine amounts', () => {
   test('match the regulation', () => {
@@ -64,5 +72,40 @@ describe('membership dues', () => {
   test('the schedule is ordered, so the lookup stays correct', () => {
     const froms = DUES_SCHEDULE.map((r) => r.from)
     expect([...froms].sort()).toEqual(froms)
+  })
+})
+
+describe('rule ids this build does not know', () => {
+  // The 17 fines imported from the old spreadsheet (T068) all carry
+  // 'historisk', because the sheet stored amounts and never which offence
+  // produced them. The page must say so rather than render a blank reason.
+  test('the historic import describes itself', () => {
+    expect(describeRule(HISTORIC_RULE_ID)).toBe('Historisk bøde — forseelse ikke registreret')
+  })
+
+  test('never offered as something to charge', () => {
+    // It has no amount and the club never voted it. If it ever reaches
+    // FINE_RULES it becomes tappable in the capture UI, and a Lead can fine a
+    // member for nothing in particular.
+    expect(FINE_RULES.map((r) => r.id)).not.toContain(HISTORIC_RULE_ID)
+  })
+
+  test('a future rule id renders as unknown and keeps its id', () => {
+    // rule_id is text so the club can vote in a rule without a migration, so
+    // an id from the future is a normal thing to read, not a bug. Blank would
+    // read as "no reason given"; this reads as "not known here", and carries
+    // the id someone debugging needs.
+    expect(describeRule('mobil-ved-bordet')).toBe('Ukendt bøderegel (mobil-ved-bordet)')
+  })
+
+  test('known rules still describe as the regulation words them', () => {
+    expect(describeRule('udeblivelse')).toBe('Udeblivelse uden afbud')
+    expect(describeRule('for-sent')).toBe('For sent fremmøde')
+  })
+
+  test('never blank, whatever it is given', () => {
+    for (const id of ['', 'historisk', 'udeblivelse', 'x', '../../etc']) {
+      expect(describeRule(id).trim().length).toBeGreaterThan(0)
+    }
   })
 })

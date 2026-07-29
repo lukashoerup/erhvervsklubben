@@ -59,6 +59,44 @@ export const FINE_RULES: FineRule[] = [
 export const ONE_FINE_PER_OFFENCE_PER_MEETING = true
 
 /**
+ * The fines imported from the club's old spreadsheet (T068).
+ *
+ * The sheet recorded amounts and nothing else, and against the five rules above
+ * most amounts have several valid readings — 200 kr is `udeblivelse` *or*
+ * thirty minutes late; 100 kr is `sent-afbud` *or* two 50-rules *or* ten
+ * minutes late. Twelve of the eighteen cells are ambiguous that way. Writing a
+ * specific offence against a named member on a guess would be worse than
+ * recording none, so those rows carry this id instead: the money is exact and
+ * the offence is honestly unknown.
+ *
+ * Deliberately *not* a member of `FINE_RULES`. It is not a rule anyone can be
+ * charged under — it has no amount and the club never voted it — so it must
+ * never appear in the capture UI as something to tap. It exists only to be read
+ * back off history. See docs/finance-reconciliation.md.
+ */
+export const HISTORIC_RULE_ID = 'historisk'
+
+/**
+ * What to show for a fine's `rule_id`, including ids this build does not know.
+ *
+ * `fines.rule_id` is text precisely so the club can vote in a new rule without
+ * a schema migration, which means a row can always name a rule this build has
+ * never heard of — a newer rule, or the historic import above. Looking the id
+ * up and rendering whatever came back would print an empty cell for exactly
+ * those rows, and an empty cell beside an amount reads as "no reason given"
+ * rather than "this build does not know that reason yet".
+ *
+ * So an unknown id is stated as unknown and keeps its id, which is the part
+ * anyone debugging it actually needs.
+ */
+export function describeRule(ruleId: string): string {
+  const known = FINE_RULES.find((r) => r.id === ruleId)
+  if (known) return known.offence
+  if (ruleId === HISTORIC_RULE_ID) return 'Historisk bøde — forseelse ikke registreret'
+  return `Ukendt bøderegel (${ruleId})`
+}
+
+/**
  * What a fine comes to. Only late arrival has a per-minute component, and only
  * that rule accepts `minutes`.
  */

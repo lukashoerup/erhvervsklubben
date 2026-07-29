@@ -1,7 +1,9 @@
 # Erhvervsklubben — finance reconciliation and import plan
 
-Investigation only. No files written to `/workspace/erhvervsklubben`, no database
-writes. All Supabase access was `SELECT`. Date of investigation: 2026-07-27.
+Investigation 2026-07-27. **Executed 2026-07-29 as T068 — see §11 for what was
+actually written, what was refused, and where §8.2's "import nothing" verdict
+was overtaken.** Sections 0–10 are the investigation as it stood on 2026-07-27
+and are left unedited, because §11 is only readable against what it changed.
 
 Sources:
 - Google Sheet **"Klubbens finanser"** `1vOyTgOqqme7ad6ttRdr0Pmfy4izjEMY5AVu0BduIwfE`,
@@ -566,3 +568,159 @@ before `fines.record_id` starts pointing at meetings.
 **Deck labelling:** slide 8 of `1gOZ…` reads "BALANCE PR. 31. MAJ 2026 —
 13.280". The sheet puts 11.480 at Maj 26 and 13.280 at Juni 26. The figure is
 the **June** one. The other copy (`1Fag…`) labels it "juni 2026" correctly.
+
+---
+
+## 11. What was imported — T068, 2026-07-29
+
+Executed against production `urlabzyihqrsdeasvrfe`. **Insert-only**: no `UPDATE`
+and no `DELETE` was issued against any table, and `attendance_records`,
+`attendances`, `news`, `events`, `profiles` and `user_member_mapping` were
+counted before and after and are unchanged.
+
+The statements are committed as
+`supabase/migrations/20260729120000_finance_history_import.sql`, so the import
+is reviewable in a diff. Both inserts end in `on conflict … do nothing` against
+the tables' own unique keys — `payments (month)` and
+`fines (record_id, member_name, rule_id)` — so re-running is a no-op. That was
+verified by re-running a sample of both after the fact: 0 rows inserted, counts
+and sums unchanged. `do nothing` rather than `do update` is deliberate: once the
+treasurer corrects a row in the app, a re-run must not silently reassert the
+spreadsheet over him.
+
+To reverse it, exactly and only:
+
+```sql
+delete from public.fines where rule_id = 'historisk';
+delete from public.payments where month between '2025-06-01' and '2026-06-01';
+```
+
+### 11.1 What the source re-verification found
+
+The sheet was re-read from the `.xlsx` export rather than trusting §2–§3.
+Everything material re-verified:
+
+- **`C2 = 100+95+80` and `C4 = 105+50+50+200` are real**, present as formulas,
+  and are the Esben and Lukas Lead columns typed in top-to-bottom order. §3.2's
+  claim stands, and with it the Lead-column-to-meeting mapping. This was the one
+  claim the import was not allowed to take on trust, because a wrong mapping puts
+  a fine on the wrong evening.
+- The Sheet2 grid is unchanged from §2, and `E29`/`C29` are still live `SUM()`s
+  at 13.280 and 1.780.
+- `Faktisk beholdning` is the **exact** running total of `Indbetalinger` across
+  all thirteen months — checked in the sheet and again in the database after
+  writing.
+
+One methodological note for whoever repeats this: the `.xlsx` arrives as
+base64 through the Drive tool, and transcribing ~14 kB of it by hand corrupts
+it. Check `zipfile.testzip()` before believing a single cell. Here exactly one
+entry failed CRC, the damage was localised to a projection row (`G27`), and the
+import-relevant cells were then cross-validated against the CRC-intact
+`sheet2.xml` and against the sheet's own live sums before being used.
+
+### 11.2 `payments` — 13 rows, 13.280 kr.
+
+`amount_kr` from `Indbetalinger`, `bank_balance_kr` from `Faktisk beholdning`.
+`Kontigenter` (charged, not received) and `Forventede bøder` (a forecast) were
+not imported; §8.3 still applies.
+
+Read back from the database after writing:
+
+| check | value |
+|---|---|
+| rows | 13 |
+| `sum(amount_kr)` | **13.280** — matches `E29` and the annual report |
+| final `bank_balance_kr` | 13.280 |
+| `bank_balance_kr` = running total of `amount_kr`, all 13 months | **yes** |
+
+The Februar 26 and Juni 26 rows carry their caveats in `note`, per §8.1: the
+February kontingent of 700 is 100 short of the 800 charged, and the June balance
+is the 2026-06-09 snapshot that §5.3's 400 kr. question hangs on.
+
+### 11.3 `fines` — 17 rows, 1.730 kr.
+
+All 17 carry **`rule_id = 'historisk'`** and **`minutes = 0`**. §7 is right that
+the offence cannot be recovered, but its conclusion — import nothing — was
+overtaken: the money is knowable to the krone even where the offence is not, and
+recording the amount honestly labelled beats recording nothing. `historisk` is
+defined in `src/data/rules.ts` and deliberately kept **out of `FINE_RULES`**, so
+it can never be offered in the capture UI as something to charge a member under.
+
+Read back, per meeting, against Sheet2's own column sums:
+
+| `record_id` | Meeting | Rows | DB total | Sheet column | |
+|---:|---|---|---:|---:|---|
+| 21 | #21 Esben / Bjælkehuset | Anders 80, Kasper 100, Rasmus 95 | 275 | 275 | ✓ |
+| 22 | #22 Lukas / Tivolihallen | Emil 50, Kasper 105, Mads 200, Rasmus 50 | 405 | 405 | ✓ |
+| 23 | #23 Oskar / Café Lindevang | Emil 75, Esben 155, Saaby 75 | 305 | 305 | ✓ |
+| 24 | #24 Emil / Les St Jacques | Esben 70, Saaby 200 | 270 | 270 | ✓ |
+| 25 | #25 Saaby / Marv og Ben | Emil 110, Esben 60, Kasper 60, Mads 185, Saaby 60 | 475 | 475 | ✓ |
+| | | **17 rows** | **1.730** | **1.730** | ✓ |
+
+And against Sheet2's row totals — the second axis, so the grid reconciles both
+ways exactly as it does in the sheet:
+
+| Member | DB | Sheet | Member | DB | Sheet |
+|---|---:|---:|---|---:|---:|
+| Kasper | 265 | 265 | Saaby | 335 | 335 |
+| Emil | 235 | 235 | Esben | 285 | 285 |
+| Rasmus *(Holst)* | 145 | 145 | Anders *(Tørring)* | 80 | 80 |
+| Mads | 385 | 385 | | | |
+
+`Holst = Rasmus` and `Tørring = Anders` were **answered by Lukas on 2026-07-29**,
+closing §9's questions 5 and 6. §6.3's warning that the Tørring evidence was too
+weak to import on was correct at the time; it is no longer the basis.
+
+**Emil's 110 kr. at record 25 is one row, not two.** The sheet's cell is
+`{=60+50}` — two bundled offences (§2). The table's unique key is
+`(record_id, member_name, rule_id)`, which is the regulation's
+one-fine-per-offence-per-meeting rule, so two rows would need two *different*
+rule ids — and with both offences unknown there is no honest pair. Inventing two
+to satisfy a constraint would fabricate precisely what this import refuses to
+guess. The krone total is identical either way.
+
+### 11.4 What was deliberately NOT imported
+
+**The Februar 26 fine of 50 kr.** It is real and it was collected — §3.3's
+`E10 = 700+1545+235` proves the money moved, and it is inside the 1.545 lump, so
+it is not Emil's. But Sheet2 never got a sixth column, so the fine has **no
+member and no meeting**. Record 26 (Anders Lead, Le Petit Rouge, created
+2026-02-21) fits perfectly and remains a hypothesis, not a finding. A fine on
+the wrong evening against the wrong member is worse than a fine not yet entered,
+so it stays out.
+
+**This is the entire gap: imported fines total 1.730, the year's fines were
+1.780, and the difference is this one unattributed 50 kr.** It is an attribution
+gap, not a missing krone — the club has the money.
+
+**Every fine's offence.** Recorded as `historisk` rather than guessed, per §7.
+
+**`Forventede bøder` and the Juli 26 – August 27 projection rows**, per §8.3.
+
+### 11.5 How this renders
+
+`/oekonomi` never selects `rule_id`, so `historisk` cannot blank or break
+anything there; `src/data/rules.ts` now also exports `describeRule()`, which
+names an unknown id instead of rendering an empty cell beside an amount. Tests
+cover both, plus the imported books end to end.
+
+All 28 meetings are still undated, so **all 1.730 kr. counts towards what the
+club is owed but sits outside the month-by-month ledger**, and the page states
+the amount it is leaving out rather than dumping it into an arbitrary month.
+That is designed behaviour (§6.2's caveat: `created_at` orders meetings but must
+never be written into `meeting_date`), and it resolves itself as Lukas supplies
+the real dates on `/anciennitet`.
+
+### 11.6 Still open after this
+
+Unchanged and still needing Lukas: §9 questions **1–2** (whose 50 kr., and was
+it the Le Petit Rouge dinner), **3** (the 400 kr. — scroll the bank statement two
+rows further back), **4** (do the Leads still have their notes, which is the only
+thing that could ever replace `historisk` with real offences), and **7–10**.
+Questions **5 and 6 are now answered** and were used.
+
+§10's repo issues were partly overtaken by events: `src/data/ledger.ts` and
+`src/pages/Oekonomi.tsx` have since been corrected to describe the 50 kr.
+accurately, and the junk `attendance_records` row id 28 has been deleted — the
+table now holds 28 rows with ids 1–27 and 29, which is why the fines could be
+hung off records 21–25 without ambiguity.
