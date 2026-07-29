@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthContext, type AuthState } from '../auth/AuthContext'
 import { minTapHeightPx, withQuery } from '../test/harness'
@@ -234,5 +234,88 @@ describe('the club as it actually stands', () => {
     expect(counted).toHaveTextContent('29')
     expect(counted).toHaveTextContent(/under Anciennitet/)
     expect(document.querySelectorAll('input[type="date"]')).toHaveLength(0)
+  })
+})
+
+/**
+ * The books exactly as T068 imported them: the 13 monthly payments and the 17
+ * fines from "Klubbens finanser", against meetings that still have no dates.
+ *
+ * Worth pinning as a fixture rather than a generic one, because this is the
+ * only data the page has in production right now, and two of its properties
+ * are easy to regress. The fines carry `rule_id = 'historisk'`, an id no rule
+ * in this build defines; and every meeting they hang off is undated, which is
+ * the branch that decides whether 1.730 kr is counted or quietly dropped.
+ */
+function theImportedBooks() {
+  const grid: [number, string, number][] = [
+    [21, 'Kasper', 100], [21, 'Rasmus', 95], [21, 'Anders', 80],
+    [22, 'Kasper', 105], [22, 'Emil', 50], [22, 'Rasmus', 50], [22, 'Mads', 200],
+    [23, 'Emil', 75], [23, 'Saaby', 75], [23, 'Esben', 155],
+    [24, 'Saaby', 200], [24, 'Esben', 70],
+    [25, 'Kasper', 60], [25, 'Emil', 110], [25, 'Mads', 185], [25, 'Saaby', 60], [25, 'Esben', 60],
+  ]
+  const months = ['2025-06', '2025-07', '2025-08', '2025-09', '2025-10', '2025-11',
+    '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06']
+  const amounts = [800, 800, 800, 800, 800, 800, 800, 800, 2480, 800, 900, 900, 1800]
+  rows = {
+    attendance_records: Array.from({ length: 28 }, (_, i) => ({
+      id: i + 1,
+      meeting_number: i + 1,
+      lead: 'Esben',
+      pre_location: null,
+      main_location: 'Propaganda',
+      post_location: null,
+      meeting_date: null,
+    })),
+    attendances: ROSTER.map((name) => ({ record_id: 21, member_name: name, attended: true })),
+    fines: grid.map(([record_id, member_name, amount_kr]) => ({
+      member_name,
+      amount_kr,
+      record_id,
+      rule_id: 'historisk',
+    })),
+    payments: months.map((m, i) => ({ month: `${m}-01`, amount_kr: amounts[i] })),
+  }
+}
+
+describe('the imported spreadsheet history (T068)', () => {
+  it('counts every krone of it, on a rule id this build never defined', async () => {
+    theImportedBooks()
+    renderPage('admin')
+    await screen.findByRole('img')
+    // 13.280 received and 1.730 owed are the two figures the whole import has
+    // to reproduce. If either moves, the import or the arithmetic is wrong.
+    // Read off the treasurer's own card: both figures legitimately appear
+    // elsewhere on the page, and a loose match would pass on the wrong one.
+    const card = screen.getByText(/Klubkassen/).closest('section')!
+    expect(within(card).getByText('13.280 kr.')).toBeInTheDocument()
+    expect(within(card).getByText('1.730 kr.')).toBeInTheDocument()
+  })
+
+  it('says out loud that the fines sit on meetings with no date', async () => {
+    theImportedBooks()
+    renderPage('admin')
+    await screen.findByRole('img')
+    // Not silently dropped and not dumped into an arbitrary month, either of
+    // which would misstate a quarter. The page states the amount it left out.
+    expect(
+      screen.getByText(/1\.730 kr\. i bøder hører til møder uden dato/),
+    ).toBeInTheDocument()
+  })
+
+  it('names every fined member with the right total', async () => {
+    theImportedBooks()
+    renderPage('admin')
+    await screen.findByRole('img')
+    // The sheet's own row totals, which is the second axis the grid balances
+    // on. Rasmus and Anders are the sheet's "Holst" and "Tørring".
+    for (const [member, total] of [
+      ['Kasper', '265 kr.'], ['Emil', '235 kr.'], ['Rasmus', '145 kr.'],
+      ['Mads', '385 kr.'], ['Anders', '80 kr.'], ['Saaby', '335 kr.'], ['Esben', '285 kr.'],
+    ]) {
+      expect(screen.getByText(member)).toBeInTheDocument()
+      expect(screen.getByText(total)).toBeInTheDocument()
+    }
   })
 })

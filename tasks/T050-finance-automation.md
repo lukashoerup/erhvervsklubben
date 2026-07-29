@@ -142,8 +142,12 @@ Design consequences, already applied to the mockups:
 - [x] Expected balance reconciles to the sheet's history — proven in
       `src/data/ledger.test.ts` against the real figures (8 × 100 kr through
       May 26, 9 × 200 kr from June)
-- [x] The 50 kr discrepancy cannot recur: nothing is stored, so a total and its
-      parts cannot disagree. Asserted directly.
+- [x] Nothing is stored, so a total and its parts cannot disagree. Asserted
+      directly. **Corrected 2026-07-29 (T068):** this does not make the 50 kr
+      recur-proof, because the sheet's totals never disagreed with their parts.
+      The grid was missing a whole meeting's column, and a derived total is
+      short by exactly the same 50 kr if a meeting is never recorded. What
+      catches that is a missing meeting being visible on Anciennitet.
 - [x] Finance table classified `ADMIN_ONLY_TABLES`; a member reading it gets
       zero rows, proven by the existing generated test
 - [x] Quarterly reconciliation prompt to Lukas via Telegram
@@ -169,8 +173,12 @@ reconciliation, then the quarterly prompt.
   all the arithmetic. 54 fast tests, still fully offline.
 - **Nothing is stored that can be derived.** Dues, fines totals, running
   balances, per-member ledgers and quarterly totals are all computed. The old
-  sheet stored its totals, which is exactly how it came to disagree with itself
-  by 50 kr — that class of error is now impossible rather than merely fixed.
+  sheet stored its totals — but **that is not what the 50 kr was**, and the
+  claim that this class of error is now impossible was wrong. See
+  docs/finance-reconciliation.md: `C29` was a live `SUM()` and correct at 1.780;
+  the 1.730 came from a different sheet covering five of six meetings. The
+  failure was a missing dimension in the breakdown, which deriving does not
+  prevent. Deriving is still right; it just buys something else.
 - `fines.amount_kr` *is* stored, deliberately and as an exception: if the club
   later votes to change a fine, history must still show what was owed at the
   time rather than being silently re-priced.
