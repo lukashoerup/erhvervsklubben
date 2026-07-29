@@ -42,6 +42,21 @@ export const demoMembers: Member[] = DEMO_ROSTER.map((name) => ({
   status: name === 'Oskar' ? 'founding-father' : 'aktiv',
 }))
 
+/**
+ * "Sidst set", fabricated (T074). Eight of the ten, spread over three weeks, so
+ * the demo shows the case the real screen has to handle: some today, some a
+ * fortnight ago, and two members with no login at all.
+ *
+ * Relative to now rather than fixed dates — a demo whose newest visit is
+ * eighteen months old reads as a broken feature rather than a quiet one.
+ */
+export const demoLastSeen: Record<string, string> = Object.fromEntries(
+  DEMO_ROSTER.slice(0, 8).map((name, i) => [
+    name,
+    new Date(Date.now() - [0, 0, 1, 2, 4, 9, 16, 23][i] * 86_400_000).toISOString(),
+  ]),
+)
+
 /** Deterministic, so the demo looks the same every time it is opened. */
 function attended(meeting: number, member: number): boolean {
   if (member >= 8) return (meeting * 7 + member) % 4 === 0 // the two who rarely come

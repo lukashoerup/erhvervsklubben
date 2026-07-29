@@ -323,6 +323,45 @@ without losing data and without taking the old site down until an approved cutov
   only February 2026 dinner, so `fines` now total **1.780 kr.** and match the
   annual report.
 
+- **2026-07-29 — the app records member *behaviour* for the first time, and the
+  boundary is in the schema (T074).** Lukas asked how often the members visit.
+  Nothing could answer: `auth.users.last_sign_in_at` only moves when a password
+  is typed, and a session lasts months — Saaby signed in last October and was
+  still on that session in February. His ruling, and the whole scope:
+
+  > Én linje per medlem med "sidst set", opdateret ved hvert besøg. **Ingen
+  > sporing af hvad de kigger på.**
+
+  This is worth its own entry rather than a line in STATUS.md, because it is the
+  first thing this app has ever stored about what a *member did*, as against what
+  the club did. Everything else here — meetings, attendance, fines, payments,
+  who is a member — is a club fact, minuted, and would exist on paper if the site
+  did not. A visit is not. So the limit is built into the schema instead of
+  living in a convention: **one row per account, one `timestamptz`, overwritten.**
+  There is no events table, no page column and no counter, and the count of
+  visits is therefore unrecoverable by construction. Anything that records
+  *which screens* a member opened is a new decision by Lukas, not an extension of
+  this one — and it would need a second column, which is the point.
+
+  **Where it lives, and why not on `profiles`.** `profiles` holds `role`, and its
+  only UPDATE policy is *Only admins can update profiles* — verified in T010 as
+  the thing preventing role self-escalation. Letting a member write his own
+  timestamp there means relaxing that policy, and relaxing an UPDATE policy on
+  the table that holds `role` is a write path to `role`. It would also have been
+  unreadable: `profiles` SELECT is own-row-only *even for admins*. So the
+  timestamp is `public.member_last_seen`, keyed by `user_id`, with **no INSERT,
+  UPDATE or DELETE policy for anyone** — the only writer is `touch_last_seen()`,
+  a `security definer` function that **takes no arguments** and so cannot be
+  aimed at another member's row. Reads are own-row plus admin, the same shape as
+  the 2026-07-26 evaluations deviation.
+
+  **Shown folded shut, alphabetically, on `/anciennitet`, to the admin only.**
+  In a club of ten where everyone knows everyone, a permanent list of who has not
+  been around is a different social object from a fact you can go and look up,
+  and ordering it by recency would build the league table the fold exists to
+  avoid. Two of the ten have no login at all; that is said in words, never as a
+  date.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

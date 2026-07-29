@@ -10,8 +10,8 @@ end of every working session._
 `vercel.json` and `.env.production` — both committed, nothing in the dashboard.
 
 **Production now has** `fines`, `payments`, `attendance_records.meeting_date`
-(added 2026-07-27) and, since 2026-07-29, **`members`** (T069) — all additive,
-no existing row touched. **28** meetings and 235
+(added 2026-07-27) and, since 2026-07-29, **`members`** (T069) and
+**`member_last_seen`** (T074) — all additive, no existing row touched. **28** meetings and 235
 attendance rows intact — the junk duplicate of meeting #27 has since been
 removed, so record ids run 1–27 and 29. **17 of the 28 meetings now carry a
 date** (2026-07-29, T071) — see below.
@@ -176,6 +176,41 @@ count alone, as a clause in the finance chart's own caption: the height of the
 blue line is nine times the rate and not ten, and that is the one thing on the
 page a member cannot work out from knowing his own club.
 
+**The club can see when its members were last here** (2026-07-29, T074). Lukas
+asked how often the members visit and nothing could answer: `last_sign_in_at`
+only moves when somebody types a password, and a session lasts months — Saaby
+signed in last October and was still on that session in February. What he
+approved is exactly this and no more: *"én linje per medlem med 'sidst set',
+opdateret ved hvert besøg. Ingen sporing af hvad de kigger på."*
+
+So there is **one row per account and one timestamp, overwritten** — no events
+table, no page column, no counter, and the count of visits unrecoverable by
+construction. It fires once per app load, never blocks or breaks a page, and is
+a no-op in the demo and under `VITE_READONLY=1`.
+
+**The security part is the part to read.** `profiles` holds `role` and its only
+UPDATE policy is what stops a member promoting himself, so `last_seen` is *not*
+a column there — it is `public.member_last_seen`, keyed by `user_id`, with **no
+INSERT, UPDATE or DELETE policy for anyone, admin included.** The only writer is
+`touch_last_seen()`, a security definer function that **takes no arguments** and
+therefore cannot be aimed at another member's row. Eight named assertions in
+`tests/rls/rls.test.ts`, and the same eight proved by hand against production
+inside rolled-back transactions.
+
+One bug production found that a local database could not: `revoke … from public`
+does not remove `anon`'s EXECUTE on a new function, because a hosted project
+carries a **default privilege** granting it — a hole that passes every local
+check and is open in prod. `revoke … from anon` is now an explicit line, and
+Supabase's own advisor confirms the function is `authenticated`-only. Applied to
+production 2026-07-29; the club's data read back **unchanged** (28 meetings, 235
+attendances, 18 fines / 1.780 kr., 13 payments / 13.280 kr., 10 members) and
+`member_last_seen` at 0 rows.
+
+An admin sees it on `/anciennitet`, **folded shut and alphabetical**: in a club
+of ten a permanent ranking by absence is a different social object from a fact
+you can go and look up. Two of the ten have no login at all, which is said in
+words rather than rendered as a date.
+
 **Two roles, and only two** (see PROJECT.md 2026-07-27): members read everything
 behind the login; admins additionally edit news, events and attendance.
 
@@ -286,7 +321,7 @@ behind the login; admins additionally edit news, events and attendance.
 |---|---|---|
 | 0 | Repo + app scaffold + green pipeline | ✅ **done** (T001) |
 | 1 | Schema-as-migration, seed, local stack | ✅ **done** (T010, T012) |
-| 2 | RLS test suite | ✅ **done** (T020) — 54 assertions generated from the rule, green in CI |
+| 2 | RLS test suite | ✅ **done** (T020) — 62 assertions, generated from the rule bar the eight T074 writes named by hand, green in CI |
 | 3 | App shell + auth + role gating | ✅ **done** (T030) — login, route gating, 23 offline tests |
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
@@ -298,7 +333,7 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 300 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 318 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
@@ -322,13 +357,13 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
   Verified in a browser both times: creating, correcting and deleting a news
   item, a calendar entry or a whole meeting with its attendance makes no network
   request at all. The demo is now ~984 kB.
-- `npm run test:rls` — 54 RLS assertions vs the local Supabase stack (~1s).
+- `npm run test:rls` — 62 RLS assertions vs the local Supabase stack (~1s).
 - **CI on every push/PR** (`.github/workflows/ci.yml`): `checks` (lint, build,
   unit) and `rls` (Supabase stack in the runner + the RLS suite). Both green,
   and the `rls` job is proven to go red on a real policy regression — see
   T022's working notes for the evidence.
-- Migrations apply clean: 8 tables / 8 RLS-enabled / **24** policies / 2 SECURITY
-  DEFINER functions / 1 signup trigger. Verified by CI's `rls` job on a fresh
+- Migrations apply clean: **11** tables / 11 RLS-enabled / **28** policies / **3**
+  SECURITY DEFINER functions / 1 signup trigger (measured 2026-07-29, T074). Verified by CI's `rls` job on a fresh
   stack, which is also what proves the `members` seed is safe on a database
   that is not this club's: the guard inserts none of the ten there, and the
   four synthetic members come from `seed.sql`. The initial migration is faithful to prod

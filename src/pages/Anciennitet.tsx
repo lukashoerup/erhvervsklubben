@@ -5,6 +5,7 @@ import { READONLY } from '../lib/supabase'
 import { daDate } from '../lib/dates'
 import { AttendanceSummary, MeetingCard } from '../components/MeetingCard'
 import { DeleteConfirm, EditButton, NewButton } from '../components/AdminEdit'
+import { LastSeen } from '../components/LastSeen'
 import { deltagelser, MeetingEditor } from '../components/MeetingEditor'
 import { Loading, Problem } from '../components/State'
 
@@ -70,6 +71,14 @@ export default function Anciennitet() {
     <div className="flex flex-col gap-3">
       {newMeeting}
       <AttendanceSummary roster={data.roster} />
+
+      {/* "Sidst set", folded shut, for the admin only (T074). On this page
+          because it is the only screen that already lists the club by name, and
+          the one an admin is on when he is thinking about the membership rather
+          than about a meeting. Read-only builds keep it: it reads, it never
+          writes, and a preview of the club's real data should show the club's
+          real screens. */}
+      {role === 'admin' && <LastSeen roster={names} />}
 
       {data.meetings.map((m) =>
         mayEdit && open === m.id ? (
