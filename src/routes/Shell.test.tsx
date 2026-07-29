@@ -43,6 +43,25 @@ test('“Log ud” is big enough to hit with a thumb', () => {
   expect(minTapHeightPx(screen.getByRole('button', { name: 'Log ud' }))).toBeGreaterThanOrEqual(44)
 })
 
+test('the logo goes back to the club’s front page, past the redirect', async () => {
+  // The bug this covers is not the link, it is the forward behind it: `/`
+  // sends a signed-in member to /hjem, so a logo pointing at `/` bounces
+  // straight back and the landing page stays unreachable — which is exactly
+  // the state Lukas found it in. The route below is the real Landing's
+  // stand-in; what is asserted is that the click arrives somewhere at all.
+  const user = userEvent.setup()
+  renderShell()
+  await user.click(screen.getByRole('link', { name: 'Til forsiden' }))
+  expect(await screen.findByText('Forsiden')).toBeInTheDocument()
+})
+
+test('the logo is big enough to hit with a thumb', () => {
+  renderShell()
+  expect(minTapHeightPx(screen.getByRole('link', { name: 'Til forsiden' }))).toBeGreaterThanOrEqual(
+    44,
+  )
+})
+
 test('signing out leaves you on the club’s public page', async () => {
   const user = userEvent.setup()
   renderShell()

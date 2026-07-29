@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { Meeting, RosterEntry } from '../data/derive'
 import { daDate } from '../lib/dates'
 import { Icon } from './Icon'
+import { Eyebrow } from './SectionTitle'
 
 /** Short month, because 29 of these stack down a phone. The year stays. */
 const SHORT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
@@ -78,9 +79,17 @@ export function MeetingCard({
        a page still loading, not as choreography. The stagger here is the
        scroll itself: the cards enter one after another because they are
        stacked, so the thumb supplies the offset. */
-    <article data-reveal className="rounded-2xl border border-line bg-surface p-3">
-      <div className="relative flex items-baseline gap-2">
-        <span className="tabular text-[0.95rem] font-semibold text-accent">{meeting.number}</span>
+    <article data-reveal className="rounded-2xl border border-line bg-surface p-4">
+      <div className="relative flex items-baseline gap-2.5">
+        {/* The meeting's number, and the page's face.
+            /anciennitet is the club's rhythm — twenty-nine evenings, one after
+            another, and the number is the only thing that changes at the same
+            place on every card. It was 15 px of the same blue as the section
+            labels and the links, so it read as one more emphasis rather than as
+            the count it is. Serif at 20 px, in ink: the beat is now legible
+            from a thumb-scroll, and the blue it gives up is on the streg under
+            the lead's name, where §01 puts the club's signature. */}
+        <span className="ek-figure text-[1.25rem] leading-none">{meeting.number}</span>
         <h3 className="text-[0.92rem] font-semibold">{meeting.lead || 'Ukendt lead'}</h3>
         <span className="tabular ml-auto text-[0.65rem] text-faint">
           {meeting.date ? daDate(meeting.date, SHORT) : 'uden dato'}
@@ -103,7 +112,7 @@ export function MeetingCard({
           by whichever font the phone reached for. `arrow_right_alt` is the
           set's long arrow: the same mark, from the shipped file. */}
       {meeting.route.length > 0 && (
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1.5 text-xs text-muted">
           {meeting.route.map((stop, i) => (
             <span key={stop + i}>
               {i > 0 && (
@@ -117,7 +126,7 @@ export function MeetingCard({
         </p>
       )}
 
-      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.6rem] text-faint">
+      <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.6rem] text-faint">
         <span className="flex items-center gap-1.5">
           <span aria-hidden="true" className={`size-3 rounded-[3px] border ${SWATCH.present}`} />
           <span className="tabular">{meeting.present.length}</span> til stede
@@ -135,7 +144,7 @@ export function MeetingCard({
           one screen §04 asks to stay cheap. The whole strip as one thing costs
           nothing and still says "who was there" arrives after "whose evening it
           was". See .ek-strip in index.css. */}
-      <div className="ek-strip mt-1.5 flex flex-wrap gap-1">
+      <div className="ek-strip mt-2 flex flex-wrap gap-1">
         {meeting.present.map((n) => pip(n, true))}
         {meeting.absent.map((n) => pip(n, false))}
       </div>
@@ -160,11 +169,9 @@ export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
   const top = roster[0]?.attended ?? 0
   const total = roster[0]?.total ?? 0
   return (
-    <section data-reveal className="rounded-2xl border border-line bg-surface p-3">
-      <p className="text-[0.58rem] tracking-[0.14em] text-accent uppercase">
-        Anciennitet · antal deltagelser{total ? ` af ${total}` : ''}
-      </p>
-      <ul className="mt-2 flex items-end gap-1">
+    <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
+      <Eyebrow>Anciennitet · antal deltagelser{total ? ` af ${total}` : ''}</Eyebrow>
+      <ul className="mt-3 flex items-end gap-1">
         {roster.map((r) => (
           <li
             key={r.name}

@@ -87,6 +87,44 @@ the window is. It is drawn as a dashed line, labelled `Forventede bøder ·
 budget`, and says on the page that it is not money the club holds. **No
 migration, nothing stored.**
 
+**The screens have a hierarchy now** (2026-07-29, T072). Lukas, having looked at
+all six: *"Det er lidt ensartet med farverne, og tekststykkerne på nogle af
+siderne virker meget voldsomme og store."* He was offered a smaller type scale
+and said no, so **nothing was made smaller.** The accent had been doing four
+jobs at once — headings, figures, links and section labels — which is exactly
+why a page of six cards read as one texture. It now means one thing, *this can
+be tapped*, and the club's **numbers are set in Instrument Serif**: the contrast
+comes out of hue and goes into the typeface, with no new colour anywhere. Each
+screen was given one face — Hjem its figures, Anciennitet its rhythm, Økonomi
+its curve, Regler its text — and `/regler`, the heaviest of them, got a statute
+title that finally out-weighs its own paragraphs (14.4 px/600 ink over
+12 px/400 muted, indented, with air around it) instead of the 0.8 px that used
+to do that job. Measured after: **zero failing contrast pairs across 1860 pairs
+on all eight screens in both themes**, every tap target at 44 px bar the demo
+bar's own switch, no horizontal scroll at 420 px, and Anciennitet's scroll cost
+unchanged. Which idiom the figures follow, and why the design system supports
+both, is in `design/README.md`.
+
+**The club's front page is reachable again** (2026-07-29, T072). Lukas: *"Der er
+ingen måde at man kan navigere tilbage til animationsforsiden."* He was right —
+`/` forwards a signed-in member to `/hjem` (T060, and deliberately: both
+audiences share the URL people type and share), so the landing page with the
+logo intro was live and unvisitable from inside the app. **The logo lockup in
+the top-left is now a link to it**, in the app bar and on `/login`, and the
+forward yields to it: the link navigates with `state={{ forside: true }}`, which
+rides that one history entry rather than the URL, so a typed, bookmarked or
+shared `/` still forwards exactly as before. Covered by a test.
+
+**"Hvem betaler kontingent" is gone from `/oekonomi`** (2026-07-29, T072).
+Lukas: *"Det ved alle godt."* The card named the nine payers of ten and quoted
+§12 under Oskar's name; in a club of ten that is a card explaining what everyone
+already knows. **Nothing about the money changed** — `MEMBER_RIGHTS` in
+`src/data/members.ts` is untouched, and it is what actually stops the founding
+father being charged and being offered on the fine screen. What survived is the
+count alone, as a clause in the finance chart's own caption: the height of the
+blue line is nine times the rate and not ten, and that is the one thing on the
+page a member cannot work out from knowing his own club.
+
 **Two roles, and only two** (see PROJECT.md 2026-07-27): members read everything
 behind the login; admins additionally edit news, events and attendance.
 
@@ -202,14 +240,14 @@ behind the login; admins additionally edit news, events and attendance.
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
 | 6 | Admin write flows | ✅ **done** — fines, news/events create/edit/delete (T063), and the attendance history itself (T065). Nothing about the club's records is typed into the database by hand any more. |
-| 7 | Design | ✅ **done** — corporate blue, the surfaces and the logo intro in `src/index.css` (T031/T060); the two Instrument fonts self-hosted and the system applied to all six members' screens (T064); the icon set and a conformance sweep of all eight screens (T066). The dark palette was silently absent from the build until T058 — see its notes. Still open, and all of it written up in `design/README.md`: the members' **type scale** sits one notch below §04's own phone mocks, §01's count-up on figures, and no motion on iOS before Safari 26. |
+| 7 | Design | ✅ **done** — corporate blue, the surfaces and the logo intro in `src/index.css` (T031/T060); the two Instrument fonts self-hosted and the system applied to all six members' screens (T064); the icon set and a conformance sweep of all eight screens (T066); the visual hierarchy — accent for action only, figures in the serif, one face per screen (T072). The dark palette was silently absent from the build until T058 — see its notes. Still open, and all of it written up in `design/README.md`: the members' **type scale** sits one notch below §04's own phone mocks, §01's count-up on figures, and no motion on iOS before Safari 26. |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
 
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 283 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 285 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom

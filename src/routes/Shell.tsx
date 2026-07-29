@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useMyMemberName } from '../data/useClubData'
 import { Icon } from '../components/Icon'
@@ -60,7 +60,31 @@ export function Shell() {
           puts a banner above this; everywhere else it falls back to 0px. */}
       <div className="mx-auto flex min-h-[calc(100dvh-var(--demo-bar,0px))] max-w-lg flex-col">
         <header className="flex items-center justify-between border-b border-line px-4 py-3">
-          <span className="flex items-center gap-2.5">
+          {/* The way back to the club's own front page, which until now did not
+              exist: `/` forwards a signed-in member to /hjem (T060, and rightly
+              — both audiences share the URL people type), so the landing page
+              was live and unvisitable. Lukas, 2026-07-29: "Der er ingen måde at
+              man kan navigere tilbage til animationsforsiden … evt. ved at
+              klikke på logo oppe i venstre hjørne." His own suggestion, which
+              is also the convention every site he uses follows, so the mark
+              only has to behave the way he already expects it to.
+
+              `state={{ forside: true }}` is what stops the forward eating the
+              tap — see Landing.tsx, ASKED_FOR. The state rides the history
+              entry rather than the URL, so nothing a member could copy out of
+              the address bar carries it.
+
+              aria-label rather than the lockup's own text: the accessible name
+              of a link should say where it goes, and "Erhvervsklubben Lukas
+              Hørup" says who we are. 44 px, bought with padding that the
+              negative margins hand straight back, so the bar keeps the height
+              it had — the same trick "Log ud" uses at the other end of it. */}
+          <Link
+            to="/"
+            state={{ forside: true }}
+            aria-label="Til forsiden"
+            className="-my-3 -ml-1.5 inline-flex min-h-11 items-center gap-2.5 rounded-btn px-1.5 transition-opacity active:opacity-60"
+          >
             {/* The drawn mark, the same component the landing page uses, rather
                 than the letters EK set in a navy box. Two renderings of one
                 logo is part of how the app came to look like two products, and
@@ -75,12 +99,16 @@ export function Shell() {
                   page of the club's own attendance reads as somebody's data
                   rather than yours. Falls back to nothing — two of the ten
                   members have no row in user_member_mapping, and a blank line
-                  is better than the word "medlem" pretending to be a name. */}
+                  is better than the word "medlem" pretending to be a name.
+
+                  Inside the link, not beside it: it doubles the width of the
+                  target, and the aria-label above means it costs the link's
+                  name nothing. */}
               {me && (
                 <span className="mt-0.5 text-[0.62rem] tracking-wide text-muted">{me}</span>
               )}
             </span>
-          </span>
+          </Link>
           {/* The word is 37 × 16 px of ink and used to be 37 × 16 px of button,
               on every page in the app. The design system asks for 48 × 48; the
               padding that buys it is pulled straight back out with negative

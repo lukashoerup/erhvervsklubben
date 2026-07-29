@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Icon } from '../components/Icon'
 import { daDate } from '../lib/dates'
 import { useAttendance, useMyMemberName, useNews, useUpcoming } from '../data/useClubData'
+import { Eyebrow } from '../components/SectionTitle'
 
 /**
  * The front page, rebuilt around what members actually open the app for.
@@ -32,17 +33,16 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* The one display line on the screen, and the design system's mobile
-          Hjem puts it here: "NÆSTE MØDE / Møde #29 / torsdag 13. august". Serif
-          because §03 pairs Instrument Serif with display sizes only — the
-          labels, the figures and the body stay Sans, and "tal i 700" is why the
-          three counts below are not set in it. */}
+      {/* The display line the design system's mobile Hjem opens with: "NÆSTE
+          MØDE / Møde #29 / torsdag 13. august". The card keeps its blue rule —
+          §04 marks the live row by border weight, and this is the only card in
+          the app that is one. */}
       <section data-reveal className="rounded-2xl border border-accent-d bg-surface p-4">
-        <p className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">Næste møde</p>
+        <Eyebrow>Næste møde</Eyebrow>
         {next ? (
           <>
-            <h2 className="mt-1.5 font-serif text-[1.75rem] leading-[1.1]">{next.title}</h2>
-            <p className="mt-1 text-sm text-muted">
+            <h2 className="mt-2 font-serif text-[1.75rem] leading-[1.1]">{next.title}</h2>
+            <p className="mt-1.5 text-sm text-muted">
               {daDate(next.date, { weekday: 'long', day: 'numeric', month: 'long' })}
               {next.time ? ` · ${next.time}` : ''}
             </p>
@@ -58,11 +58,11 @@ export default function Home() {
           </>
         ) : (
           <>
-            <h2 className="mt-1.5 font-serif text-[1.5rem] leading-[1.15]">Ikke planlagt endnu</h2>
+            <h2 className="mt-2 font-serif text-[1.5rem] leading-[1.15]">Ikke planlagt endnu</h2>
             {/* Not a neutral empty state: the statutes require two meetings to
                 be in the calendar at all times, so nothing scheduled is a fact
                 worth surfacing rather than hiding behind a blank card. */}
-            <p className="mt-1 text-sm text-muted">
+            <p className="mt-1.5 text-sm text-muted">
               Vedtægterne §9: der planlægges altid to møder forud.
             </p>
           </>
@@ -82,12 +82,14 @@ export default function Home() {
       )}
 
       {latest && (
-        <Link to="/nyheder" data-reveal className="rounded-2xl border border-line bg-surface p-3">
-          <p className="tabular text-[0.6rem] tracking-[0.1em] text-accent uppercase">
+        <Link to="/nyheder" data-reveal className="rounded-2xl border border-line bg-surface p-4">
+          {/* Muted, where this was blue. A date is not something you can tap;
+              the whole card is, and it says so by being a link. */}
+          <p className="tabular text-[0.6rem] tracking-[0.1em] text-muted uppercase">
             {daDate(latest.date, { day: 'numeric', month: 'long' })}
           </p>
-          <h3 className="mt-1 text-[0.95rem] leading-snug font-semibold">{latest.title}</h3>
-          <p className="mt-1 text-xs text-muted">{latest.excerpt}</p>
+          <h3 className="mt-1.5 text-[0.95rem] leading-snug font-semibold">{latest.title}</h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted">{latest.excerpt}</p>
         </Link>
       )}
 
@@ -95,14 +97,15 @@ export default function Home() {
         <Link
           to="/oekonomi"
           data-reveal
-          className="rounded-2xl border border-line bg-surface p-3 text-sm text-muted"
+          className="rounded-2xl border border-line bg-surface p-4 text-sm text-muted"
         >
-          <span className="text-[0.6rem] tracking-[0.14em] text-accent uppercase">Kasserer</span>
+          <Eyebrow>Kasserer</Eyebrow>
           {/* §03 lists `north_east` as "Link" and this is the only one on the
-              screen. It was a → that Instrument does not draw. */}
-          <span className="mt-1 flex items-center gap-1.5 text-ink">
+              screen. It was a → that Instrument does not draw. Blue, and one of
+              the few things left that is: this line goes somewhere. */}
+          <span className="mt-1.5 flex items-center gap-1.5 text-accent">
             Klubkassen
-            <Icon name="north_east" className="text-sm text-accent" />
+            <Icon name="north_east" className="text-sm" />
           </span>
         </Link>
       )}
@@ -112,9 +115,23 @@ export default function Home() {
 
 /* The three counts, as the system's mobile Hjem lays them out — its own mock
    sets exactly these three, "19 / 68% / 9", and captions the screen "tal tæller
-   op ved indlæsning". They stay in Sans at 700 — "tal i 700" (§03) — and the
-   row reveals as one block rather than three, because three cards arriving
-   60 ms apart across 380 px reads as a stutter rather than a stagger.
+   op ved indlæsning". The row reveals as one block rather than three, because
+   three cards arriving 60 ms apart across 380 px reads as a stutter rather than
+   a stagger.
+
+   **This is the page's face.** Of the six members' screens, Hjem is the one
+   whose whole content is figures — where you stand, out of how many, how many
+   you missed — and it read as three more cards in the same stack as everything
+   else. They are display type now: Instrument Serif at 26 px, which is what the
+   landing page has set the club's facts in since T060 and what §04's own
+   scroll-scene sets its lead figure in. `.ek-figure` in index.css carries why
+   this idiom and §03's Sans-700 tile are both the system's, and where the line
+   between them falls.
+
+   Serif 400 puts less ink on the page than the Sans 700 it replaces, so the
+   size goes up rather than the weight — 22 px to 26 px. That is a step
+   *towards* §04's phone mocks, which run one notch above this app at every
+   level (design/README.md), never away from them.
 
    `data-count` is what makes them count up (§01: 900 ms, easeOutExpo); see
    lib/reveal.ts. Only when there is a number to count to — a dash is the
@@ -122,14 +139,11 @@ export default function Home() {
    there is nothing to animate about it. */
 function Stat({ n, suffix = '', label }: { n: number | null; suffix?: string; label: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface px-2 py-3 text-center">
-      <div
-        data-count={n ?? undefined}
-        className="tabular text-[1.375rem] leading-none font-bold"
-      >
+    <div className="rounded-2xl border border-line bg-surface px-2 py-4 text-center">
+      <div data-count={n ?? undefined} className="ek-figure text-[1.625rem] leading-none">
         {n === null ? '—' : `${n.toLocaleString('da-DK')}${suffix}`}
       </div>
-      <div className="mt-1.5 text-[0.55rem] tracking-wider text-faint uppercase">{label}</div>
+      <div className="mt-2 text-[0.55rem] tracking-wider text-faint uppercase">{label}</div>
     </div>
   )
 }

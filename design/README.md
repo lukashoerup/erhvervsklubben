@@ -106,6 +106,68 @@ o.flavor = 'woff2'; subset.save_font(f, 'public/fonts/material-symbols-subset.wo
 fontTools is not a project dependency and is not being made one — this is a
 one-off that produces a committed artefact, like the extraction above it.
 
+## The hierarchy, and what the accent is allowed to mean
+
+T072, 2026-07-29, on Lukas's reading of the six members' screens: *"Det er lidt
+ensartet med farverne, og tekststykkerne på nogle af siderne virker meget
+voldsomme og store."* He was offered a smaller type scale and declined it.
+
+The palette was not short of colours; the accent was doing four jobs at once.
+Headings, figures, links and section labels were all `--color-accent`, on every
+screen, which is why a page of six cards read as one texture. **Three registers
+now, and each has one job:**
+
+| Register | What it is for |
+|---|---|
+| **Instrument Serif, ink** | a figure that is the subject of its line, and the one display line a screen has |
+| **Instrument Sans, ink** | headings and body — hierarchy from weight, size and space |
+| **The accent** | what can be tapped or is a mark: buttons, links, the active tab, the streg, the chart's own curves and the icons §03 draws blue |
+
+Nothing else is the accent. Section labels are muted with the club's signature
+streg beside them — §04's desktop mock sets that very label in `#94A3B8`, so the
+quiet version is the system's own, and §01's "én blå streg som signatur" is what
+keeps the blue in the composition without spending it on text.
+
+**Where the system disagrees with itself, and which side this took.** §03
+TYPOGRAFI says "Instrument Sans 400/500/600/700 · **tal i 700**", and §04's stat
+tiles do set their `data-count` figures in Sans 700. But §04's scroll-scene sets
+the figure that *leads a panel* — "13.150 kr.", "86%" — in Instrument Serif, and
+this app's landing page has done the same since T060. Two idioms for a number,
+both the system's, and the app was using both without saying so. The line
+between them is now named in `.ek-figure` (`src/index.css`): **the figure that
+leads a block is serif; a figure in a tile with its label beneath it stays Sans
+700.** Below ~14 px neither applies — Instrument Serif has one weight, so a
+small serif figure has nothing to lean on — which is why Anciennitet's ten
+roster counts (9.6 px) and every table cell are untouched.
+
+Each screen was given one face, without a new colour:
+
+| Screen | Its face |
+|---|---|
+| `/hjem` | **figures** — the three counts are 26 px serif, the loudest thing on the page |
+| `/anciennitet` | **rhythm** — the meeting number is a 20 px serif ordinal repeating down 29 cards |
+| `/oekonomi` | **the curve** — what the curve resolves to is set as display type directly under it |
+| `/regler` | **text** — the amounts lead in serif from a left rail, and the statutes finally out-weigh their own paragraphs |
+
+`/regler` was the heaviest screen and got the largest change. Fifteen statute
+titles at 12 px over their own paragraphs at 11.2 px: 0.8 px doing the whole
+work of saying which was the heading. **Nothing was made smaller.** The title is
+14.4 px/600 in ink, the body 12 px/400 muted, the paragraphs are indented under
+the §-rail and the row has real space around it — weight, colour, size *upwards*
+and air, which is the four ways a gap grows without costing legibility.
+
+Measured after, at 420 × 900 in both themes, on all eight screens, signed in:
+**1860 text/background pairs composited through a canvas, zero failures**; the
+only tap target under 44 px is the demo build's own 21.6 px role switch, as
+before; no horizontal scroll anywhere. Anciennitet is 10 % taller (4049 →
+4457 px) and its scroll cost is unchanged within run-to-run noise.
+
+**Reading Tailwind's alpha variants still needs the canvas.** `/20` and `/40`
+compile to `oklab(… / 0.2)`, and a contrast sweep that parses three decimals out
+of that reports the attendance pips at 4.05:1 when they are fine. T064 was
+caught by it; a first pass of T072's harness was caught by it again. Resolve
+every colour by painting it into a 1 × 1 canvas and reading the pixel back.
+
 ## The tokens, and where the app stands on each
 
 Measured in a browser at 420 × 900, both themes, signed in and out, member and
@@ -179,22 +241,24 @@ on the one page whose whole job is to be exact.
 
 ## Not done yet
 
-**The type scale runs one notch below §04's own phone mocks.** Consistently,
-across every members' screen — the app is set 8–25 % smaller than the design's
-mobile screens at every level, and the design's mocks are 360 px wide where the
-app is measured at 420, so it is not a question of room.
+**The type scale runs one notch below §04's own phone mocks.** T072 closed part
+of it rather than none — Hjem's figures 22 → 26 px, a meeting number 15 → 20 px,
+a statute title 12 → 14.4 px and its body 11.2 → 12 px — but the table below is
+the state before that and the remaining levels are still short.
+
+The measurement, as T066 left it — the rows T072 moved are marked:
 
 | Role | §04 mobil | The app |
 |---|---|---|
 | Section label | 10 px, .18em | 9.3 px, .14em |
-| Meeting number | 19 px / 700 | 15.2 px / 600 |
+| Meeting number | 19 px / 700 | ~~15.2 px / 600~~ → **20 px serif** (T072) |
 | Lead name | 17 px / 600 | 14.7 px / 600 |
 | Route line | 13 px | 12 px |
 | Attendance initials | 11 px / 600 | **8.8 px** / 600 |
 | Meeting date | 12 px | 10.4 px |
 | Fine amount | 14 px / 700 | 12 px / 600 |
 | News headline | 16 px / 600 | 15.2 px / 600 |
-| Figures, serif display, nav labels | 22 / 28 / 10 px | ✅ the same |
+| Figures, serif display, nav labels | 22 / 28 / 10 px | ✅ the same — Hjem's three are **26 px serif** since T072 |
 
 Raising it is not a tweak: it re-flows six screens, changes Anciennitet's
 height and therefore the `cover 12%` reveal range tuned against it, and the

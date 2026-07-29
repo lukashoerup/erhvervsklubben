@@ -179,8 +179,8 @@ export function FineCapture({
         </section>
       ))}
 
-      <p className="tabular text-right text-sm">
-        I alt <span className="font-semibold text-accent">{kr(total)}</span>
+      <p className="text-right text-sm">
+        I alt <span className="ek-figure text-[1.15rem]">{kr(total)}</span>
       </p>
     </div>
   )

@@ -213,6 +213,47 @@ body {
   font-feature-settings: 'tnum';
 }
 
+/* ------------------------------------------------------------- the figures
+   A number that is the subject of its line is set in the display face.
+
+   Lukas, 2026-07-29: "Det er lidt ensartet med farverne." He was reading a
+   palette in which the accent did headings, figures, links and section labels
+   at once — and a club whose whole subject is its own counting had no way to
+   say so except by turning its counts the same blue as everything else. The
+   contrast comes out of hue and goes into the typeface instead: the numbers
+   get Instrument Serif, and the blue goes back to meaning "this can be tapped".
+
+   The system supports it in both directions, so which one this follows matters.
+   §03 TYPOGRAFI says "Instrument Sans 400/500/600/700 · tal i 700", and §04's
+   stat tiles do set their `data-count` figures in Sans 700 at #0A1120. But
+   §04's own scroll-scene sets the single figure that leads a panel — "13.150
+   kr.", "86%" — in Instrument Serif at #0A1120, and this app's landing page has
+   done the same since T060. The system has two idioms for a number and the app
+   was already using both without saying so. The line between them, named here:
+   **the figure that leads a block is serif; a figure inside a tile with its
+   label beneath it stays Sans 700**, which is the tile §04 draws literally.
+
+   The size floor is a measurement rather than a taste. Instrument Serif has one
+   weight — 400 is the whole family — so a serif figure cannot lean on weight
+   the way a Sans 700 one does; it earns its emphasis from size and from being
+   the only serif on the card. Below about 14 px it stops reading as display
+   type and becomes a slightly odd body number, so the ten roster counts on
+   Anciennitet (9.6 px) and every table cell stay exactly where they were.
+
+   No colour in here. Ink is inherited, so one class works on a card, on the
+   ground and in both themes — and the two places a figure is deliberately not
+   ink, the present/absent counts, keep saying what they say. */
+.ek-figure {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  /* The system tracks its own numerals at -0.02em; Instrument Serif sets a
+     touch looser than the Sans it sits beside, and this closes the gap without
+     making the digits touch. */
+  letter-spacing: -0.01em;
+}
+
 /* ------------------------------------------------------------ the surfaces
    "Tre flader i hele sitet — ikke flere." (designsystem §03 Fundament.)
 

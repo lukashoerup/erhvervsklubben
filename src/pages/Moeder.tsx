@@ -106,18 +106,21 @@ export default function Moeder() {
       data-reveal
       /* 1.5px blue on the next one — the design system marks the live row by
          border weight, never by fill. */
-      className={`rounded-2xl border bg-surface p-3 ${next ? 'border-[1.5px] border-accent' : 'border-line'}`}
+      className={`rounded-2xl border bg-surface p-4 ${next ? 'border-[1.5px] border-accent' : 'border-line'}`}
     >
-      <p className="tabular text-[0.6rem] tracking-[0.1em] text-accent uppercase">
+      {/* Muted. The blue on this card is its border and only its border — which
+          is how the design system marks the live row, and the mark stops
+          working the moment three other things on the card are the same blue. */}
+      <p className="tabular text-[0.6rem] tracking-[0.1em] text-muted uppercase">
         {daDate(e.date)}
         {e.time ? ` · ${e.time}` : ''}
       </p>
-      <h3 className="mt-1 text-[0.95rem] leading-snug font-semibold">{e.title}</h3>
+      <h3 className="mt-1.5 text-[0.95rem] leading-snug font-semibold">{e.title}</h3>
       {/* Stated rather than left blank: the venue is usually settled after the
           date, so an empty line reads as a page that failed to load. */}
-      <p className="mt-1 text-xs text-muted">{e.location || 'Sted endnu ikke sat'}</p>
+      <p className="mt-1.5 text-xs text-muted">{e.location || 'Sted endnu ikke sat'}</p>
       {e.description && (
-        <p className="mt-1 text-xs leading-relaxed text-muted">{e.description}</p>
+        <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{e.description}</p>
       )}
 
       {mayEdit && (
@@ -170,7 +173,7 @@ export default function Moeder() {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2.5">
       {/* Sticky here more than anywhere: the two halves of this page look
           identical card for card, and which half you are in — planned, or
           already held — is the whole difference between "we are meeting" and

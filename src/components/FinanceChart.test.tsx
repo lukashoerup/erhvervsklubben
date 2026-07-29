@@ -14,7 +14,7 @@ import { FinanceChart, financeSeries, kr, niceTicks, type BooksState } from './F
  * state gives a member. Those are also the parts that must stay true.
  */
 
-const NO_BOOKS: BooksState = { fines: 0, payments: 0, meetings: 0, undatedMeetings: 0 }
+const NO_BOOKS: BooksState = { payers: 9, fines: 0, payments: 0, meetings: 0, undatedMeetings: 0 }
 
 /** The demo build's figures: five months, ten members, behind throughout. */
 function demoLedger(): LedgerMonth[] {
@@ -162,7 +162,7 @@ describe('when there is nothing to plot', () => {
     render(
       <FinanceChart
         ledger={empty}
-        books={{ fines: 4, payments: 0, meetings: 29, undatedMeetings: 6 }}
+        books={{ payers: 9, fines: 4, payments: 0, meetings: 29, undatedMeetings: 6 }}
       />,
     )
     expect(screen.getByText(/6 af 29 møder mangler en dato/i)).toBeInTheDocument()

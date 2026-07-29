@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { DEMO } from '../data/demo'
 import { LogoMark } from '../components/LogoMark'
@@ -51,10 +51,26 @@ export default function Login() {
                 the four-second intro belongs on the front door, and someone
                 who has come here to type a password has already been through
                 it. */}
-            <LogoMark size={64} />
-            <h1 className="mt-4 text-sm font-semibold tracking-[0.2em] uppercase">
-              Erhvervsklubben
-            </h1>
+            {/* The same way back the app bar has, on the one screen outside
+                the Shell — a member who opened the app cold and does not want
+                to log in yet had no door to the club's public page from here
+                either. Whole lockup, so the target is the thing that looks like
+                the button; 64 px of mark is well past the touch floor on its
+                own. */}
+            <Link
+              to="/"
+              state={{ forside: true }}
+              aria-label="Til forsiden"
+              className="flex flex-col items-center rounded-btn transition-opacity active:opacity-60"
+            >
+              <LogoMark size={64} />
+              {/* Still the page's h1 — it is the heading of this screen as much
+                  as it is the way out of it, and a login page with no heading
+                  is a page a screen reader cannot summarise. */}
+              <h1 className="mt-4 text-sm font-semibold tracking-[0.2em] uppercase">
+                Erhvervsklubben
+              </h1>
+            </Link>
           </div>
 
           {/* min-h-12 on both fields and the button: §03's touch floor is
