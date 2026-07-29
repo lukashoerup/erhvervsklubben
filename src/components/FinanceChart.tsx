@@ -448,8 +448,10 @@ function Figure({
           display type directly under it rather than as three more Sans values
           in a card of Sans values. Ink, not the series colour — a curve's
           colour is unreadable as 11 px text, and the swatch beside the label
-          already carries the identity. The gap leads by size. */}
-      <dd className={`ek-figure mt-1 ${lead ? 'text-[1.15rem]' : 'text-[1rem]'} text-ink`}>
+          already carries the identity. The gap leads by size — 22 px against
+          16 px, because Instrument Serif has one weight and the bold that used
+          to make it lead is not available to it. */}
+      <dd className={`ek-figure mt-1 ${lead ? 'text-[1.375rem]' : 'text-[1rem]'} text-ink`}>
         {kr(amount)}
       </dd>
     </div>
