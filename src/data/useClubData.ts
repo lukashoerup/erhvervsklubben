@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
+import type { Member } from './members'
 import {
   DEMO,
   demoAttendances,
   demoDelete,
   demoDeleteMeeting,
   demoEvents,
+  demoMembers,
   demoNews,
   demoRecords,
   demoSave,
@@ -22,6 +24,9 @@ const RECORD_COLUMNS = 'id, meeting_number, lead, pre_location, main_location, p
 
 /** Postgres `undefined_column` — PostgREST passes the SQLSTATE straight through. */
 const UNDEFINED_COLUMN = '42703'
+
+/** PostgREST's own code for a table missing from its schema cache. */
+const UNDEFINED_TABLE = 'PGRST205'
 
 /**
  * The meeting records, tolerating a database older than this code.
@@ -56,6 +61,30 @@ export async function readRecords(): Promise<RecordRow[]> {
  * place. Inside an async function the same throw is just a rejection, which
  * Promise.all is built to handle.
  */
+/**
+ * The club's member list, tolerating a database that predates it.
+ *
+ * The `members` table arrived on 2026-07-29; every database this app has ever
+ * read was older than that until the morning it was applied. A missing table
+ * fails the read outright, and this one feeds the roster — so an unguarded read
+ * would turn "no member list yet" into a blank Anciennitet page.
+ *
+ * Falling back to *no members* rather than to the attendance names is the
+ * deliberate half. Without a member record nobody is charged kontingent and
+ * nobody can be fined (see `rightsOf`), so the failure mode is a finance page
+ * that under-charges and says so, not one that quietly invoices ten people on a
+ * guess. That guess is the bug this table was added to fix; a fallback must not
+ * reinstate it.
+ */
+export async function readMembers(): Promise<Member[]> {
+  const { data, error } = await supabase().from('members').select('name, status')
+  if (error) {
+    if (error.code === UNDEFINED_TABLE) return []
+    throw error
+  }
+  return (data ?? []) as Member[]
+}
+
 async function readAttendances(): Promise<AttendanceRow[]> {
   const { data, error } = await supabase()
     .from('attendances')
@@ -65,27 +94,34 @@ async function readAttendances(): Promise<AttendanceRow[]> {
 }
 
 /**
- * The club's attendance history, shaped for the page.
+ * The club's attendance history and who the club's members are, shaped for the
+ * page.
  *
- * Two queries rather than a join: PostgREST would nest the attendance rows
- * under each record, but the roster needs them flat anyway, and two flat reads
- * are simpler to reason about than an embedded shape that changes if the
- * foreign key ever does.
+ * Flat reads rather than a join: PostgREST would nest the attendance rows under
+ * each record, but the roster needs them flat anyway, and flat reads are simpler
+ * to reason about than an embedded shape that changes if the foreign key ever
+ * does. `members` could not be joined at all — it is keyed by the same free-text
+ * name the attendance rows carry, with no foreign key between them, which is
+ * exactly what let it be added without touching 235 rows of history.
  */
 export function useAttendance() {
   return useQuery({
     queryKey: ['attendance'],
     queryFn: async () => {
       if (DEMO) {
-        const roster = buildRoster(demoRecords, demoAttendances)
+        const roster = buildRoster(demoRecords, demoAttendances, demoMembers)
         return {
           roster,
           meetings: buildMeetings(demoRecords, demoAttendances, roster),
           labels: shortLabels(roster.map((r) => r.name)),
         }
       }
-      const [records, rows] = await Promise.all([readRecords(), readAttendances()])
-      const roster = buildRoster(records, rows)
+      const [records, rows, members] = await Promise.all([
+        readRecords(),
+        readAttendances(),
+        readMembers(),
+      ])
+      const roster = buildRoster(records, rows, members)
       return {
         roster,
         meetings: buildMeetings(records, rows, roster),

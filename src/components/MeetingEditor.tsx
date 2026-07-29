@@ -204,11 +204,13 @@ export function MeetingEditor({
           ))}
         </ul>
 
-        {/* The roster is every name that already appears in `attendances` —
-            there is no members table — so an eleventh member cannot be ticked
-            until some meeting has recorded them once. Without this field the
-            app could record every meeting except the one that matters, and the
-            club would be back to typing rows into the database by hand. */}
+        {/* Since T069 the roster is the members table *plus* every name the
+            attendance history holds, so a newly admitted member shows up here
+            without having attended anything. This field covers the evening
+            before that — a guest, or someone admitted between meetings, ticked
+            off on the spot rather than the club going back to typing rows into
+            the database by hand. A name added this way has no member record and
+            is therefore charged nothing; see data/members.ts. */}
         <div className="mt-2 flex gap-1.5">
           <label className="flex-1 text-xs text-muted">
             <span className="sr-only">Nyt medlem</span>

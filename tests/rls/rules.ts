@@ -12,8 +12,16 @@
 /** Readable by anyone at all, including signed-out visitors. Admin-only writes. */
 export const PUBLIC_TABLES = ['news', 'events'] as const
 
-/** The club's shared data: any signed-in member reads it all. Admin-only writes. */
-export const SHARED_TABLES = ['attendance_records', 'attendances'] as const
+/**
+ * The club's shared data: any signed-in member reads it all. Admin-only writes.
+ *
+ * `members` joined here on 2026-07-29 rather than with the finance tables: who
+ * belongs to the club and who is on pause is its own composition, not a bank
+ * balance, and §3's split is a rule members are held to. Writing is the part
+ * that has to stay with the admins — a member able to edit his own row could
+ * set himself inactive and stop being charged kontingent.
+ */
+export const SHARED_TABLES = ['attendance_records', 'attendances', 'members'] as const
 
 /** Personal rows — you see yours, not anyone else's. */
 export const PERSONAL_TABLES = ['profiles', 'user_member_mapping', 'event_evaluations'] as const
@@ -43,6 +51,9 @@ export const SAMPLE_ROW: Record<string, Record<string, unknown>> = {
   events: { title: 'probe', date: '2025-01-01', time: '18:00', location: 'probe', description: 'probe' },
   attendance_records: { meeting_number: 9999, lead: 'probe', main_location: 'probe' },
   attendances: { record_id: 1, member_name: 'probe', attended: true },
+  // A status the check constraint accepts, or the denial tests would pass on a
+  // constraint violation instead of on the policy.
+  members: { name: 'probe', status: 'aktiv' },
   // Admin-only tables. A member must not be able to write these either — an
   // unwritable-but-readable balance would still be a leak, and a writable one
   // would let a member forgive their own fines.

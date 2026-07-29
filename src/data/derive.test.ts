@@ -1,4 +1,5 @@
 import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
+import type { Member } from './members'
 
 const records: RecordRow[] = [
   { id: 1, meeting_number: 1, lead: 'Rasmus', pre_location: 'Privaten', main_location: 'Cafe Gammeltorv', post_location: 'Toga Bar' },
@@ -17,6 +18,46 @@ const rows: AttendanceRow[] = [
   { record_id: 3, member_name: 'Rasmus', attended: true },
   { record_id: 3, member_name: 'Kasper', attended: true },
 ]
+
+describe('membership status on the roster', () => {
+  const members: Member[] = [
+    { name: 'Anders', status: 'aktiv' },
+    { name: 'Rasmus', status: 'founding-father' },
+    // Admitted, and has not been to a meeting yet.
+    { name: 'Have', status: 'aktiv' },
+  ]
+
+  test('carries each member’s status through', () => {
+    const roster = buildRoster(records, rows, members)
+    expect(roster.find((r) => r.name === 'Rasmus')!.status).toBe('founding-father')
+    expect(roster.find((r) => r.name === 'Anders')!.status).toBe('aktiv')
+  })
+
+  test('a name in the history that no member row claims has no status', () => {
+    // Not a bug and not "aktiv" by default. `attendances.member_name` is free
+    // text, so a guest can be recorded — and a guessed status here is what
+    // charged ten people kontingent for as long as the finance page existed.
+    expect(buildRoster(records, rows, members).find((r) => r.name === 'Kasper')!.status).toBeNull()
+  })
+
+  test('a member with no attendance yet is on the roster, on nought', () => {
+    // §11 earns anciennitet by turning up, so nought is correct and is not the
+    // same thing as not existing. He has to be visible before his first
+    // meeting, or nobody can tick him off at it.
+    const have = buildRoster(records, rows, members).find((r) => r.name === 'Have')!
+    expect([have.attended, have.total]).toEqual([0, 0])
+    expect(have.status).toBe('aktiv')
+  })
+
+  test('a founding father’s anciennitet is untouched by his exemptions', () => {
+    // §11 is attendance and nothing else. Paying no kontingent does not cost
+    // him an evening.
+    const withStatus = buildRoster(records, rows, members).find((r) => r.name === 'Rasmus')!
+    const without = buildRoster(records, rows).find((r) => r.name === 'Rasmus')!
+    expect(withStatus.attended).toBe(without.attended)
+    expect(withStatus.total).toBe(without.total)
+  })
+})
 
 describe('the roster', () => {
   test('counts anciennitet as attendances, per §11', () => {

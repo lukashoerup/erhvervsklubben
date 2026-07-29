@@ -27,6 +27,17 @@ insert into public.attendance_records (meeting_number, lead, pre_location, main_
   (3, 'Chris', 'Lilly',    'Café C', 'Bar Z'),         -- id 3
   (3, '',      null,       '',       null);            -- id 4 (blank duplicate #3)
 
+-- Members. The club's own ten come from the members migration, which guards
+-- itself on their attendance rows and therefore inserts nothing into this
+-- stack — the members here are these four. Bob is inactive, so a dev box
+-- exercises the §3 split the finance page turns on: a roster of four, three of
+-- them charged.
+insert into public.members (name, status, note) values
+  ('Alice', 'aktiv',   null),
+  ('Bob',   'inaktiv', 'På pause siden sæsonstart.'),
+  ('Chris', 'aktiv',   null),
+  ('Dana',  'aktiv',   null);
+
 -- Attendances: Chris joins only from meeting 3 → meetings 1,2 have no Chris row.
 -- Dana is a member_name with no login at all.
 insert into public.attendances (record_id, member_name, attended) values

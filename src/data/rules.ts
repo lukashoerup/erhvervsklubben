@@ -125,9 +125,14 @@ export function duesFor(month: string): number {
 }
 
 /**
- * Only *aktive* members pay (§3): inactive members are on pause and owe
- * nothing. Income is never simply "everyone × rate".
+ * Membership income for a month: the rate times the members who actually pay.
+ *
+ * Never "everyone × rate". §3 puts inactive members on pause owing nothing, and
+ * §12's founding father pays nothing while attending everything — so the count
+ * comes from membership status (`payingMembers` in data/members.ts) and not
+ * from the roster's length. Counting the roster is exactly the mistake this
+ * argument is named after.
  */
-export function duesForMonth(month: string, activeMembers: number): number {
-  return duesFor(month) * Math.max(0, activeMembers)
+export function duesForMonth(month: string, payingMembers: number): number {
+  return duesFor(month) * Math.max(0, payingMembers)
 }

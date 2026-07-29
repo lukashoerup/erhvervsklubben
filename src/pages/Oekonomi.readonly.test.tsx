@@ -37,6 +37,12 @@ const { default: Oekonomi } = await import('./Oekonomi')
 
 const ROSTER = ['Anders', 'Rasmus', 'Esben', 'Oskar', 'Emil', 'Saaby', 'Lukas', 'Mads', 'Kasper', 'Have']
 
+/** The club as it is: nine paying, and Oskar exempt as a founding father. */
+const MEMBERS = ROSTER.map((name) => ({
+  name,
+  status: name === 'Oskar' ? 'founding-father' : 'aktiv',
+}))
+
 function renderPage(role: AuthState['role']) {
   rows = {
     attendance_records: [
@@ -51,6 +57,7 @@ function renderPage(role: AuthState['role']) {
       },
     ],
     attendances: ROSTER.map((name) => ({ record_id: 1, member_name: name, attended: true })),
+    members: MEMBERS,
     fines: [{ member_name: 'Mads', amount_kr: 200, record_id: 1 }],
     payments: [{ month: '2026-06-01', amount_kr: 1800 }],
   }
@@ -73,10 +80,11 @@ function renderPage(role: AuthState['role']) {
 describe('a read-only preview of the club’s books', () => {
   it('reports the club’s real figures rather than zeros', async () => {
     renderPage('admin')
-    // June 2026: ten members at 200 kr. plus a 200 kr. fine, 1.800 kr. paid.
+    // June 2026: the nine paying members at 200 kr. plus a 200 kr. fine, and
+    // 1.800 kr. paid. Nine, not the roster's ten — Oskar pays no kontingent.
     expect(await screen.findByText(/Skrivebeskyttet/)).toBeInTheDocument()
     const june = screen.getByText('2026-06').closest('tr')
-    expect(june).toHaveTextContent('2.200 kr.')
+    expect(june).toHaveTextContent('2.000 kr.')
     expect(june).toHaveTextContent('1.800 kr.')
   })
 

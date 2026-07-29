@@ -56,8 +56,17 @@ export function buildLedger(opts: {
   to: string
   fines: FineRecord[]
   payments: PaymentRecord[]
-  /** Active members in a given month — only they pay dues (§3). */
-  activeMembers: (month: string) => number
+  /**
+   * How many members the club charges kontingent in a given month.
+   *
+   * Not the size of the roster, and the difference is why this is a question
+   * rather than a number. §3 charges *aktive medlemmer* only, and the founding
+   * father (§12, Lukas 2026-07-29) pays nothing while attending everything.
+   * This was `roster.length` until 2026-07-29 — everyone who had ever turned
+   * up — which made the expected-income line too high in every month the club
+   * has ever had. Answer it from membership status; see data/members.ts.
+   */
+  payingMembers: (month: string) => number
 }): LedgerMonth[] {
   const finesByMonth = new Map<string, number>()
   for (const f of opts.fines) {
@@ -72,7 +81,7 @@ export function buildLedger(opts: {
   let actualBalance = 0
 
   return monthsBetween(opts.from, opts.to).map((month) => {
-    const dues = duesForMonth(month, opts.activeMembers(month))
+    const dues = duesForMonth(month, opts.payingMembers(month))
     const fines = finesByMonth.get(month) ?? 0
     const expected = dues + fines
     const received = paidByMonth.get(month) ?? 0
