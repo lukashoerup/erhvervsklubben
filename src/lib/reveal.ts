@@ -58,6 +58,47 @@ const MAX_STAGGER_STEPS = 6
 const COUNT_MS = 900
 
 /**
+ * The curves that draw themselves in, and where their handle comes from.
+ *
+ * Lukas, 2026-07-29: *"Det kunne også være fedt med noget motion på
+ * finansgrafen. Så linjerne sådan kommer frem, når man åbner siden."*
+ *
+ * `.ek-curve` is a class this app puts on recharts' `<Line>`, and recharts
+ * lands it on the `<g>` around the path rather than on the path itself — the
+ * same behaviour FinanceChart already documents for colour, leaned on here so
+ * that nothing in this file has to know a recharts class name.
+ *
+ * The path inside is the one element in the app whose *shape* arrives, and the
+ * only way to say that is `stroke-dashoffset`: a line drawing itself is not
+ * something opacity or a transform can express. §01's "kun opacity og
+ * transform" is a rule about what composites cheaply, and this is the same
+ * exception the system already makes for the wordmark's letter-spacing in the
+ * logo intro — one property, on two paths, on one screen, none of them in a
+ * list. What is animated on the rest of that card is opacity and nothing else.
+ */
+const CURVE = '.ek-curve path'
+
+/**
+ * Measure a curve, so the CSS has something to hide it by.
+ *
+ * `--ek-len` is set here and read by the `[data-draw]` rules in index.css, and
+ * the fallbacks in those rules are the whole guarantee: with no variable the
+ * dash array is `none` and the offset is `0`, which is an ordinary, complete
+ * line. A path this never reaches is therefore whole rather than missing.
+ *
+ * It is a default rather than the ordering `arm()` uses, because these paths
+ * are not the app's to sequence: recharts inserts them some frames after the
+ * card they live in, once ResponsiveContainer has measured itself.
+ */
+function measure(path: SVGPathElement) {
+  if (path.style.getPropertyValue('--ek-len')) return
+  // jsdom has no geometry, and a chart that has not been laid out yet reports
+  // zero. Either way the line stays whole.
+  const len = typeof path.getTotalLength === 'function' ? path.getTotalLength() : 0
+  if (len > 0) path.style.setProperty('--ek-len', `${Math.ceil(len)}`)
+}
+
+/**
  * How long after `in` an element is finished, and can stop being an animation.
  *
  * The longest arrival on any screen is a card that came in six places into its
@@ -90,11 +131,12 @@ const not = (attr: string) => STATES.map((s) => `:not([${attr}="${s}"])`).join('
 const PENDING = [
   `[data-reveal]${not('data-reveal')}`,
   `[data-bar]${not('data-bar')}`,
+  `[data-draw]${not('data-draw')}`,
   '[data-count]:not([data-counted])',
 ].join(', ')
 
 /** What `arm()` has hidden, and what `release()` therefore has to hand back. */
-const ARMED = '[data-reveal="armed"], [data-bar="armed"]'
+const ARMED = '[data-reveal="armed"], [data-bar="armed"], [data-draw="armed"]'
 
 const MOTION_OFF = '(prefers-reduced-motion: reduce)'
 
@@ -109,9 +151,10 @@ function reducedMotion(): boolean {
  * honest: `[data-reveal]` alone (the value React renders) styles nothing at
  * all, so an element is at its natural opacity until this file says otherwise.
  */
-function stateAttr(el: Element): 'data-reveal' | 'data-bar' | null {
+function stateAttr(el: Element): 'data-reveal' | 'data-bar' | 'data-draw' | null {
   if (el.hasAttribute('data-reveal')) return 'data-reveal'
   if (el.hasAttribute('data-bar')) return 'data-bar'
+  if (el.hasAttribute('data-draw')) return 'data-draw'
   return null
 }
 
@@ -162,7 +205,16 @@ function tick(now: number) {
     // land inside these 900 ms, and a count-up that finishes on the number the
     // page had when it started is a stale figure nothing will correct.
     const to = Number(c.el.dataset.count)
-    const p = Math.min(1, (now - c.from) / COUNT_MS)
+    // Clamped at both ends, and the lower one is not defensive tidying. `from`
+    // is `performance.now()`, taken when the observer said the figure was in
+    // view; `now` is the rAF timestamp, which is the *frame's* time and can be
+    // a fraction earlier than a reading taken during that same frame. One
+    // negative millisecond puts easeOutExpo above 1 in the wrong direction —
+    // `1 − 2^(−10p)` with p < 0 is a large negative multiplier — and the club's
+    // bank balance renders as "-24.643 kr." for a frame. Found on /oekonomi
+    // (T073), where a figure being briefly, confidently wrong about money is
+    // the one failure this count-up was allowed on the page to avoid.
+    const p = Math.min(1, Math.max(0, (now - c.from) / COUNT_MS))
     if (p < 1) {
       // easeOutExpo, the export's own formula. It never quite reaches 1, which
       // is why the last frame is written from the target rather than from it.
@@ -235,6 +287,19 @@ function arm(io: IntersectionObserver, el: HTMLElement) {
   el.setAttribute(attr, 'armed')
 }
 
+/**
+ * Give every curve under `within` its length.
+ *
+ * Separate from `arm()` and run on every scan, because the chart arrives in two
+ * pieces: React commits the card, and recharts fills the SVG in once
+ * ResponsiveContainer knows how wide it is. The card is armed on the first
+ * pass and the paths turn up on a later one.
+ */
+function measureCurves(within: ParentNode) {
+  if (within instanceof Element && within.matches(CURVE)) measure(within as SVGPathElement)
+  for (const path of within.querySelectorAll<SVGPathElement>(CURVE)) measure(path)
+}
+
 /** Play the arrival, `step` places into the batch it came in with. */
 function show(el: HTMLElement, step: number) {
   if (el.hasAttribute('data-count')) {
@@ -304,6 +369,7 @@ export function installReveals(root: ParentNode & Node): () => void {
   )
 
   const scan = (within: ParentNode) => {
+    measureCurves(within)
     const found = [...within.querySelectorAll<HTMLElement>(PENDING)]
     // The added node itself may be the card, not its container.
     if (within instanceof HTMLElement && within.matches(PENDING)) found.unshift(within)
