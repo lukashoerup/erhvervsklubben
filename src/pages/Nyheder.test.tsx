@@ -215,6 +215,34 @@ describe('deleting a news item', () => {
     expect(writes).toHaveLength(0)
   })
 
+  /**
+   * The card's face, T073. `author` was written by the form and read by
+   * nothing — the note in Nyheder.tsx called it "a design question for another
+   * day" — and the date was a 10 px line above the headline that vanished at a
+   * thumb-scroll. Both are asserted because both are content: a byline the page
+   * stops printing is the club's own attribution going quietly missing.
+   */
+  it('signs each item with the member who wrote it', async () => {
+    renderPage('user')
+    await screen.findByText('Sommerfest 2026')
+
+    expect(within(cardFor('Sommerfest 2026')).getByText('Mathias Saaby')).toBeInTheDocument()
+    expect(
+      within(cardFor('Kontingentet er fordoblet')).getByText('Lukas Hørup Eskildsen'),
+    ).toBeInTheDocument()
+  })
+
+  it('leads the card with its date, day over month', async () => {
+    renderPage('user')
+    await screen.findByText('Sommerfest 2026')
+    const card = within(cardFor('Sommerfest 2026'))
+
+    // 9. juni 2026 — the day as the figure, the month as its label. No year:
+    // it is the year the reader is standing in, or it would be there.
+    expect(card.getByText('9')).toBeInTheDocument()
+    expect(card.getByText('jun')).toBeInTheDocument()
+  })
+
   it('does nothing at all if the second tap is Fortryd', async () => {
     const user = userEvent.setup()
     renderPage('admin')

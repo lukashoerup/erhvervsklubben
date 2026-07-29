@@ -1,7 +1,8 @@
 import { useAuth } from '../auth/AuthContext'
 import { useNews, type NewsItem } from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
-import { daDate, todayISO } from '../lib/dates'
+import { todayISO } from '../lib/dates'
+import { DateRail } from '../components/DateRail'
 import { Loading, Problem } from '../components/State'
 import {
   blankDraft,
@@ -15,13 +16,15 @@ import {
 } from '../components/AdminEdit'
 
 /**
- * `author` is here even though no card shows it.
+ * `author` is on the card now, and that was the open question on this screen.
  *
- * The column is `not null` and every existing row carries a real name, so a
- * form that left it out would write an empty author onto every news item the
- * club creates from now on — a column quietly emptied by the screen meant to
- * fill it. What to do with it on the card is a design question for another day;
- * losing the data while that is decided is not.
+ * The column is `not null` and every existing row carries a real name, so the
+ * form has always written it — but nothing ever read it back, and the note that
+ * stood here said what to do with it was "a design question for another day".
+ * Lukas, 2026-07-29: *"de cards der er på møde og nyheder siderne er stadig
+ * lidt kedelige."* The day arrived. A byline is material the card already had,
+ * and it is the one line on it that says the club's news is written by somebody
+ * in the club rather than published at it.
  */
 const FIELDS: Field[] = [
   { name: 'title', label: 'Overskrift' },
@@ -90,14 +93,37 @@ export default function Nyheder() {
           form(n.id)
         ) : (
           <article key={n.id} data-reveal className="rounded-2xl border border-line bg-surface p-4">
-            {/* Muted, where every one of these dates used to be blue. Nothing
-                on this card is tappable to a member, so nothing on it is the
-                accent — the headline leads by weight and by being ink. */}
-            <p className="tabular text-[0.6rem] tracking-[0.1em] text-muted uppercase">
-              {daDate(n.date, { day: 'numeric', month: 'long' })}
-            </p>
-            <h3 className="mt-1.5 text-[0.95rem] leading-snug font-semibold">{n.title}</h3>
-            <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{n.excerpt}</p>
+            {/* The date left the top of the card and became its face. It was a
+                10 px uppercase line above the headline — correct, and invisible
+                at a thumb-scroll, which is what made eight of these read as one
+                block of text. As a 26 px serif numeral in a rail it is the one
+                thing that repeats at the same place on every card, so the page
+                gets a beat to scroll down. See components/DateRail.tsx.
+
+                Nothing on this card is tappable to a member, so nothing on it
+                is the accent — the headline still leads by weight and by ink. */}
+            <div className="flex gap-3">
+              <DateRail iso={n.date} />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[0.95rem] leading-snug font-semibold">{n.title}</h3>
+                <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{n.excerpt}</p>
+                {/* The byline, in the newspaper's own shape: an em dash and a
+                    name, under the text rather than over it. Set faint and
+                    small because it is an attribution and not a headline — the
+                    club writes in a dry, formal register and signs its notices,
+                    and this is that signature and no more than it. Hidden when
+                    the row has no author rather than printed as a bare dash;
+                    RLS lets a legacy row be blank even though the column is
+                    not, and "— " on its own is a card that failed to load. */}
+                {n.author && (
+                  <p className="mt-2 text-[0.62rem] leading-none text-faint">
+                    <span aria-hidden="true">— </span>
+                    <span className="sr-only">Skrevet af </span>
+                    {n.author}
+                  </p>
+                )}
+              </div>
+            </div>
 
             {mayEdit && (
               <div className="mt-3 flex flex-wrap items-start gap-2">

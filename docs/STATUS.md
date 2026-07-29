@@ -105,6 +105,57 @@ bar's own switch, no horizontal scroll at 420 px, and Anciennitet's scroll cost
 unchanged. Which idiom the figures follow, and why the design system supports
 both, is in `design/README.md`.
 
+**The app has some character now** (2026-07-29, T073). T072 refined the
+hierarchy and Lukas's verdict on it was that the diagnosis had been wrong:
+*"Synes ikke rigtig at jeg kan se den store forskel på farverne … de cards der
+er på møde og nyheder siderne er stadig lidt kedelige."* One thing he did like:
+*"Den nye skrifttype på tallene er pæn."* He was not asking for tidier, he was
+asking for the members' screens to feel like the landing page's logo intro,
+which he calls *"genial"*. Three things, all of them §01 Bevægelse:
+
+- **The finance curves draw themselves in.** *"Det kunne også være fedt med
+  noget motion på finansgrafen. Så linjerne sådan kommer frem, når man åbner
+  siden."* 900 ms on the system's own curve — the timing §01 gives the count-up
+  and the bars, because a drawn line is one quantity being read out rather than
+  an element arriving. **The band settles after the curves rather than drawing
+  with them**: it is not a third series, it is the distance between the two
+  lines, and drawn alongside them it would show a shortfall growing as you
+  watch. The forecast waits one beat longer again, being the only mark on the
+  chart that has not happened yet.
+- **The three figures under the curve count up**, over the same 900 ms the curve
+  takes to draw, so the line and the number it resolves to finish together.
+  *"Og lidt mere motion på tallene."* Klubkassen — the balance a member checks
+  his own arithmetic against — deliberately still does not move.
+- **Nyheder and Møder have a face.** *"Man kunne måske lave et eller andet
+  der?"* The date left the top of the card and became it: a **26 px serif day
+  numeral** in a rail with its month beneath and a hairline down its side, which
+  is the register he already approved and the idiom `/anciennitet` and `/regler`
+  already use. News items are **signed** — `author` was written by the form and
+  read by nothing since the page was built — and a meeting's **venue has its own
+  row with the set's blue pin**. The rail's hairline is blue while a meeting is
+  still ahead and the ordinary line once it has been held, so the calendar says
+  which half you are in without a chip.
+
+**Room was deliberately left for the map** (*"vi skal have et kort, som viser
+alle steder vi har været"*): the venue is now a single self-contained row with
+its own icon and the full width of the card, so a link, a chip or a row of them
+can arrive there without the card being rebuilt. **No map dependency was added.**
+
+One bug was found and fixed on the way: the count-up mixed `performance.now()`
+with the rAF timestamp, and a frame whose clock read a millisecond early turned
+easeOutExpo's `1 − 2^(−10p)` into a large negative multiplier — the club's
+balance rendering as **"-24.643 kr."** for one frame. Clamped, and tested.
+
+Measured after, at 420 × 900 on all eight screens in both themes, signed out,
+member and admin: **zero failing contrast pairs**, no horizontal scroll, tap
+targets unchanged (the demo bar's own 21.6 px switch is still the only one under
+44 px), nothing stranded mid-reveal after a full scroll, and `/anciennitet`'s
+scroll cost unchanged within run-to-run noise (10× CPU throttle 23–27 fps before
+against 20–27 after; 15× 10–13 before against 13–14 after). **WebKit could not
+be verified** — the Playwright WebKit build is not installed here and the
+download fails from this environment. See T073's notes for what that leaves at
+risk.
+
 **The club's front page is reachable again** (2026-07-29, T072). Lukas: *"Der er
 ingen måde at man kan navigere tilbage til animationsforsiden."* He was right —
 `/` forwards a signed-in member to `/hjem` (T060, and deliberately: both
@@ -240,14 +291,14 @@ behind the login; admins additionally edit news, events and attendance.
 | 4 | Read-only screens | ✅ **done** — public landing, members' front page, Anciennitet, Møder, Nyheder, Regler on real data |
 | 5 | Anciennitet UI | ✅ **done** — meeting cards + anciennitet chart, mobile-first. The finance curve (was T054) landed 2026-07-27 as T061. |
 | 6 | Admin write flows | ✅ **done** — fines, news/events create/edit/delete (T063), and the attendance history itself (T065). Nothing about the club's records is typed into the database by hand any more. |
-| 7 | Design | ✅ **done** — corporate blue, the surfaces and the logo intro in `src/index.css` (T031/T060); the two Instrument fonts self-hosted and the system applied to all six members' screens (T064); the icon set and a conformance sweep of all eight screens (T066); the visual hierarchy — accent for action only, figures in the serif, one face per screen (T072). The dark palette was silently absent from the build until T058 — see its notes. Still open, and all of it written up in `design/README.md`: the members' **type scale** sits one notch below §04's own phone mocks, §01's count-up on figures, and no motion on iOS before Safari 26. |
+| 7 | Design | ✅ **done** — corporate blue, the surfaces and the logo intro in `src/index.css` (T031/T060); the two Instrument fonts self-hosted and the system applied to all six members' screens (T064); the icon set and a conformance sweep of all eight screens (T066); the visual hierarchy — accent for action only, figures in the serif, one face per screen (T072); and the character Lukas actually asked for — the finance curves drawing in, the figures under them counting, and a serif date rail giving the Nyheder and Møder cards a face (T073). The dark palette was silently absent from the build until T058 — see its notes. Still open, and written up in `design/README.md`: the members' **type scale** sits one notch below §04's own phone mocks, and there is no desktop layout. |
 | 8 | Deploy to Vercel (staging) + e2e | ⬜ not started |
 | 9 | Cutover (old site stays live until then) | ⬜ not started |
 
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 285 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 300 component/derivation tests (jsdom, fast, offline). The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom

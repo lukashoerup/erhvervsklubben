@@ -163,6 +163,39 @@ describe('writing a meeting', () => {
   })
 })
 
+/**
+ * The card's face, T073 — and the row a map will one day hang off.
+ *
+ * Lukas, 2026-07-29, on the long view: "vi skal have et kort, som viser alle
+ * steder vi har været implementeret på længere sigt." The venue is on its own
+ * row with the set's pin rather than being one more muted line among three, so
+ * that a link, a chip or a marker can arrive there without the card being
+ * rebuilt around it. What is asserted is what the club can lose: the venue is
+ * still printed, still says so in words when nobody has set one, and the date
+ * still leads.
+ */
+describe('the card’s face', () => {
+  it('gives the venue its own row, named or not', async () => {
+    renderPage('user')
+    await screen.findByText('Møde #29')
+
+    expect(within(cardFor('Møde #29')).getByText('Propaganda')).toBeInTheDocument()
+    // §9 has the venue settled after the date, so an empty line would read as
+    // a card that failed to load.
+    expect(within(cardFor('Møde #30')).getByText('Sted endnu ikke sat')).toBeInTheDocument()
+  })
+
+  it('leads with the day and keeps the time beside it', async () => {
+    renderPage('user')
+    await screen.findByText('Møde #29')
+    const card = within(cardFor('Møde #29'))
+    const when = new Date(Date.now() + 14 * 864e5)
+
+    expect(card.getByText(String(when.getUTCDate()))).toBeInTheDocument()
+    expect(card.getByText('18.30')).toBeInTheDocument()
+  })
+})
+
 describe('deleting a meeting', () => {
   it('asks first, and puts the date in the question', async () => {
     const user = userEvent.setup()

@@ -70,15 +70,28 @@ describe('the landing animation', () => {
     // Covers the members' reveals too: ek-reveal and ek-bar are matched by the
     // same @keyframes sweep below.
     // The design system's own rule: "Kun opacity og transform, så det kører
-    // 60 fps på telefonen." letter-spacing is the single sanctioned exception —
-    // the wordmark tightening is asked for by name and no transform expresses
-    // it. Anything else here means a keyframe is animating layout.
+    // 60 fps på telefonen." Two sanctioned exceptions, and both are gestures no
+    // transform can express rather than conveniences:
+    //
+    //   letter-spacing — the wordmark tightening in the logo intro, which §01
+    //   asks for by name;
+    //   stroke-dashoffset — the finance curves drawing themselves in (T073,
+    //   Lukas: "Så linjerne sådan kommer frem, når man åbner siden"). Two paths
+    //   inside one SVG layer on one screen, and nothing in a list.
+    //
+    // Neither is layout: the rule exists because height, top and margin
+    // reflow, and these do not. Anything *else* appearing here does.
     const inside = [...css.matchAll(/@keyframes ek-[a-z-]+\s*\{([\s\S]*?)\n\}/g)]
     expect(inside.length).toBeGreaterThan(0)
     const props = new Set(
       inside.flatMap((m) => [...m[1].matchAll(/^\s{4}([a-z-]+):/gm)].map((p) => p[1])),
     )
-    expect([...props].sort()).toEqual(['letter-spacing', 'opacity', 'transform'])
+    expect([...props].sort()).toEqual([
+      'letter-spacing',
+      'opacity',
+      'stroke-dashoffset',
+      'transform',
+    ])
   })
 })
 
@@ -243,9 +256,41 @@ describe('the members’ reveals', () => {
     // If this ever finds none, the sweep has stopped seeing the stylesheet.
     expect(hiding.length).toBeGreaterThan(0)
     for (const r of hiding) {
+      // `armed` is the only state lib/reveal.ts sets after `observe()` has
+      // returned on that element, so a rule scoped to it cannot outlive the
+      // thing that ends it. `data-draw` joined the two in T073 and carries the
+      // same promise for the finance chart.
       expect(r.selector, `${r.selector} starts content invisible on its own`).toMatch(
-        /\[data-(reveal|bar)='armed'\]/,
+        /\[data-(reveal|bar|draw)='armed'\]/,
       )
+    }
+  })
+
+  /**
+   * The curve's own hiding property, which the opacity sweep above cannot see.
+   *
+   * A path with `stroke-dashoffset` equal to its length is invisible exactly
+   * the way `opacity: 0` is, so it needs the same guarantee — and one more
+   * besides: `--ek-len` is written by lib/reveal.ts *after* the geometry
+   * answered, so every rule that uses it has to name a fallback that draws the
+   * club's finances whole. An unmeasured path, a thrown observer, jsdom, no
+   * script at all: `none` and `0` are a complete line.
+   */
+  it('never leaves a curve short of its own length', () => {
+    const dashed = rules.filter((r) => /stroke-dash(array|offset):/.test(r.body))
+    expect(dashed.length).toBeGreaterThan(0)
+    for (const r of dashed) {
+      // The reduced-motion block undraws the dashes outright, and says so in
+      // literals rather than through the variable.
+      if (/stroke-dasharray:\s*none/.test(r.body) && /stroke-dashoffset:\s*0/.test(r.body)) continue
+      expect(r.selector, `${r.selector} chops a curve with no script involved`).toMatch(
+        /\[data-draw='(armed|in)'\]/,
+      )
+      for (const use of r.body.matchAll(/var\(([^)]*)\)/g)) {
+        expect(use[1], `${r.selector} has no fallback for an unmeasured curve`).toMatch(
+          /--ek-len,\s*(none|0)/,
+        )
+      }
     }
   })
 

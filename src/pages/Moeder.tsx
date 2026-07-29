@@ -3,6 +3,8 @@ import { useAuth } from '../auth/AuthContext'
 import { useEvents, type EventItem } from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
 import { daDate, todayISO } from '../lib/dates'
+import { DateRail } from '../components/DateRail'
+import { Icon } from '../components/Icon'
 import { Loading, Problem } from '../components/State'
 import { SectionTitle } from '../components/SectionTitle'
 import {
@@ -100,7 +102,7 @@ export default function Moeder() {
     />
   )
 
-  const card = (e: EventItem, next: boolean) => (
+  const card = (e: EventItem, next: boolean, ahead: boolean) => (
     <article
       key={e.id}
       data-reveal
@@ -108,20 +110,50 @@ export default function Moeder() {
          border weight, never by fill. */
       className={`rounded-2xl border bg-surface p-4 ${next ? 'border-[1.5px] border-accent' : 'border-line'}`}
     >
-      {/* Muted. The blue on this card is its border and only its border — which
-          is how the design system marks the live row, and the mark stops
-          working the moment three other things on the card are the same blue. */}
-      <p className="tabular text-[0.6rem] tracking-[0.1em] text-muted uppercase">
-        {daDate(e.date)}
-        {e.time ? ` · ${e.time}` : ''}
-      </p>
-      <h3 className="mt-1.5 text-[0.95rem] leading-snug font-semibold">{e.title}</h3>
-      {/* Stated rather than left blank: the venue is usually settled after the
-          date, so an empty line reads as a page that failed to load. */}
-      <p className="mt-1.5 text-xs text-muted">{e.location || 'Sted endnu ikke sat'}</p>
-      {e.description && (
-        <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{e.description}</p>
-      )}
+      {/* The date became the card's face rather than a 10 px line above its
+          title. Both halves of this page are the same card repeated, and what
+          a member scans for is *when* — so the day is a 26 px serif numeral in
+          a rail, with the time under it, and the whole "hvornår" is one block
+          on the left instead of a sentence across the top. The rail's hairline
+          carries the club's blue while the meeting is still ahead and the
+          ordinary line once it has been held: scrolled past the boundary, the
+          page says which half you are in without a chip or a second heading.
+          See components/DateRail.tsx.
+
+          The blue on the card itself is still its border and only its border,
+          which is how the system marks the live row. */}
+      <div className="flex gap-3">
+        <DateRail iso={e.date} time={e.time} ahead={ahead} />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[0.95rem] leading-snug font-semibold">{e.title}</h3>
+          {/* The venue on its own line with the set's pin, blue because §04
+              draws `place` in #2563EB by name — an icon is a mark, not an
+              emphasis (T072).
+
+              **This row is where the map will live.** Lukas, 2026-07-29: "vi
+              skal have et kort, som viser alle steder vi har været implementeret
+              på længere sigt." A place is a different kind of thing from a
+              title and a description, and it was previously indistinguishable
+              from either — one more muted 12 px line in a stack of them. Given
+              its own row, its own icon and the full width of the card, it can
+              become a link, a chip or a row of them without the card being
+              rebuilt around it. Nothing here reaches for a map today and no
+              dependency was added for one.
+
+              Stated rather than left blank: the venue is usually settled after
+              the date, so an empty line reads as a page that failed to load. */}
+          <p className="mt-2 flex items-baseline gap-1.5 text-xs">
+            <Icon name="place" className="shrink-0 text-sm text-accent" />
+            <span className={e.location ? 'font-medium text-ink' : 'text-faint'}>
+              {e.location || 'Sted endnu ikke sat'}
+            </span>
+          </p>
+          {e.description && (
+            <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{e.description}</p>
+          )}
+
+        </div>
+      </div>
 
       {mayEdit && (
         <div className="mt-3 flex flex-wrap items-start gap-2">
@@ -155,7 +187,7 @@ export default function Moeder() {
           </p>
         ) : (
           planned.map((e, i) =>
-            mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0),
+            mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0, true),
           )
         )}
       </Section>
@@ -164,7 +196,7 @@ export default function Moeder() {
         {held.length === 0 ? (
           <p className="text-sm text-muted">Ingen afholdte møder i kalenderen.</p>
         ) : (
-          held.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false)))
+          held.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false, false)))
         )}
       </Section>
     </div>

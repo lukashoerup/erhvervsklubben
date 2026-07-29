@@ -341,4 +341,150 @@ describe('the figures counting up', () => {
 
     expect(figure.textContent).toBe('20')
   })
+
+  /**
+   * A frame whose clock reads earlier than the figure's own start.
+   *
+   * `from` is `performance.now()` at the moment the observer fired; `now` is
+   * the rAF timestamp, which is the frame's time and need not be later than a
+   * reading taken inside that frame. Unclamped, easeOutExpo turns those few
+   * negative milliseconds into a large negative multiplier: the club's balance
+   * flashing as "-24.643 kr." on the one screen whose whole job is to be exact.
+   */
+  it('never prints a negative krone on a frame that arrives early', () => {
+    const io = useFakeIO()
+    const clock = frames()
+    const root = markup('<dd data-count="6210">6.210 kr.</dd>')
+    const figure = root.querySelector<HTMLElement>('[data-count]')!
+    install(root)
+
+    io().fire(figure)
+    // The next frame's timestamp is behind the moment the count began.
+    clock.advance(-4)
+    expect(figure.textContent).toBe('0 kr.')
+
+    clock.advance(1000)
+    expect(figure.textContent).toBe('6.210 kr.')
+  })
+
+  /**
+   * §01: "prefers-reduced-motion slår alt fra og viser indhold med det samme."
+   * A figure is the one kind of element where getting that wrong is not a
+   * missing animation but a wrong number on screen — the club's money, held at
+   * whatever the easing had reached. It is asserted here as well as in the
+   * reveal's own reduced-motion test because /oekonomi's three figures now
+   * count too (T073), and a count-up that spins a balance for somebody who
+   * asked for stillness is worse than one that never ran.
+   */
+  it('shows the club’s real figure, not a count, when less motion was asked for', () => {
+    useFakeIO()
+    const clock = frames()
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('reduce') }))
+    const root = markup('<dd data-count="2610">2.610 kr.</dd>')
+    const figure = root.querySelector<HTMLElement>('[data-count]')!
+
+    install(root)
+    clock.advance(200)
+
+    expect(figure.textContent).toBe('2.610 kr.')
+    // Nothing was ever started, so nothing has to finish for this to be true.
+    expect(figure.hasAttribute('data-counted')).toBe(false)
+  })
+})
+
+/**
+ * The finance chart's curves, drawing themselves in.
+ *
+ * Lukas, 2026-07-29: "Det kunne også være fedt med noget motion på
+ * finansgrafen. Så linjerne sådan kommer frem, når man åbner siden."
+ *
+ * The animation itself is four CSS rules; what is testable — and what actually
+ * matters — is that the club's finances are never drawn short. A path is
+ * hidden only by `--ek-len`, which is only ever written after the geometry
+ * answered, so every path this cannot measure is a whole line.
+ */
+describe('the finance curves drawing in', () => {
+  const chart = () =>
+    markup(
+      '<div data-draw><svg><g class="ek-curve"><path d="M0 0 L10 10"></path></g></svg></div>',
+    )
+
+  /** jsdom has no geometry, so a length has to be lent to the path. */
+  const withLength = (root: ParentNode, len: number) => {
+    const path = root.querySelector<SVGPathElement>('.ek-curve path')!
+    // jsdom implements the element but not its geometry: getTotalLength is
+    // declared and throws. Lending it one is what stands in for layout.
+    path.getTotalLength = () => len
+    return path
+  }
+
+  it('hides nothing until the plot is being watched', () => {
+    const io = useFakeIO()
+    const root = chart()
+    withLength(root, 420)
+    install(root)
+
+    const plot = root.querySelector('[data-draw]')!
+    expect(plot.getAttribute('data-draw')).toBe('armed')
+    expect(io().watched).toContain(plot)
+  })
+
+  it('measures each curve so the CSS has something to draw', async () => {
+    useFakeIO()
+    const root = chart()
+    const path = withLength(root, 420)
+    install(root)
+    await mutations()
+
+    expect(path.style.getPropertyValue('--ek-len')).toBe('420')
+  })
+
+  it('draws when the plot comes into view', () => {
+    const io = useFakeIO()
+    const root = chart()
+    withLength(root, 420)
+    install(root)
+
+    const plot = root.querySelector<HTMLElement>('[data-draw]')!
+    io().fire(plot)
+
+    expect(plot.getAttribute('data-draw')).toBe('in')
+  })
+
+  /**
+   * The guarantee, in the one form it can take here: a path with no length
+   * carries no `--ek-len`, and the two rules that hide it fall back to
+   * `stroke-dasharray: none` and `stroke-dashoffset: 0` — a complete curve.
+   * recharts fills the SVG in some frames after React commits the card, so
+   * "not measured yet" is a state this passes through on every page load.
+   */
+  it('leaves an unmeasured curve whole', async () => {
+    useFakeIO()
+    const root = chart()
+    const path = root.querySelector<SVGPathElement>('.ek-curve path')!
+    install(root)
+    await mutations()
+
+    expect(path.style.getPropertyValue('--ek-len')).toBe('')
+  })
+
+  it('hands the plot back if it is torn down before it was ever seen', () => {
+    useFakeIO()
+    const root = chart()
+    withLength(root, 420)
+    const stop = install(root)
+
+    stop()
+
+    expect(root.querySelector('[data-draw]')!.getAttribute('data-draw')).toBe('')
+  })
+
+  it('never arms the plot for someone who asked for less motion', () => {
+    useFakeIO()
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('reduce') }))
+    const root = chart()
+    install(root)
+
+    expect(root.querySelector('[data-draw]')!.getAttribute('data-draw')).toBe('')
+  })
 })

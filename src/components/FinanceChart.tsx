@@ -266,6 +266,13 @@ export function FinanceChart({
            than widened-and-scrolled on purpose: two smooth curves stay
            readable compressed, and the one month a member actually wants —
            the last one — would be the one off the right-hand edge. */
+        /* `data-draw` sits here rather than on the card, so the curves start
+           drawing when the plot itself is 18 % into view: the heading, the
+           sentence and the three figures stand above it, and armed from the
+           card the whole gesture would play with the plot still off-screen.
+           lib/reveal.ts measures the paths; the `[data-draw]` rules in
+           index.css carry the timing and the order. */
+        data-draw
         className="mt-3 -mx-1 overflow-x-auto"
       >
         <ResponsiveContainer width="100%" height={210}>
@@ -302,7 +309,7 @@ export function FinanceChart({
                 its own. */}
             <Area
               dataKey="behind"
-              className="text-absent"
+              className="text-absent ek-band"
               fill="currentColor"
               fillOpacity={0.28}
               stroke="none"
@@ -311,7 +318,7 @@ export function FinanceChart({
             />
             <Area
               dataKey="ahead"
-              className="text-present"
+              className="text-present ek-band"
               fill="currentColor"
               fillOpacity={0.28}
               stroke="none"
@@ -320,7 +327,7 @@ export function FinanceChart({
             />
             <Line
               dataKey="expected"
-              className="text-accent"
+              className="text-accent ek-curve"
               stroke="currentColor"
               strokeWidth={2}
               strokeLinecap="round"
@@ -331,7 +338,7 @@ export function FinanceChart({
             />
             <Line
               dataKey="received"
-              className="text-present"
+              className="text-present ek-curve"
               stroke="currentColor"
               strokeWidth={2}
               strokeLinecap="round"
@@ -351,7 +358,7 @@ export function FinanceChart({
             {showBudget && (
               <Line
                 dataKey="budgeted"
-                className="text-accent"
+                className="text-accent ek-forecast"
                 stroke="currentColor"
                 strokeWidth={2}
                 strokeDasharray="5 4"
@@ -451,7 +458,22 @@ function Figure({
           already carries the identity. The gap leads by size — 22 px against
           16 px, because Instrument Serif has one weight and the bold that used
           to make it lead is not available to it. */}
-      <dd className={`ek-figure mt-1 ${lead ? 'text-[1.375rem]' : 'text-[1rem]'} text-ink`}>
+      {/* `data-count`: Lukas, 2026-07-29 — "Og lidt mere motion på tallene."
+          These three are the exception to design/README.md's note that
+          /oekonomi is left out of the count-up, and the note's reasoning is
+          what makes them one. What it argues against is a *bank balance* that
+          spins up to its value, "decoration on the one page whose whole job is
+          to be exact" — and Klubkassen, the balance a member checks his own
+          arithmetic against, still does not move. These are not that. They are
+          the readout of the curve directly below them, they count over the same
+          900 ms it takes to draw, and the number they land on is the string
+          React rendered rather than one this arrived at (lib/reveal.ts refuses
+          any figure it cannot rebuild exactly). The line and the figure it
+          resolves to finish together, which is the whole point of the card. */}
+      <dd
+        data-count={amount > 0 ? amount : undefined}
+        className={`ek-figure mt-1 ${lead ? 'text-[1.375rem]' : 'text-[1rem]'} text-ink`}
+      >
         {kr(amount)}
       </dd>
     </div>

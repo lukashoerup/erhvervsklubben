@@ -265,6 +265,43 @@ describe('the fine budget', () => {
     expect(points.filter((p) => p.isBudget)).toHaveLength(3)
   })
 
+  /**
+   * The handle the draw-in hangs off, asserted here because it is invisible
+   * from the screen it animates and silent when it breaks: drop `data-draw`
+   * and the club loses the motion and nothing else, so nothing else would ever
+   * fail.
+   *
+   * Only the plot marker can be checked in jsdom. ResponsiveContainer measures
+   * itself and jsdom reports every box as zero, so recharts renders no SVG at
+   * all here — which is also why `.ek-curve`, `.ek-band` and `.ek-forecast`
+   * are verified in a browser instead (T073's notes) rather than asserted
+   * against a chart that was never drawn.
+   */
+  it('marks the plot so the curves can be drawn into it', () => {
+    const { container } = draw()
+
+    expect(container.querySelector('[data-draw]')).toBeTruthy()
+    // On the plot, not on the card: armed from the card the gesture would play
+    // with the plot still below the fold.
+    expect(container.querySelector('[data-draw]')).toBe(container.querySelector('[role="img"]'))
+  })
+
+  /**
+   * "Og lidt mere motion på tallene" (Lukas, 2026-07-29). The three figures the
+   * curve resolves to count over the same 900 ms the curve takes to draw — and
+   * they carry the *exact* value, because lib/reveal.ts rebuilds the rendered
+   * string or leaves the figure alone.
+   */
+  it('lets the three figures under the curve count up to what they say', () => {
+    draw()
+    const figures = screen.getAllByText(/kr\./).filter((el) => el.hasAttribute('data-count'))
+
+    expect(figures.length).toBeGreaterThanOrEqual(3)
+    for (const el of figures) {
+      expect(el.textContent).toContain(Number(el.dataset.count).toLocaleString('da-DK'))
+    }
+  })
+
   it('leaves the real curves null in a month that has not happened', () => {
     const projected = financeSeries(demoLedger(), months).filter((p) => p.isBudget)
     // Zero would draw both curves diving to the axis, reporting a month with no

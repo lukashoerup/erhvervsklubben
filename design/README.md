@@ -184,7 +184,8 @@ admin — not read off the source. T066's notes carry the numbers.
 | Kun opacity og transform (§01) | ✅ asserted in `src/theme.test.ts` |
 | Reveal ved scroll (§01) | ✅ all seven scrolling screens — and since T067 it runs on the phones the club actually holds |
 | IntersectionObserver, tærskel 0.18 (§05) | ✅ since T067 — `src/lib/reveal.ts` |
-| Nøgletal tæller op, 900 ms easeOutExpo (§01) | ✅ since T067, on Hjem and Anciennitet |
+| Nøgletal tæller op, 900 ms easeOutExpo (§01) | ✅ since T067 on Hjem and Anciennitet, and since T073 on Økonomi's three chart figures |
+| Kurver tegner sig ind (§01, "indhold træder frem") | ✅ since T073 — `/oekonomi`, 900 ms, the same curve |
 | Søjler vokser fra baseline, forskudt (§01) | ✅ since T067 |
 
 Contrast is at zero failing pairs across all eight screens in both themes, with
@@ -226,18 +227,124 @@ What the members' screens do now, all of it from §01:
 | Figures | count up in 900 ms, easeOutExpo, the export's own `1 − 2^(−10p)` |
 | Attendance strip | the ten pips arrive left to right, 26 ms apart, riding their card's own state |
 | Meeting card | the club's blue streg is drawn under the meeting's name as the card arrives — absolutely positioned, so 29 of them add no height |
+| Finance curves | draw themselves in over 900 ms; the band settles behind them at 620 ms and the forecast at 900 — see below |
+| Date rail | the hairline beside a news item's or a meeting's date grows downwards, 120 ms behind its card |
 | Scroll indicator | the export's `#ek-progress`, as `scaleX` rather than its `width` |
 
-**The count-up is no longer an open conflict.** T064 and T066 left it, reading
+**The count-up is no longer an open conflict, and Økonomi is no longer wholly
+out of it.** T064 and T066 left it, reading
 §01's "kun opacity og transform" as forbidding text that is rewritten every
 frame. Re-read against the export, the two rules never disagreed: that one is
 about which CSS properties may be animated, because those two composite — and
 the export's own script counts its figures by writing `textContent`. The number
 on screen is always React's; the count-up only replaces it while it is arriving,
 only when it can rebuild the rendered string exactly, and the width is pinned
-first so nothing moves under it ("Ingen loading-hop", §05). Økonomi is
-deliberately left out: a bank balance that spins up to its value is decoration
-on the one page whose whole job is to be exact.
+first so nothing moves under it ("Ingen loading-hop", §05).
+
+Økonomi was left out entirely, on the reasoning that a bank balance spinning up
+to its value is decoration on the one page whose whole job is to be exact. That
+reasoning still holds and **Klubkassen still does not move** — it is the figure a
+member checks his own arithmetic against. T073 drew the line one card further
+in, at Lukas's word (2026-07-29: *"Og lidt mere motion på tallene"*): the three
+figures in the chart's legend row are the *readout of the curve directly below
+them*, they count over the same 900 ms the curve takes to draw, and the line and
+the number it resolves to therefore finish in the same moment. A figure that
+belongs to a gesture is not the same object as a balance sitting on a card.
+
+T073 also found the count-up's one real fault, on that page. `from` is
+`performance.now()` at the moment the observer fires; `now` is the rAF
+timestamp, which is the *frame's* time and need not be later than a reading
+taken inside that frame. Unclamped, a millisecond of that turns easeOutExpo's
+`1 − 2^(−10p)` into a large negative multiplier and the club's balance renders
+as **"-24.643 kr."** for one frame. It is clamped at both ends now, and
+`reveal.test.ts` drives a frame backwards to prove it.
+
+## The curve, and why the band waits
+
+Lukas, 2026-07-29: *"Det kunne også være fedt med noget motion på finansgrafen.
+Så linjerne sådan kommer frem, når man åbner siden."*
+
+The two measured curves draw themselves in over **900 ms** on the system's own
+`.16 1 .3 1` — the timing §01 gives the count-up and the bars rather than the
+700 ms it gives a card, because a drawn line is one quantity being read out and
+not an element arriving. The three figures above the plot count over the same
+900 ms, so the line and the number it resolves to land together.
+
+**Recharts' own animation is not used.** Every series on this chart has carried
+`isAnimationActive={false}` since it was built, and turning it back on would put
+a second easing curve and a second duration on the page beside the system's. The
+draw is `stroke-dashoffset` instead: `lib/reveal.ts` measures each path with
+`getTotalLength()`, writes it to the path as `--ek-len`, and four rules in
+`index.css` do the rest.
+
+**stroke-dashoffset is the second sanctioned exception to "kun opacity og
+transform"**, beside the wordmark's letter-spacing in the logo intro, and for
+the same reason: a line drawing itself cannot be said with either. §01's rule is
+about what composites — height, top and margin reflow and these do not — and
+this is two paths inside one SVG layer on one screen, none of them in a list.
+`src/theme.test.ts` asserts the exception by name, so a third one cannot arrive
+quietly.
+
+**The band settles after the curves rather than drawing with them.** It is not a
+third series: it is the distance between the two lines, which is the one number
+the card exists to report. Drawn alongside them it reads as a third thing
+arriving on its own account, and for 900 ms it would be showing the gap between
+two curves that are not finished — a shortfall that grows while you watch, which
+is not what the club's books did. So the lines are drawn first, the gap is
+filled in behind them at 620 ms, the end dots arrive at 780 ms with the lines
+that reach them, and the dashed forecast last at 900 ms, being the only mark on
+the chart that has not happened yet. All four of those are opacity.
+
+**The guarantee is a fallback rather than an ordering**, and it has to be:
+recharts inserts these paths some frames after React commits the card, so
+`arm()`'s "observe first, hide second" cannot cover them. Every rule that hides
+a curve names a default — `stroke-dasharray: none`, `stroke-dashoffset: 0` —
+which is an ordinary complete line. No script, no layout, an observer that
+threw, jsdom: the club's finances are drawn whole. `theme.test.ts` fails if a
+rule ever uses `--ek-len` without one.
+
+## The cards, and what was left room for
+
+Lukas, 2026-07-29, on Nyheder and Møder: *"de cards ... er stadig lidt kedelige.
+Altså man kunne måske lave et eller andet der?"* They were a 10 px uppercase
+date, a headline and a paragraph in a rounded box, repeated down a page —
+nothing recurring at the same place, so the eye had no beat and every card
+looked like the one above it.
+
+They were given a face out of material they already had, in the register he had
+already approved (*"Den nye skrifttype på tallene er pæn"*): the day is a **26 px
+serif numeral** in a rail with its month beneath it and a hairline down its
+side. It is the idiom `/anciennitet` already uses as its face and the §-rail
+`/regler` got in T072 — a third screen sharing it rather than a third invention.
+The year appears only when it is not the current one, which is the trap
+`lib/dates.ts` already documents said the other way round.
+
+Two things came out of the data rather than out of a decoration:
+
+- **News items are signed.** `author` is `not null`, every row carries a real
+  name, the form has always written it — and nothing read it back. The note in
+  `Nyheder.tsx` called what to do with it "a design question for another day".
+- **A meeting's venue has its own row**, with §03's `place` pin in the accent
+  (§04 draws that icon blue by name).
+
+**That venue row is where the map goes.** Lukas, same day: *"Derudover skal vi
+have et kort, som viser alle steder vi har været implementeret på længere
+sigt."* Before T073 the venue was one muted 12 px line among three and
+indistinguishable from a description; it is now a single self-contained row with
+its own icon and the full width of the card, so a link, a chip, a distance or a
+row of markers can arrive there without the card being rebuilt around it. **No
+map dependency was added and none is approved.**
+
+**Not verified on WebKit.** T073's motion was measured in Chromium only: the
+Playwright WebKit build is not installed in the cloud session's image and the
+download fails from it. What that leaves unproven is narrow and worth naming —
+`var()` substituted inside a `@keyframes` block, which is what carries
+`--ek-len` into the draw. Its failure mode is benign in the one direction that
+matters: an unresolvable `var()` makes `stroke-dashoffset` invalid, the
+animation's from-value falls back to the computed value, and the curve simply
+appears whole with no draw. Everything else in this pass — `getTotalLength`,
+custom properties on an element, dash animation on an SVG path — has been in iOS
+Safari for a decade.
 
 ## Not done yet
 
