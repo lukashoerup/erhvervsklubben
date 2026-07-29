@@ -713,11 +713,15 @@ the real dates on `/anciennitet`.
 
 ### 11.6 Still open after this
 
-Unchanged and still needing Lukas: §9 questions **1–2** (whose 50 kr., and was
-it the Le Petit Rouge dinner), **3** (the 400 kr. — scroll the bank statement two
-rows further back), **4** (do the Leads still have their notes, which is the only
-thing that could ever replace `historisk` with real offences), and **7–10**.
-Questions **5 and 6 are now answered** and were used.
+Unchanged and still needing Lukas: **3** (the 400 kr. — scroll the bank statement
+two rows further back), **4** (do the Leads still have their notes, which is the
+only thing that could ever replace `historisk` with real offences), and **7**,
+**9–10**. Questions **5 and 6 are now answered** and were used.
+
+**Superseded on 2026-07-29 by T071 — see §14.** Questions **1–2** (whose 50 kr.,
+and which dinner) are answered: it was Lukas's own, and it was the Le Petit Rouge
+dinner, record 26, on 2026-02-21. Question **8** (when did the ninth member join)
+is answered: June 2026. Both came from Lukas the same day.
 
 §10's repo issues were partly overtaken by events: `src/data/ledger.ts` and
 `src/pages/Oekonomi.tsx` have since been corrected to describe the 50 kr.
@@ -842,3 +846,150 @@ Answering Q8 is what fixes it — a per-month paying count, not more arithmetic.
 2026-06-09 snapshot. If two more dues payments landed in June rather than on
 1 July, received is 13.680 and the page would report 1.080 kr. ahead instead of
 680. Neither reading changes the decomposition above.
+
+---
+
+## 14. The meetings have dates — T071, 2026-07-29
+
+All 28 meetings were undated, which is why §13 had to book 1.780 kr. of fines as
+*outside* every month. **17 of the 28 now carry a date. 11 do not, on purpose.**
+
+Source: Lukas's Outlook calendar. The club's invitations and his own all-day
+blocks for it are there, under subjects that vary a great deal —
+`Erhvervsklubben`, `Erhvervsklub`, with and without `#N`, with and without a
+venue, and twice with no number at all. The search had to be run per date window
+and per organiser; a single wide query silently truncates and misses events (the
+2024-10-12 invitation does not come back from a 2023–2026 search but does from a
+2024-only one).
+
+### 14.1 The trap: `#N` in a subject is not `meeting_number`
+
+**The club's own numbering ran one ahead of the database's through the middle of
+the history, then closed the gap again.** This is not a suspicion, it is visible
+in two invitations whose bodies name the venues:
+
+| Calendar subject | Date | Body names | Database row |
+|---|---|---|---|
+| `Erhvervsklub #18` | 2024-10-12 | Stenosgade 3, **Aamanns 1921**, **St. Pauli 54**, **ÅBEN i Kødbyen** | record **17** — lead Kasper, main `Aamanns`, post `St. Pauli + ÅBEN` |
+| `Erhvervsklub #13 - Ekskursion til Odense` | 2024-01-20 | **RESTAURANT HOS**, Kongensgade 65, Odense | record **12** — lead Mads, main `Hos`, pre `DSB`, post `Sir Club` |
+
+Both are exact venue-for-venue matches to a record numbered one lower. By
+2025-11-21 the two numberings agree again (`Erhvervsklub #24` is record 24). So
+**every date below was matched on lead + venue + ordering**, and the number in
+the subject was used only as a tiebreak once lead and venue already agreed.
+Anyone repeating this work who joins on `#N` will silently shift a third of the
+history by one meeting.
+
+### 14.2 The 17 that were written
+
+| # | Date | What corroborated it |
+|---:|---|---|
+| 5 | 2022-10-29 | Subject `#5 - Restaurant Kronborg`; location Brolæggerstræde 12 **is** Restaurant Kronborg; organiser Saaby = lead |
+| 6 | 2023-01-21 | Organiser Oskar = lead; starts at the private Ægirsgade 29, and the record says `Privaten inden med papvin`; the only club event between the confirmed 5 and 7 |
+| 7 | 2023-03-11 | Subject `#7 - Restaurant Møntergade`; location Møntergade 19; organiser Esben = lead |
+| 9 | 2023-08-05 | Subject `#9`; body: bubbles at his own Asminderødgade 3 (`Privaten`), then **Hansens Familiehave**; organiser Lukas = lead |
+| 10 | 2023-09-09 | Subject `#10`; body: his own Blegdamsvej 74C (`Privaten`), then **Restaurant Palægade**; organiser Emil = lead |
+| 11 | 2023-11-11 | Organiser Rasmus = lead; venue still `TBD` in the invitation, so no venue match — but the only club event between the confirmed 10 and 12, and an evening at 2.000 kr. a head fits Punk Royal |
+| 12 | 2024-01-20 | **RESTAURANT HOS, Odense** = main `Hos`; organiser Mads = lead; `DSB` is the train there and `Sir Club` is in Odense. Subject says 13 |
+| 13 | 2024-03-09 | Location **Seaside Toldboden** = pre `Seaside`; organiser Anders = lead. Subject carries no number at all (`#X`) |
+| 17 | 2024-10-12 | **Aamanns 1921 / St. Pauli 54 / ÅBEN** and Stenosgade 3 = `Privaten`; organiser Kasper = lead. Subject says 18 |
+| 21 | 2025-05-31 | All-day club block that date; record created the same day; lead Esben = the Esben Lead column, §3.2 |
+| 22 | 2025-08-30 | Club block that date **and** Saaby's `Placeholder \| Erhvervsklub` invitation to the club for it; record created the same day; lead Lukas = the Lukas Lead column, §3.2 |
+| 23 | 2025-10-11 | Subject `#23`; preceded by Saaby's `Erhvervsklub \| Check-in` call the afternoon before, which is when the record was created; lead Oskar = the Oskar Lead column, §3.2 |
+| 24 | 2025-11-21 | Subject `#24 \| Fredagsbar`; organiser Emil = lead; his own Nordre Frihavnsgade 19 = `Privaten`; a Friday, and the invitation calls the Friday format new; lead Emil = the Emil Lead column, §3.2 |
+| 25 | 2026-01-24 | Subject `#25`; lead Saaby = the Saaby Lead column, which §3.2 pins to **Januar 26** — decisive, because the record was not created until 2026-02-05 and `created_at` alone would have left February open |
+| 26 | 2026-02-21 | Subject `#26`; record created the same day; lead Anders |
+| 27 | 2026-04-24 | Club block 16.00–23.30 local that date; record created that afternoon; lead Rasmus |
+| 28 | 2026-06-26 | Subject `#28 - Generalforsamling`; body: meet at Esben's Sylviavej 26 (`Privaten`), then dinner at **Propaganda**; organiser Esben = lead; record created the same day |
+
+**The spreadsheet is a second, independent source for records 21–25, and it
+agrees.** §3.2 pins each of Sheet2's five Lead columns to a month of Sheet1 by
+two verbatim formulas. Those months are Juni 25, August 25, Oktober 25,
+November 25, Januar 26, under leads Esben, Lukas, Oskar, Emil, Saaby. The
+calendar — which has never seen that spreadsheet — dates records 21–25 to
+meetings led by Esben, Lukas, Oskar, Emil and Saaby, in that order, in May,
+August, October and November 2025 and January 2026. Four land in the sheet's own
+month exactly. The fifth is a dinner on **31 May**, whose 275 kr. of fines the
+ledger books in its first month, June. Two sources built from nothing in common
+agreeing on five leads and five months is what makes these five safe rather than
+merely plausible.
+
+### 14.3 The 11 that were refused, and why
+
+A missing date is visible in the app. A wrong one is not, and it puts a fine in
+the wrong month and quarter — the exact error this whole effort has been
+avoiding. So:
+
+| # | Why not |
+|---:|---|
+| 1, 2, 3, 4 | **No calendar evidence at all.** Nothing club-shaped in Lukas's calendar before 2022-10-29. The club pre-dates the invitations he still holds |
+| 8 | One candidate (an all-day block, 2023-06-10) between the confirmed 7 and 9 — but it is titled `Erhvervsklub (Lukas)` while record 8's lead is **Have**. A conflicting signal is not a corroborating one |
+| 14, 15, 16 | **Three records, one candidate.** Between the confirmed 13 (2024-03-09) and 17 (2024-10-12) the database has three meetings and the calendar has exactly one event, 2024-06-15. Two of the three are simply not there, and nothing says which |
+| 18 | Identified beyond doubt — `London Erhvervsklub`, and record 18's venues are The Grafton, King Williams the Fourth and `Pubs i London` — but the block is **all-day across 2025-01-18 and 19**, and nothing decides which. The month is certain (January 2025); the day is not |
+| 19, 20 | Two candidates in the right order (2025-03-08, 2025-04-26), but both are bare all-day blocks: no organiser but Lukas, no location, no body. They match only by position in a run assumed complete — and the 2024 gap above **proves this calendar is not complete**. Position alone is not corroboration |
+
+### 14.4 The Februar 26 fine went in
+
+Lukas answered §9 Q1 on 2026-07-29: **the 50 kr. was his own**, a voluntary fine
+he transferred himself, as treasurer, because a year in which the treasurer
+incurred no fine at all looked implausible. That is also why he is the one member
+with no row in Sheet2's grid.
+
+Q2 — which dinner — the dating answers. Exactly one meeting falls in February
+2026: record 26, 2026-02-21, lead Anders, Le Petit Rouge. Record 25 is not a
+second candidate, because §3.2 puts its 475 kr. in **Januar 26**.
+
+Imported in the same shape as the other seventeen, `rule_id = 'historisk'`,
+because the offence is no more known here than for any of them.
+
+```
+fines: 17 rows / 1.730 kr.  ->  18 rows / 1.780 kr.   ✓ annual report
+```
+
+Fines now sit in the months the sheet says they do:
+
+| Month | Meeting | Lead | kr. | Sheet1 `Faktiske bøder` |
+|---|---:|---|---:|---|
+| 2025-05 | 21 | Esben | 275 | Juni 25 (dinner 31 May, booked the month after) |
+| 2025-08 | 22 | Lukas | 405 | August 25 ✓ |
+| 2025-10 | 23 | Oskar | 305 | Oktober 25 ✓ |
+| 2025-11 | 24 | Emil | 270 | November 25 ✓ |
+| 2026-01 | 25 | Saaby | 475 | Januar 26 ✓ |
+| 2026-02 | 26 | Anders | 50 | Februar 26 ✓ |
+
+### 14.5 The ninth member, and the receivable the app cannot express
+
+Lukas, 2026-07-29, answering §9 Q8: **the club became nine members in June 2026.**
+Months before 2026-06 had **eight** paying members.
+
+And a second fact that is not the same thing: **the ninth must still buy in
+retroactively.** He is treated as though he had paid kontingent all along, but he
+has not actually paid. That is a **receivable** — money owed to the club and not
+in the bank — and **nothing in the schema can hold it.** `payments` records money
+that moved, by month, with no member on it, and must keep meaning exactly that.
+`members` carries `name`, `status`, `note` and a `created_at` that is when the row
+was written, not when the man joined.
+
+**Not fixed here.** Adding a joining date is a schema change and needs Lukas
+first. What it would take, in full: a nullable `joined_on date` on `members`
+(additive, so RLS and the CI seed are untouched); `buildLedger` counting payers
+per month from it instead of being handed one roster length; the buy-in modelled
+as its own receivable rather than smuggled into `payments`; and the ledger tests
+extended to a roster that changes size mid-history. Until that exists, `/oekonomi`
+names who it charges in `Hvem betaler kontingent`, which is the honest version of
+being wrong.
+
+### 14.6 What this does to §13
+
+§13's decomposition was built on all 28 meetings being undated and the 50 kr.
+never imported. Both have changed, so the two figures move:
+
+| §13 line | Then | Now |
+|---|---:|---:|
+| Fines kept out of every month because the meeting is undated | −1.730 | **−545** (the 11 still-undated meetings carry no fines at all; all 1.780 kr. now sits on dated meetings) |
+| The Februar 26 fine, never imported | −50 | **0** — imported |
+| Dues charged to 9 payers where the club charged 8 | +1.200 | unchanged until `members` can carry a joining date |
+
+The 1.780 kr. of fines is now inside the month-by-month ledger in full, which is
+what §13 predicted would move the club **from ahead to behind**. The remaining
+distortion is the payer count, and that is §14.5, not the meeting dates.
