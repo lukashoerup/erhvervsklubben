@@ -23,8 +23,27 @@ export const PUBLIC_TABLES = ['news', 'events'] as const
  */
 export const SHARED_TABLES = ['attendance_records', 'attendances', 'members'] as const
 
-/** Personal rows — you see yours, not anyone else's. */
-export const PERSONAL_TABLES = ['profiles', 'user_member_mapping', 'event_evaluations'] as const
+/**
+ * Personal rows — you see yours, not anyone else's.
+ *
+ * `member_last_seen` joined here on 2026-07-29 (T074). It is one timestamp per
+ * account saying when that member last opened the site, and it is personal for
+ * the same reason a member's own feedback is: it is a fact about a person, not
+ * about the club. Like `event_evaluations` it also carries an admin read, which
+ * is the whole point of writing it down — Lukas asked how often the members
+ * visit and nothing in the app could answer him.
+ *
+ * What makes it unlike everything else in this file is the write side: it has
+ * **no write policy at all**, for anyone, the admin included. The only way a row
+ * can appear is `touch_last_seen()`, a security definer function that takes no
+ * arguments and sets nothing but `auth.uid()`'s own timestamp. The alternative —
+ * a column on `profiles`, reachable only by relaxing an UPDATE policy on the
+ * table that holds `role` — is the trap this design exists to avoid. See the
+ * migration, and the named tests at the bottom of rls.test.ts.
+ */
+export const PERSONAL_TABLES = [
+  'profiles', 'user_member_mapping', 'event_evaluations', 'member_last_seen',
+] as const
 
 /**
  * Admin-only, read included. Ordinary members cannot see these at all.
@@ -59,6 +78,11 @@ export const SAMPLE_ROW: Record<string, Record<string, unknown>> = {
   // would let a member forgive their own fines.
   fines: { record_id: 1, member_name: 'probe', rule_id: 'skaal', amount_kr: 50 },
   payments: { month: '2026-01-01', amount_kr: 1 },
+  // `member_last_seen` is deliberately absent. Its only column is a user id
+  // that has to be a real account, and a made-up uuid here would risk the
+  // denial landing on the foreign key rather than on the policy — the exact
+  // failure this map exists to prevent. Its denials are written out by hand
+  // with the seed users instead; see 'sidst set' in rls.test.ts.
 }
 
 /** Tables an admin is expected to be able to write. */

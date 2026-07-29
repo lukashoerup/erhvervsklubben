@@ -180,6 +180,109 @@ describe('personal data stays personal', () => {
   })
 })
 
+// --------------------------------------------------------------- sidst set
+//
+// The one table in this app whose contents a member can cause to be written, so
+// it gets named tests rather than generated ones.
+//
+// The trap it was designed around: `profiles` holds `role`, and its only UPDATE
+// policy is what stops a member promoting himself. Putting `last_seen` there
+// would have meant relaxing that policy, which is a write path to `role`. So the
+// timestamp lives in its own table with no write policy at all, reachable only
+// through a security definer function that takes no arguments. Each test below
+// is one sentence of that claim.
+describe('sidst set', () => {
+  /** True state, RLS bypassed. */
+  const stored = async (id: string) =>
+    (await service.from('member_last_seen').select('last_seen_at').eq('user_id', id)).data ?? []
+
+  test('a member records their own visit, and has no way to name anyone else', async () => {
+    const { error } = await member1.rpc('touch_last_seen')
+    expect(error).toBeNull()
+
+    expect((await stored(SEED.member1.id)).length).toBe(1)
+    // The function takes no arguments, so there is no parameter in which
+    // member1 could have named member2. The property is in the signature, not
+    // in a policy someone has to keep correct.
+    expect(await stored(SEED.member2.id)).toEqual([])
+  })
+
+  test('calling it again moves the timestamp and adds no row', async () => {
+    // One row per member, overwritten: the count of visits is unrecoverable by
+    // construction. That is the half Lukas asked for, and the half that keeps
+    // this from turning into a visit log.
+    await service
+      .from('member_last_seen')
+      .update({ last_seen_at: '2020-01-01T00:00:00Z' })
+      .eq('user_id', SEED.member1.id)
+
+    await member1.rpc('touch_last_seen')
+
+    const rows = await stored(SEED.member1.id)
+    expect(rows.length).toBe(1)
+    expect(new Date(rows[0].last_seen_at as string).getFullYear()).toBeGreaterThan(2020)
+  })
+
+  test('a member cannot write anyone else\'s timestamp', async () => {
+    const { error } = await member1.from('member_last_seen').insert({ user_id: SEED.member2.id })
+    expect(error?.code).toBe(RLS_DENIED)
+    expect(await stored(SEED.member2.id)).toEqual([])
+  })
+
+  test('a member cannot write even their own row directly', async () => {
+    // Not belt and braces — this is what makes the test above hold. The table
+    // has no write policy, so the only write path is the function, and the
+    // function is the thing that cannot be aimed at somebody else.
+    const { error } = await member1
+      .from('member_last_seen')
+      .insert({ user_id: SEED.member1.id, last_seen_at: '1999-01-01T00:00:00Z' })
+    expect(error?.code).toBe(RLS_DENIED)
+
+    // UPDATE and DELETE are denied by matching no rows rather than by erroring,
+    // so they are asserted on the row and not on an error code.
+    const before = await stored(SEED.member1.id)
+    await member1
+      .from('member_last_seen')
+      .update({ last_seen_at: '1999-01-01T00:00:00Z' })
+      .eq('user_id', SEED.member1.id)
+    await member1.from('member_last_seen').delete().eq('user_id', SEED.member1.id)
+    expect(await stored(SEED.member1.id)).toEqual(before)
+  })
+
+  test('not even an admin can write it by hand', async () => {
+    const { error } = await admin.from('member_last_seen').insert({ user_id: SEED.member2.id })
+    expect(error?.code).toBe(RLS_DENIED)
+  })
+
+  test('a signed-out visitor can neither write it nor call the function', async () => {
+    const written = await anon.from('member_last_seen').insert({ user_id: SEED.member1.id })
+    expect(written.error?.code).toBe(RLS_DENIED)
+    // No execute grant, so anon is refused before the function's own
+    // "no session, no row" guard is ever reached.
+    expect((await anon.rpc('touch_last_seen')).error).not.toBeNull()
+  })
+
+  test('a member sees only their own visit; the admin sees the club\'s', async () => {
+    await member2.rpc('touch_last_seen')
+
+    const theirs = await member1.from('member_last_seen').select('user_id')
+    expect(theirs.data?.map((r) => r.user_id)).toEqual([SEED.member1.id])
+
+    const all = await admin.from('member_last_seen').select('user_id')
+    expect(all.data?.map((r) => r.user_id)).toEqual(
+      expect.arrayContaining([SEED.member1.id, SEED.member2.id]),
+    )
+  })
+
+  test('recording a visit cannot touch anything else, least of all a role', async () => {
+    // The whole reason this is not a column on `profiles`. If the write path
+    // ever widened, this is the assertion that goes red.
+    await member1.rpc('touch_last_seen')
+    const check = await service.from('profiles').select('role').eq('id', SEED.member1.id).single()
+    expect(check.data?.role).toBe('user')
+  })
+})
+
 // ------------------------------------------------------- privilege boundary
 describe('nobody can promote themselves', () => {
   test('a member cannot make themselves an admin', async () => {

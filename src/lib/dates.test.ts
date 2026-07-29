@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { daDate } from './dates'
+import { daDate, daWhen } from './dates'
 
 /**
  * The club is in Copenhagen, so this bug is invisible from home.
@@ -49,5 +49,41 @@ describe('a date from the database', () => {
     expect(daDate('2026-08-01', { weekday: 'long', day: 'numeric', month: 'long' })).toBe(
       'lørdag 1. august',
     )
+  })
+})
+
+/**
+ * "Sidst set" is the one thing in this app that is an *instant* rather than a
+ * day the club agreed on, so it is the one thing rendered in the reader's own
+ * zone rather than in UTC. These run in the same western zone as everything
+ * above, which is what makes the distinction visible at all.
+ */
+describe('when a member was last here', () => {
+  const at = (iso: string) => new Date(iso)
+
+  it('says i dag and i går rather than counting days', () => {
+    // A number of days is something to compare ten men on. The words are not.
+    expect(daWhen('2026-07-29T09:00:00Z', at('2026-07-29T20:00:00Z'))).toBe('i dag')
+    expect(daWhen('2026-07-28T09:00:00Z', at('2026-07-29T20:00:00Z'))).toBe('i går')
+  })
+
+  it('falls back to the date once it stops being recent', () => {
+    expect(daWhen('2026-07-06T09:00:00Z', at('2026-07-29T20:00:00Z'))).toBe('6. juli 2026')
+  })
+
+  it('reads the instant in the reader\'s zone, not in UTC', () => {
+    // 00:30 UTC on the 29th is still the evening of the 28th in this zone. A
+    // visit stamped by the server must land on the day the reader was living
+    // through, which is the opposite of what daDate does — and correct for the
+    // opposite reason.
+    expect(daWhen('2026-07-29T00:30:00Z', at('2026-07-29T20:00:00Z'))).toBe('i går')
+  })
+
+  it('never puts a visit in the future when a phone clock runs fast', () => {
+    expect(daWhen('2026-07-30T09:00:00Z', at('2026-07-29T20:00:00Z'))).toBe('i dag')
+  })
+
+  it('says nothing at all rather than Invalid Date', () => {
+    expect(daWhen('')).toBe('')
   })
 })

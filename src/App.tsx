@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from './auth/AuthContext'
+import { useMarkSeen } from './data/lastSeen'
 import { useReveal } from './lib/reveal'
 import { RequireAccess } from './routes/RequireAccess'
 import { Shell } from './routes/Shell'
@@ -26,6 +28,12 @@ export default function App() {
   // reveals too — and here rather than in main.tsx, so the observers are torn
   // down with the tree that owns them instead of outliving it.
   useReveal()
+
+  // "Sidst set" (T074). Here for the same reason: App is mounted once and
+  // survives every navigation, so a member opening six screens records one
+  // visit. In the Shell it would fire again each time he left the members' area
+  // and came back, which would turn a visit into a count of round trips.
+  useMarkSeen(useAuth().userId)
 
   return (
     <Routes>
