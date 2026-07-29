@@ -1,7 +1,9 @@
+import { useRef } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Icon } from '../components/Icon'
 import { LogoMark } from '../components/LogoMark'
+import { useScrollProgress } from '../lib/reveal'
 import { NAV_ROUTES } from './routes'
 
 /**
@@ -16,6 +18,8 @@ import { NAV_ROUTES } from './routes'
 export function Shell() {
   const { signOut } = useAuth()
   const navigate = useNavigate()
+  const progress = useRef<HTMLDivElement>(null)
+  useScrollProgress(progress)
 
   async function onSignOut() {
     await signOut()
@@ -34,6 +38,20 @@ export function Shell() {
        the max-w-lg column it would stop at 512 px and draw a seam down a
        desktop window; the landing page grounds itself the same way. */
     <div className="ek-texture min-h-[calc(100dvh-var(--demo-bar,0px))]">
+      {/* How far through the page you are, as the export's own `#ek-progress`:
+          a 2 px blue rule pinned to the top of the screen. Anciennitet is 29
+          meetings over ~3400 px and nothing on it says whether the card under
+          your thumb is a quarter of the club's history or nearly all of it.
+          `--demo-bar` because the demo build puts a banner above everything;
+          elsewhere it is 0. aria-hidden: it says nothing a scroll position does
+          not already say to anyone not looking at the screen. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-[var(--demo-bar,0px)] z-50 h-[2px]"
+      >
+        <div ref={progress} className="ek-progress h-full bg-accent" />
+      </div>
+
       {/* dvh, not vh: on a phone `100vh` is the viewport measured with the
           address bar hidden, so the tab bar sits below the fold until you
           scroll. The --demo-bar variable is set only by the demo build, which

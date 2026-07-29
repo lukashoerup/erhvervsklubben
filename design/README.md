@@ -120,10 +120,62 @@ admin — not read off the source. T066's notes carry the numbers.
 | Instrument Serif display / Sans UI | ✅ |
 | Ingen vandret scroll (§04) | ✅ at 420 px on every screen and state |
 | Kun opacity og transform (§01) | ✅ asserted in `src/theme.test.ts` |
-| Reveal ved scroll (§01) | ✅ all six members' screens **and** the landing page since T066 |
+| Reveal ved scroll (§01) | ✅ all seven scrolling screens — and since T067 it runs on the phones the club actually holds |
+| IntersectionObserver, tærskel 0.18 (§05) | ✅ since T067 — `src/lib/reveal.ts` |
+| Nøgletal tæller op, 900 ms easeOutExpo (§01) | ✅ since T067, on Hjem and Anciennitet |
+| Søjler vokser fra baseline, forskudt (§01) | ✅ since T067 |
 
 Contrast is at zero failing pairs across all eight screens in both themes, with
 every background layer composited.
+
+## The motion, and where it actually runs
+
+The export answers §01 twice and the two answers are not equivalent. Its
+stylesheet binds the reveal to `animation-timeline: view()`; its own script
+uses an `IntersectionObserver` at threshold 0.18 for the count-up, which is
+also what §05 Implementering writes down. T064 followed the stylesheet.
+
+That was wrong for this club and T067 undid it. `animation-timeline` is Safari
+26; the members are on iPhones and the `@supports` guard meant the six screens
+behind the login simply did not move for any of them — not degraded, absent.
+Lukas, 2026-07-28, having checked on both his phone and his computer: *"the
+cool visuals on the other pages, and flip through, I cannot see anywhere."*
+
+It is now one code path, `src/lib/reveal.ts`, and the scroll-timeline rules are
+gone rather than kept as a second branch. IntersectionObserver has been in iOS
+Safari since 12.1 (2019), far under the floor this app already sits on —
+Tailwind v4 needs Safari 16.4.
+
+**The guarantee moved from a feature check to an ordering.** T064 was right that
+a reveal must never strand content; its `@supports` guard was how it bought
+that, at the cost of the motion. Now the stylesheet hides nothing on its own —
+`[data-reveal]`, which is what React renders, selects no rule — and the only
+thing that ever sets a hiding state is `arm()`, *after* `observe()` has
+returned on that same element. No script, an old browser, a thrown observer, a
+teardown mid-animation: every one lands on the finished page. Unlike the CSS
+guard, that is a behaviour, so `src/lib/reveal.test.ts` can actually assert it.
+
+What the members' screens do now, all of it from §01:
+
+| | |
+|---|---|
+| Reveal | 22 px up + fade, 700 ms, `.16 1 .3 1`, staggered 60 ms per element in a batch (capped at six) |
+| Bars | grow from the baseline over 900 ms on the same curve — §01 pairs them with the count-up, not with the cards |
+| Figures | count up in 900 ms, easeOutExpo, the export's own `1 − 2^(−10p)` |
+| Attendance strip | the ten pips arrive left to right, 26 ms apart, riding their card's own state |
+| Meeting card | the club's blue streg is drawn under the meeting's name as the card arrives — absolutely positioned, so 29 of them add no height |
+| Scroll indicator | the export's `#ek-progress`, as `scaleX` rather than its `width` |
+
+**The count-up is no longer an open conflict.** T064 and T066 left it, reading
+§01's "kun opacity og transform" as forbidding text that is rewritten every
+frame. Re-read against the export, the two rules never disagreed: that one is
+about which CSS properties may be animated, because those two composite — and
+the export's own script counts its figures by writing `textContent`. The number
+on screen is always React's; the count-up only replaces it while it is arriving,
+only when it can rebuild the rendered string exactly, and the width is pinned
+first so nothing moves under it ("Ingen loading-hop", §05). Økonomi is
+deliberately left out: a bank balance that spins up to its value is decoration
+on the one page whose whole job is to be exact.
 
 ## Not done yet
 
@@ -152,12 +204,6 @@ regressing the one page that has to stay cheap, and it wants Lukas's eye on a
 before/after rather than a session's judgement. **It is the largest thing left
 between the app and the system.**
 
-**Count-up on the figures.** §01 asks for "Nøgletal tæller op i 900 ms med
-easeOutExpo", and the members' screens do not. Counting a number up means
-rewriting text every frame, which is the one thing §01's own rule about
-`opacity` and `transform` exists to prevent. Left undone deliberately rather
-than half-done; it needs a decision about which rule wins.
-
 **There is no desktop layout.** §04 shows a 1180 px, 12-column desktop with a
 wide hero, and §05 asks for "Bundmenu på mobil, topnav fra 1024 px". At 1280 px
 the six members' screens are the 512 px phone column centred in the window with
@@ -165,9 +211,6 @@ the bottom tab bar still sticky. Nothing is broken — it reads as a phone app o
 a big screen, which is what it is — but it is a whole section of the system the
 app has not attempted, and building it is a task rather than a conformance fix.
 The landing page is the exception and already goes wide.
-
-**No motion at all on iOS before Safari 26.** The price of the no-JavaScript
-reveal (T064). The screens are complete and readable, simply still.
 
 **The demo build's role switch is 21.6 px tall**, against the 48 px floor. It
 is scaffolding rather than a members' screen, and it cannot simply grow: its

@@ -56,16 +56,33 @@ light-mode only; dark passed throughout.
 
 ## Decisions
 
-- **CSS scroll-driven animation, no JavaScript.** §05 Implementering suggests
-  an IntersectionObserver at threshold 0.18 and the export itself does not use
-  one — it ships `animation-timeline: view()`. Following what the export does
-  rather than what it says buys three things: Anciennitet's 3400 px of scroll
-  stays free of a callback firing 29 times; there is no state where a reveal is
-  armed and never fires, which is the one failure a reveal must not have; and
-  an old browser gets the finished page instead of a second code path.
-  **The cost is that iOS before Safari 26 sees no motion on these screens at
-  all** — complete and readable, just still. That is the right thing to lose
-  first, but it is a real loss and Lukas should know it.
+- ~~**CSS scroll-driven animation, no JavaScript.**~~ **Reversed by T067
+  (2026-07-28).** The decision was: §05 Implementering suggests an
+  IntersectionObserver at threshold 0.18 and the export itself does not use one
+  — it ships `animation-timeline: view()` — so follow what the export does
+  rather than what it says. Three things bought: Anciennitet's 3400 px of
+  scroll stays free of a callback firing 29 times; no state where a reveal is
+  armed and never fires; an old browser gets the finished page instead of a
+  second code path. **The cost was that iOS before Safari 26 saw no motion on
+  these screens at all** — complete and readable, just still. Recorded here as
+  "the right thing to lose first", and Lukas should know it.
+
+  He did, on 2026-07-28, and it was not the right thing to lose: *"the cool
+  visuals on the other pages, and flip through, I cannot see anywhere. Neither
+  on computer or phone. Note almost all EK members use iPhone."* The trade was
+  made as though the affected browsers were a minority. They are the club.
+
+  Two premises of it were also wrong on their own terms. The export **does** use
+  an IntersectionObserver — its own script runs one at threshold 0.18 with
+  `unobserve` after the first hit, for the count-up — so "what the export does"
+  and "what it says" agreed all along. And IntersectionObserver is not a second
+  code path: T067 removed the scroll-timeline rules entirely and has one.
+
+  What was genuinely right, and is kept: a reveal must never strand content.
+  T067 gets that from ordering rather than from a feature check — nothing is
+  hidden until an observer is already watching that exact element, which is a
+  behaviour and is therefore tested. See `src/lib/reveal.ts` and
+  `design/README.md`.
 
 - **`cover 12%`, not the export's `cover 26%`.** This is a bug the export
   cannot have and every one of these screens does. A scroll-linked animation
@@ -99,6 +116,11 @@ number up means rewriting text every frame, which is what §01's own rule about
 on this task. Two rules in the system disagree and the conflict is Lukas's to
 settle, not something to resolve by half-doing it. Recorded in
 `design/README.md`.
+
+**Done in T067, and the conflict turned out not to exist.** §01's rule is about
+which *CSS properties* may be animated — those two composite and height/top/
+margin do not — and the export's own script counts its figures by writing
+`textContent`. The rule was being applied to something it does not describe.
 
 ## Evidence
 jsdom has no layout and no scroll, so none of this can be proven by the test
