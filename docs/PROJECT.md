@@ -572,6 +572,38 @@ without losing data and without taking the old site down until an approved cutov
   Told to him plainly as a departure from what he described, with the loop offered
   as a one-line change if he prefers it after seeing this.
 
+- **2026-07-30 — one list of meetings, one button, and no meeting twice.** Lukas, on
+  the first version of the merge: *"Problemet er at der jo ligger to knapper der laver
+  møder … alle møder ligger flere gange. Altså denne funktionalitet med at have møder
+  separat fra kortene på anciennitetssiden giver ikke så meget mening. Det er jo alt
+  sammen møder."*
+
+  He was right twice and the second was a real defect I shipped: the calendar section
+  rendered **every** held `events` row, and ten of the twelve are the same evenings as
+  the attendance cards below them. The club's history was on the page twice.
+
+  Three fixes, and the shape they share is *the two tables stop showing through the
+  screen*:
+
+  1. **`heldDates`.** `/anciennitet` passes the set of dates its records cover, and a
+     calendar row on one of those dates is not drawn. Verified against production: 8
+     rows hidden, 2 planned, 2 genuinely calendar-only.
+  2. **Filtering on "is it in the future" would have been wrong**, which is why it
+     filters on the history instead. `2025-04-26 Erhvervsklub #20` is behind us and its
+     record was never dated; a meeting whose year is mistyped is behind us too. Both
+     must stay reachable, and both now appear under "Kun i kalenderen".
+  3. **One button.** `useSaveMeeting` routes on the date it is given — ahead goes to
+     `events`, today or behind is recorded with its attendance — and the form drops the
+     ten attendance buttons and gains a time field when the date is ahead, *saying so*
+     rather than silently changing shape. **Only on create:** changing an existing
+     record's date to a future one is a mistyped year, and routing that to `events`
+     would strand ~10 attendance rows and the evening's fines on a record nothing
+     renders. Both cases have a test.
+
+  What did **not** change: the tables. An attendance record is a record of who
+  attended, so a meeting still ahead cannot have one — that is why `events` exists and
+  why it was never merged away in the database.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

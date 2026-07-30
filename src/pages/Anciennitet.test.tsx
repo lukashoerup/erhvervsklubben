@@ -18,6 +18,17 @@ vi.mock('../lib/supabase', () => ({ READONLY: false, supabase: () => client }))
 const { default: Anciennitet } = await import('./Anciennitet')
 
 /**
+ * One button for both kinds of meeting since 2026-07-30. It was "Registrér møde"
+ * beside the calendar's "Nyt møde i kalenderen", and Lukas: *"der ligger jo to
+ * knapper der laver møder … Det er jo alt sammen møder."* The form routes on the
+ * date it is given, so the label no longer says which table it will write.
+ */
+const NEW_MEETING = 'Nyt møde'
+
+/** A date behind today, so a save records a held meeting rather than planning one. */
+const HELD_DATE = '2026-06-26'
+
+/**
  * Two meetings, four members, and one member with no row at all.
  *
  * Kasper never appears on meeting 28. That is a real third state — not absent —
@@ -91,7 +102,7 @@ describe('who may write the club’s history', () => {
   it('offers a member nothing that writes', async () => {
     renderPage('user')
     expect(await screen.findByText('Esben')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Registrér møde' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: NEW_MEETING })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
   })
@@ -99,7 +110,7 @@ describe('who may write the club’s history', () => {
   it('gives the admin the three controls, on every meeting', async () => {
     renderPage('admin')
     await screen.findByText('Esben')
-    expect(screen.getByRole('button', { name: 'Registrér møde' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: NEW_MEETING })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Rediger' })).toHaveLength(2)
     expect(screen.getAllByRole('button', { name: 'Slet' })).toHaveLength(2)
   })
@@ -120,18 +131,20 @@ describe('recording a meeting', () => {
     const user = userEvent.setup()
     state.insertedId = 42
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Registrér møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
 
     await user.type(screen.getByLabelText(/Lead/), 'Oskar')
     await user.type(screen.getByLabelText(/^Sted/), 'Marv og Ben')
-    fireEvent.change(screen.getByLabelText(/Dato/), { target: { value: '2026-08-13' } })
+    // Behind today, so this records a held meeting. A date ahead of it goes in the
+    // calendar instead — see 'a meeting still ahead' below.
+    fireEvent.change(screen.getByLabelText(/Dato/), { target: { value: HELD_DATE } })
     await user.click(screen.getByRole('button', { name: 'Gem' }))
 
     await waitFor(() => expect(writes).toHaveLength(2))
     expect(writes[0]).toMatchObject({
       table: 'attendance_records',
       verb: 'insert',
-      values: { meeting_number: 29, lead: 'Oskar', main_location: 'Marv og Ben', meeting_date: '2026-08-13' },
+      values: { meeting_number: 29, lead: 'Oskar', main_location: 'Marv og Ben', meeting_date: HELD_DATE },
     })
     expect(writes[1]).toMatchObject({ table: 'attendances', verb: 'insert' })
     for (const row of writes[1].values as { record_id: number }[]) {
@@ -144,7 +157,7 @@ describe('recording a meeting', () => {
     // ticking the eight who did is eight, on a phone, the morning after.
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Registrér møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
 
     expect(within(form()).getByText(/Til stede/)).toHaveTextContent('4 af 4')
     await user.click(tick('Mads'))
@@ -171,7 +184,7 @@ describe('recording a meeting', () => {
     // derive.ts to filter twice.
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Registrér møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
     await user.type(screen.getByLabelText(/Lead/), 'Oskar')
     await user.type(screen.getByLabelText(/^Sted/), 'Marv og Ben')
     await user.click(screen.getByRole('button', { name: 'Gem' }))
@@ -190,7 +203,7 @@ describe('recording a meeting', () => {
     // than Enter must not throw it away. It cost the club real money once.
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Registrér møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
 
     await user.type(screen.getByLabelText(/Lead/), 'Oskar')
     await user.tab()
@@ -205,7 +218,7 @@ describe('recording a meeting', () => {
   it('refuses to save without the three columns the database requires', async () => {
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Registrér møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
 
     // `lead` and `main_location` are `not null`; the number is prefilled.
     expect(screen.getByRole('button', { name: 'Gem' })).toBeDisabled()
@@ -222,7 +235,7 @@ describe('recording a meeting', () => {
     // the club would be back to typing rows into the database by hand.
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Registrér møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
 
     await user.type(screen.getByLabelText('Nyt medlem'), 'Have')
     await user.click(screen.getByRole('button', { name: 'Tilføj' }))
@@ -241,7 +254,7 @@ describe('recording a meeting', () => {
   it('saves behind a button that can be hit, and read', async () => {
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Registrér møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
     const save = screen.getByRole('button', { name: 'Gem' })
     expect(minTapHeightPx(save)).toBeGreaterThanOrEqual(48)
     // White on --color-accent measures 3.2:1 on the dark ground and fails AA.
@@ -502,13 +515,53 @@ describe('the calendar and the fines, now that /moeder is gone', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('gives the admin the calendar’s controls, which had no other home', async () => {
+  it('offers one button for both kinds of meeting, not two', async () => {
     renderPage('admin')
-    expect(
-      await screen.findByRole('button', { name: 'Nyt møde i kalenderen' }),
-    ).toBeInTheDocument()
-    // Distinct from the history's own button, which writes the other table.
-    expect(screen.getByRole('button', { name: 'Registrér møde' })).toBeInTheDocument()
+    await screen.findByRole('button', { name: NEW_MEETING })
+    // Lukas: "der ligger jo to knapper der laver møder … Det er jo alt sammen
+    // møder." Exactly one control on this page creates a meeting; which table it
+    // lands in is the date's business, not his.
+    expect(screen.getAllByRole('button', { name: /nyt møde|registrér møde/i })).toHaveLength(1)
+  })
+
+  it('plans a meeting still ahead into the calendar, from that same button', async () => {
+    const user = userEvent.setup()
+    renderPage('admin')
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
+
+    fireEvent.change(screen.getByLabelText(/Dato/), { target: { value: '2099-08-08' } })
+    await user.type(screen.getByLabelText(/^Sted/), 'Frk. Barners')
+    // The ten attendance buttons are gone, because nobody attended a meeting that
+    // has not happened — and the form says why rather than just dropping them.
+    expect(screen.getByText(/lægges i kalenderen/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /til stede/ })).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText(/Tidspunkt/), '18.30')
+    await user.click(screen.getByRole('button', { name: 'Gem' }))
+
+    await waitFor(() => expect(writes).toHaveLength(1))
+    expect(writes[0]).toMatchObject({
+      table: 'events',
+      verb: 'insert',
+      // The club's own title convention, so `calendarHead` reads the number back
+      // out of it and a meeting planned here is indistinguishable from the twelve
+      // the club typed itself.
+      values: { title: 'Erhvervsklub #29', date: '2099-08-08', location: 'Frk. Barners' },
+    })
+  })
+
+  it('does not move a held meeting into the calendar when its date is mistyped', async () => {
+    const user = userEvent.setup()
+    renderPage('admin')
+    await screen.findByText('Esben')
+    await user.click(within(cardFor('Esben')).getByRole('button', { name: 'Rediger' }))
+    fireEvent.change(screen.getByLabelText(/Dato/), { target: { value: '2099-01-01' } })
+    await user.click(screen.getByRole('button', { name: 'Gem' }))
+
+    // A wrong year on an existing record is a typo, not a plan. Routing it to
+    // `events` would strand ~10 attendance rows and the evening's fines on a
+    // record nothing renders.
+    await waitFor(() => expect(writes.length).toBeGreaterThan(0))
+    expect(writes[0]).toMatchObject({ table: 'attendance_records', verb: 'update' })
   })
 
   it('puts each meeting’s fines on its own card, for a member', async () => {

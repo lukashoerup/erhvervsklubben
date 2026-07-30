@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Meeting } from '../data/derive'
 import { useSaveMeeting, type Attendance } from '../data/useClubData'
+import { todayISO } from '../lib/dates'
 import { blankDraft, EditForm, type Draft, type Field } from './AdminEdit'
 
 /**
@@ -40,6 +41,15 @@ const FIELDS: Field[] = [
     hint: 'kort — vises på kortet, fuldt når man klikker ind',
   },
 ]
+
+/**
+ * The one extra field a meeting that has not happened yet needs, and the reason it
+ * is not in the list above: `attendance_records` has no `time` column, so it is
+ * only ever written on the calendar branch of `useSaveMeeting`. A text field, not
+ * `<input type="time">` — the club writes "18.30" with a full stop, which is how
+ * Danes write it and not what HTML's time input accepts.
+ */
+const AHEAD_FIELDS: Field[] = [{ name: 'time', label: 'Tidspunkt', hint: 'fx 18.30' }]
 
 const TICK =
   'flex min-h-12 w-full flex-col justify-center rounded-btn border px-2 py-1 text-left'
@@ -84,6 +94,7 @@ const draftOf = (m: Meeting | null, nextNumber: number): Draft =>
           main_location: m.venues.main,
           post_location: m.venues.post ?? '',
           description: m.description ?? '',
+          time: '',
         }
       : { meeting_number: String(nextNumber) },
   )
@@ -140,10 +151,17 @@ export function MeetingEditor({
   const present = names.filter((n) => ticks[n]).length
 
   const number = Number(draft.meeting_number)
+  // A date in the future means this evening has not happened, so it goes in the
+  // calendar and there is nothing to tick off. Only on a *new* meeting: changing an
+  // existing record's date to a future one is a mistyped year, and it must not move
+  // the club's attendance rows into the calendar behind his back. See useSaveMeeting.
+  const ahead = !meeting && !!draft.meeting_date && draft.meeting_date > todayISO()
   const canSave =
     Number.isInteger(number) &&
     number > 0 &&
-    Boolean(draft.lead?.trim()) &&
+    // A planned meeting has no lead yet — §9 has the lead calling it two weeks
+    // ahead, and the club routinely writes the date and the venue down first.
+    (ahead || Boolean(draft.lead?.trim())) &&
     Boolean(draft.main_location?.trim())
 
   const trimmed = newName.trim()
@@ -171,6 +189,8 @@ export function MeetingEditor({
         },
         attendance: ticks,
         stored,
+        // Only read when the date puts the meeting ahead — see useSaveMeeting.
+        time: draft.time,
       },
       // Closed only once the rows are actually written — closing on the tap
       // would show a saved-looking card built from a request that may fail.
@@ -180,7 +200,7 @@ export function MeetingEditor({
 
   return (
     <EditForm
-      fields={FIELDS}
+      fields={ahead ? [...FIELDS, ...AHEAD_FIELDS] : FIELDS}
       draft={draft}
       onChange={setDraft}
       onSave={submit}
@@ -189,6 +209,15 @@ export function MeetingEditor({
       failed={save.isError}
       canSave={canSave}
     >
+      {ahead ? (
+        /* Said, not silently done. The form has just dropped ten buttons and
+           gained a time field because of one character in the date, and a person
+           who cannot see why that happened will assume the app is broken. */
+        <p className="mt-1 rounded-lg border border-accent-d bg-surface p-3 text-xs leading-relaxed text-muted">
+          Datoen er i fremtiden, så mødet lægges i kalenderen. Deltagelse og bøder
+          registreres bagefter — rediger mødet her, når det er afholdt.
+        </p>
+      ) : (
       <fieldset className="mt-1 rounded-lg border border-line p-2">
         <legend className="px-1 text-xs text-muted">
           Til stede · <span className="tabular">{present}</span> af{' '}
@@ -250,6 +279,7 @@ export function MeetingEditor({
           </button>
         </div>
       </fieldset>
+      )}
     </EditForm>
   )
 }

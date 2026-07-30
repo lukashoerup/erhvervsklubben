@@ -6,11 +6,9 @@ import { Icon } from './Icon'
 import { MeetingHead } from './MeetingCard'
 import { SectionTitle } from './SectionTitle'
 import {
-  blankDraft,
   DeleteConfirm,
   EditButton,
   EditForm,
-  NewButton,
   useEditor,
   type Draft,
   type Field,
@@ -41,30 +39,28 @@ const draftOf = (e: EventItem): Draft => ({
   description: e.description,
 })
 
-const blank = () => blankDraft(FIELDS, { date: todayISO() })
-
 /** Short month, so the date sits in one line beside the heading. As MeetingCard. */
 const SHORT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
 
 /**
- * A calendar entry, read as the same three things a held meeting is read as: a
+ * A calendar row, read as the same three things a held meeting is read as: a
  * number, a name for the evening, and a date.
  *
  * The club writes its meeting number into the *title* — "Erhvervsklub #29",
  * "Erhvervsklub #25 JUBILÆUM" — so the figure is lifted out of it and what remains
  * becomes the heading. Where nothing remains (the ordinary case, the club's own
- * name and a number) the venue takes over, which is what a member opening the
- * calendar actually wants and is the same slot the lead occupies behind.
+ * name and a number) the venue takes over, which is what a member wants and is the
+ * same slot the lead occupies on a held meeting.
  *
  * Titles with no number at all — "Generalforsamling 2026", "Udarbejdelse af
  * vedtægtsudkast" — keep their whole title as the heading and take the day of the
- * month as the figure. Those are the entries where the title *is* the information.
+ * month as the figure. Those are the rows where the title *is* the information.
  *
- * **This reads the number, it never joins on it.** T071 established that the
- * club's own numbering ran a meeting ahead of the database's through the middle of
- * the history, so "#20" is not record 20 — which is why the 2026-07-30 backfill
- * matched on dates and leads instead. Printing the club's own label back to the
- * club is a different act from using it as a key.
+ * **This reads the number, it never joins on it.** T071 established that the club's
+ * own numbering ran a meeting ahead of the database's through the middle of the
+ * history, so "#20" is not record 20 — which is why the 2026-07-30 backfill matched
+ * on dates and leads instead. Printing the club's own label back to the club is a
+ * different act from using it as a key.
  */
 /**
  * The club's own word for "a meeting", which every numbered title opens with —
@@ -90,31 +86,40 @@ export function calendarHead(e: EventItem): { figure: string; heading: string } 
 }
 
 /**
- * The club's calendar — what is planned, and what is on the books behind.
+ * The meetings the attendance history cannot hold, rendered into the same list as
+ * the ones it can.
  *
- * **This was `/moeder` until 2026-07-30.** Lukas asked for the meetings page and
- * the anciennitet page to become one — *"Så skal mødesiden fjernes"* — with
- * /anciennitet as the surviving screen, untouched. So the calendar moved onto it
- * as a section rather than being deleted, because `events` holds two things
- * `attendance_records` structurally cannot:
+ * **This stopped being a calendar on 2026-07-30.** It came across from `/moeder`
+ * as a section of its own with its own create button and a fold holding every
+ * held calendar entry — and Lukas, looking at the result: *"der ligger jo to
+ * knapper der laver møder … alle møder ligger flere gange … denne funktionalitet
+ * med at have møder separat fra kortene på anciennitetssiden giver ikke så meget
+ * mening. Det er jo alt sammen møder."*
  *
- *   * **Meetings still ahead.** #29 and #30 are planned and dated. An attendance
- *     record for a meeting that has not happened would be a record of who
- *     attended it, which is why the two tables were never merged in the database.
- *     Delete this and the club's next meeting is unchangeable, on the front page
- *     as much as here.
- *   * **A held meeting whose record has no date.** `2025-04-26 Erhvervsklub #20`
- *     carries a real description, and record #20 is one of the eleven the history
- *     never dated — so the 2026-07-30 backfill could not match it and it lives on
- *     here. A calendar showing only the future would hide it, along with any
- *     evening whose year was mistyped: that is what the second section is for,
- *     and it is why it is folded rather than dropped.
+ * He is right on both counts, and the second was the real defect: ten of the
+ * twelve calendar rows are the same evenings as the attendance records below them,
+ * so the club's own history was on the page twice.
  *
- * Held entries are shut by default. /anciennitet is the longest page in the app
- * and the history below already tells the club what happened; open, this answers
- * "what did the calendar say" and lets an admin fix it.
+ * So this renders exactly the rows that are **not** in the history, and nothing
+ * else:
+ *
+ *   * **Meetings still ahead.** A future meeting cannot have an attendance record
+ *     — that record is a record of who attended — which is why the two tables were
+ *     never one. Without these the club's next meeting is unchangeable, here and
+ *     on the front page.
+ *   * **Past rows the history has no evening for.** `2025-04-26 Erhvervsklub #20`
+ *     carries a real description and record #20 is one of the eleven that never
+ *     got a date; `2025-04-20 Udarbejdelse af vedtægtsudkast` was a working
+ *     session with no attendance at all. A meeting whose year was mistyped lands
+ *     here too, which is the reason it must not be filtered on "is it in the
+ *     future" alone: that was the fold's job, and this does it without printing
+ *     ten duplicates to do it.
+ *
+ * Matching on the date, never on the number in the title — T071 found the club's
+ * own numbering running a meeting ahead of the database's, so "#20" is not record
+ * 20. The same rule the 2026-07-30 backfill was built on.
  */
-export function Moedekalender() {
+export function Moedekalender({ heldDates }: { heldDates: Set<string> }) {
   const { data, isPending, error } = useEvents()
   const { role } = useAuth()
   const editor = useEditor('events')
@@ -137,7 +142,12 @@ export function Moedekalender() {
   const planned = data
     .filter((e) => e.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))
-  const held = data.filter((e) => e.date < today).sort((a, b) => b.date.localeCompare(a.date))
+  // Past rows the history has no evening for. `heldDates` is every date the
+  // attendance records carry, so a calendar row that pairs with one is a second
+  // copy of a meeting already on this page and is simply not drawn.
+  const orphans = data
+    .filter((e) => e.date < today && !heldDates.has(e.date))
+    .sort((a, b) => b.date.localeCompare(a.date))
 
   const form = (id: string | null) => (
     <EditForm
@@ -218,46 +228,25 @@ export function Moedekalender() {
     )
   }
 
+  if (planned.length === 0 && orphans.length === 0) return null
+
   return (
-    <div className="flex flex-col gap-2.5">
-      <SectionTitle>Planlagte møder</SectionTitle>
+    <>
+      {/* One label for both groups, because both are the same thing: a meeting
+          the club has written down that the attendance history has no evening
+          for. The label is the only furniture here — no section wrapper, no
+          create button — so these cards fall into the single stream of meetings
+          on /anciennitet rather than sitting in a box above it. */}
+      <SectionTitle>{planned.length > 0 ? 'Planlagte møder' : 'Kun i kalenderen'}</SectionTitle>
 
-      {mayEdit &&
-        (editor.creating ? (
-          form(null)
-        ) : (
-          // "i kalenderen", because /anciennitet now carries two new-meeting
-          // buttons that write different tables: this one plans an evening,
-          // "Registrér møde" below records one that has happened.
-          <NewButton label="Nyt møde i kalenderen" onClick={() => editor.create(blank())} />
-        ))}
+      {planned.map((e, i) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0)))}
 
-      {planned.length === 0 ? (
-        // Not a neutral empty state: the statutes require two in the calendar
-        // at all times, so nothing planned is a fact worth stating.
-        <p className="text-sm text-muted">
-          Ingen møder i kalenderen. Vedtægterne §9: der planlægges altid to møder forud.
-        </p>
-      ) : (
-        planned.map((e, i) =>
-          mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0),
-        )
+      {orphans.length > 0 && (
+        <>
+          {planned.length > 0 && <SectionTitle>Kun i kalenderen</SectionTitle>}
+          {orphans.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false)))}
+        </>
       )}
-
-      {held.length > 0 && (
-        <details data-reveal className="rounded-2xl border border-line bg-surface">
-          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between p-4">
-            <SectionTitle onCard>Kalenderen bagud</SectionTitle>
-            <span className="text-[0.62rem] text-faint">{held.length}</span>
-          </summary>
-          {/* Inside the fold, the same cards. This is the only screen a meeting
-              with a mistyped — and therefore past — date can be reached on, so
-              an admin still gets Rediger and Slet on every one of them. */}
-          <div className="flex flex-col gap-2.5 border-t border-line p-4">
-            {held.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false)))}
-          </div>
-        </details>
-      )}
-    </div>
+    </>
   )
 }

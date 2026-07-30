@@ -82,7 +82,9 @@ describe('recording a meeting in a build with no database behind it', () => {
   const RECORD = {
     meeting_number: 99,
     lead: 'Oskar',
-    meeting_date: '2026-08-13',
+    // Behind today: a date ahead of it routes to `events` instead, which is a
+    // different write and has its own test.
+    meeting_date: '2026-06-26',
     pre_location: null,
     main_location: 'Marv og Ben',
     post_location: null,

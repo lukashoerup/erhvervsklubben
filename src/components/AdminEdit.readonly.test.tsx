@@ -23,7 +23,25 @@ const { default: Nyheder } = await import('../pages/Nyheder')
 const { Moedekalender } = await import('../components/Moedekalender')
 const { default: Anciennitet } = await import('../pages/Anciennitet')
 
-const PAGES = { nyheder: Nyheder, kalender: Moedekalender, anciennitet: Anciennitet }
+/**
+ * One button for both kinds of meeting since 2026-07-30. It was "Registrér møde"
+ * beside the calendar's "Nyt møde i kalenderen", and Lukas: *"der ligger jo to
+ * knapper der laver møder … Det er jo alt sammen møder."* The form routes on the
+ * date it is given, so the label no longer says which table it will write.
+ */
+const NEW_MEETING = 'Nyt møde'
+
+/**
+ * `Moedekalender` needs the dates the attendance history covers, so it can drop the
+ * rows that are the same evenings as /anciennitet's own cards. Empty here: this
+ * suite is about what a read-only build offers, and an empty set draws every row
+ * rather than hiding one the assertions rely on.
+ */
+const PAGES = {
+  nyheder: Nyheder,
+  kalender: () => <Moedekalender heldDates={new Set<string>()} />,
+  anciennitet: Anciennitet,
+}
 
 function renderAsAdmin(page: keyof typeof PAGES) {
   reset({
@@ -81,9 +99,9 @@ describe('a read-only preview', () => {
     // and the venue in the heading (`calendarHead`), so no element holds the
     // title text. The date is far ahead so the card stays in the planned half.
     expect(await screen.findByText('Propaganda')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Nyt møde i kalenderen' }),
-    ).not.toBeInTheDocument()
+    // No create button here at all any more — creating a meeting is
+    // /anciennitet's one button, and it is gone in a read-only build too.
+    expect(screen.queryByRole('button', { name: /nyt møde/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
   })
@@ -93,7 +111,7 @@ describe('a read-only preview', () => {
     // its fines, and the club has fifteen years of them and no backup.
     renderAsAdmin('anciennitet')
     expect(await screen.findByText('Esben')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Registrér møde' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: NEW_MEETING })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
   })

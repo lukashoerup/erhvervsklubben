@@ -19,18 +19,25 @@ import { Loading, Problem } from '../components/State'
  * route, the same shape as `/nyheder`: a member sees the history
  * exactly as before and is never offered a button that could only fail.
  *
- * These are `attendance_records` — what happened. The calendar above is
- * `events`, what is planned. The two tables have always been separate and this
- * page does not merge them: recording a meeting here puts nothing in the
- * calendar, and deleting a calendar entry loses no attendance.
- *
- * **The meetings page folded into this one on 2026-07-30**, at Lukas's word —
+ * **This is the club's only meetings page since 2026-07-30**, at Lukas's word —
  * *"Ancinitetssiden er den rigtige. Den må der ikke ændres på"*, then *"Så skal
- * mødesiden fjernes"*. So everything below the calendar is exactly what it was,
- * in the order it was, and the merge is three additions: the calendar section on
- * top, a description on each meeting, and a disclosure on the card that opens
- * onto the full text and that evening's fines. See components/Moedekalender.tsx
- * for why `events` outlived its page.
+ * mødesiden fjernes."* So the page below is what it was, in the order it was, and
+ * the merge is four additions: a description on each meeting, a disclosure on the
+ * card opening onto the full text and that evening's fines, the meetings the
+ * history has no evening for (`Moedekalender`), and one button where there were
+ * two.
+ *
+ * **One list, one button, no meeting twice.** His verdict on the first attempt —
+ * *"der ligger jo to knapper der laver møder … alle møder ligger flere gange …
+ * Det er jo alt sammen møder"* — named both faults, and the duplication was the
+ * real one: ten of the twelve `events` rows are the same evenings as the cards
+ * here, and both were being drawn. `heldDates` is what stops that now.
+ *
+ * The two tables stay two tables, because an attendance record is a record of who
+ * attended and a meeting still ahead cannot have one. What went away is the
+ * *seam* being visible: the form routes on the date it is given
+ * (`useSaveMeeting`), so the club sees one list of meetings and one way to add to
+ * it.
  */
 export default function Anciennitet() {
   const { userId, role } = useAuth()
@@ -77,15 +84,26 @@ export default function Anciennitet() {
     />
   )
 
+  // **One button, for both kinds of meeting.** Lukas, 2026-07-30: "der ligger jo
+  // to knapper der laver møder … Det er jo alt sammen møder." It was "Registrér
+  // møde" beside "Nyt møde i kalenderen", which is the app's two tables showing
+  // through the screen. The form decides from the date it is given: ahead goes in
+  // the calendar, today or behind is recorded with its attendance. See
+  // `useSaveMeeting`.
   const newMeeting =
     mayEdit &&
-    (open === 'ny' ? editor(null) : <NewButton label="Registrér møde" onClick={() => setOpen('ny')} />)
+    (open === 'ny' ? editor(null) : <NewButton label="Nyt møde" onClick={() => setOpen('ny')} />)
+
+  // Every date the history covers, so the calendar can drop the rows that are the
+  // same evenings as the cards below. Ten of the club's twelve calendar rows are —
+  // which is why the page showed each of those meetings twice until Lukas said so.
+  const heldDates = new Set(data.meetings.map((m) => m.date).filter((d): d is string => !!d))
 
   if (data.meetings.length === 0) {
     return (
       <div className="flex flex-col gap-3">
-        <Moedekalender />
         {newMeeting}
+        <Moedekalender heldDates={heldDates} />
         <p className="text-sm text-muted">Ingen møder registreret endnu.</p>
       </div>
     )
@@ -93,13 +111,6 @@ export default function Anciennitet() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* The calendar, on top, because it is the only part of this page that
-          looks forward — and because everything under it has to stay where it
-          was. It is two cards deep in the ordinary case (§9 requires two
-          meetings planned) with the held entries folded away, so the club's own
-          history is still what the page opens on after one thumb-flick. */}
-      <Moedekalender />
-
       {newMeeting}
       <AttendanceSummary roster={data.roster} />
 
@@ -110,6 +121,13 @@ export default function Anciennitet() {
           writes, and a preview of the club's real data should show the club's
           real screens. */}
       {role === 'admin' && <LastSeen roster={names} />}
+
+      {/* The meetings the history has no evening for — the ones still ahead, and
+          the two past rows no attendance record was ever dated to — in the same
+          stream as the cards below rather than in a box of their own. Lukas:
+          "Generelt så skal de ligge samme sted som de gamle møder … Det er jo alt
+          sammen møder." */}
+      <Moedekalender heldDates={heldDates} />
 
       {data.meetings.map((m) =>
         mayEdit && open === m.id ? (

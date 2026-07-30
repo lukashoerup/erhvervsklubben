@@ -6,12 +6,19 @@ import { withQuery } from '../test/harness'
 import { client, reset, writes } from '../test/writes'
 
 /**
- * The club's calendar, and the screen an admin corrects it on.
+ * The meetings the attendance history has no evening for, on /anciennitet.
  *
- * The page's reason for existing is in the second block below: a meeting whose
- * date was typed wrong is in the past, and every other view of `events` shows
- * only the future. If the held meetings ever drop off this page, a mistyped
- * year becomes a meeting the club cannot get back.
+ * Two properties are load-bearing and the first is why this component was rewritten
+ * on 2026-07-30. Lukas, looking at the merge: *"alle møder ligger flere gange …
+ * denne funktionalitet med at have møder separat fra kortene på anciennitetssiden
+ * giver ikke så meget mening. Det er jo alt sammen møder."* Ten of the club's twelve
+ * `events` rows are the same evenings as the attendance cards below them, and both
+ * were being drawn.
+ *
+ * So: **a row the history covers is not drawn at all**, and **a row it does not is**
+ * — because a meeting whose year was mistyped lands in the past, and this is the
+ * only screen it is reachable on. Filtering on "is it in the future" alone would
+ * lose it; filtering on nothing prints the club's history twice.
  */
 vi.mock('../lib/supabase', () => ({ READONLY: false, supabase: () => client }))
 
@@ -31,9 +38,15 @@ const day = (offset: number) => new Date(Date.now() + offset * 864e5).toISOStrin
 const EVENTS = [
   { id: 'e2', title: 'Erhvervsklub #30', date: day(70), time: '18.30', location: '', description: '' },
   { id: 'e1', title: 'Erhvervsklub #29', date: day(14), time: '18.30', location: 'Propaganda', description: 'Oskar lægger op.' },
-  { id: 'p1', title: 'Erhvervsklub #28 JUBILÆUM', date: day(-46), time: '18.30', location: 'Tivolihallen', description: '' },
-  { id: 'p2', title: 'Generalforsamling 2026', date: day(-120), time: '17.00', location: 'Marv og Ben', description: '' },
+  // Behind, and the history *has* this evening — a duplicate of a card below.
+  { id: 'dup', title: 'Erhvervsklub #28 JUBILÆUM', date: day(-46), time: '18.30', location: 'Tivolihallen', description: '' },
+  // Behind, and the history has nothing on this date: the club's own #20 case,
+  // and the shape a mistyped year takes.
+  { id: 'orphan', title: 'Generalforsamling 2026', date: day(-120), time: '17.00', location: 'Marv og Ben', description: '' },
 ]
+
+/** What the attendance records cover. `dup` is on this list; `orphan` is not. */
+const HELD = new Set([day(-46), day(-3)])
 
 function renderPage(role: AuthState['role']) {
   const value: AuthState = {
@@ -46,210 +59,109 @@ function renderPage(role: AuthState['role']) {
   return render(
     withQuery(
       <AuthContext.Provider value={value}>
-        <Moedekalender />
+        <Moedekalender heldDates={HELD} />
       </AuthContext.Provider>,
     ),
   )
 }
 
-/** Relabelled 2026-07-30: /anciennitet now carries two new-meeting buttons that
-    write different tables — this one plans an evening, "Registrér møde" records
-    one that happened. Named once here so the distinction cannot rot in four
-    places. */
-const NEW_MEETING = 'Nyt møde i kalenderen'
-
-/**
- * By the heading the card *shows*, which is not always its title: a plain
- * "Erhvervsklub #29" puts 29 in the serif slot and the venue in the heading, so
- * there is no element holding the title text at all.
- */
 const cardFor = (heading: string) => screen.getByText(heading).closest('article')!
 
 beforeEach(() => reset({ events: EVENTS }))
 
-describe('the calendar a member sees', () => {
-  it('lists what is planned and what has been held', async () => {
+describe('what a member sees', () => {
+  it('shows the meetings still ahead', async () => {
     renderPage('user')
-    // Each card's own heading: the venue where the title only numbered the
-    // evening, the remainder where it said more, the title where it had no
-    // number at all.
+    // By the heading each card shows: a plain numbered title puts the number in
+    // the serif slot and the venue in the heading, so no element holds the title.
     expect(await screen.findByText('Propaganda')).toBeInTheDocument()
     expect(screen.getByText('Sted endnu ikke sat')).toBeInTheDocument()
-    expect(screen.getByText('JUBILÆUM')).toBeInTheDocument()
-    expect(screen.getByText('Generalforsamling 2026')).toBeInTheDocument()
-    // And the figures, which are the club's own numbers rather than a position.
-    for (const n of ['29', '30', '28']) {
-      expect(screen.getByText(n)).toBeInTheDocument()
-    }
+    expect(screen.getByText('Planlagte møder')).toBeInTheDocument()
   })
 
-  it('offers a member nothing that writes', async () => {
+  it('draws no card for an evening the history already has', async () => {
     renderPage('user')
     await screen.findByText('Propaganda')
-    expect(screen.queryByRole('button', { name: NEW_MEETING })).not.toBeInTheDocument()
+    // The defect Lukas found. This row shares its date with an attendance record,
+    // so the card below is the meeting and this would be a second copy of it.
+    expect(screen.queryByText('JUBILÆUM')).not.toBeInTheDocument()
+  })
+
+  it('keeps a past row the history has no evening for', async () => {
+    renderPage('user')
+    // Two real cases at once: the club's `Erhvervsklub #20`, whose record never
+    // got a date, and any meeting whose year was mistyped. Drop this and a wrong
+    // date becomes a meeting nobody can reach.
+    expect(await screen.findByText('Generalforsamling 2026')).toBeInTheDocument()
+    expect(screen.getByText('Kun i kalenderen')).toBeInTheDocument()
+  })
+
+  it('offers a member nothing that writes, and nobody a second new-meeting button', async () => {
+    renderPage('user')
+    await screen.findByText('Propaganda')
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
+
+    renderPage('admin')
+    // "der ligger jo to knapper der laver møder" — creating a meeting is
+    // /anciennitet's one button now, and this component has none.
+    expect(screen.queryByRole('button', { name: /nyt møde/i })).not.toBeInTheDocument()
   })
 
-  it('says the venue is unset rather than leaving a blank line', async () => {
-    renderPage('user')
-    // §9 has the lead calling the meeting two weeks ahead, so a date without a
-    // venue is the ordinary state of the second one — not a page that failed.
-    expect(await screen.findByText('Sted endnu ikke sat')).toBeInTheDocument()
-  })
-
-  it('states the statutes’ promise when nothing is planned', async () => {
-    reset({ events: EVENTS.filter((e) => e.date < day(0)) })
-    renderPage('user')
-    expect(await screen.findByText(/der planlægges altid to møder forud/i)).toBeInTheDocument()
+  it('renders nothing at all when every row is a duplicate', async () => {
+    reset({ events: [EVENTS[2]] })
+    const { container } = renderPage('user')
+    await waitFor(() => expect(container.textContent).toBe(''))
   })
 })
 
-describe('what this page shows that the others cannot', () => {
-  it('keeps the held meetings, which is where a mistyped date lands', async () => {
-    // The front page shows the next meeting and the public page the next two.
-    // Type 2025 instead of 2026 and the meeting vanishes from both — this is
-    // the only screen it is still reachable on, so it must stay editable here.
+describe('what an admin can correct', () => {
+  it('gives Rediger and Slet on a meeting ahead', async () => {
     renderPage('admin')
-    await screen.findByText('JUBILÆUM')
+    await screen.findByText('Propaganda')
+    const card = within(cardFor('Propaganda'))
+    expect(card.getByRole('button', { name: 'Rediger' })).toBeInTheDocument()
+    expect(card.getByRole('button', { name: 'Slet' })).toBeInTheDocument()
+  })
+
+  it('gives them on the past row too, which is where a mistyped date lands', async () => {
+    renderPage('admin')
+    await screen.findByText('Generalforsamling 2026')
     expect(
-      within(cardFor('JUBILÆUM')).getByRole('button', { name: 'Rediger' }),
+      within(cardFor('Generalforsamling 2026')).getByRole('button', { name: 'Rediger' }),
     ).toBeInTheDocument()
   })
-})
 
-describe('writing a meeting', () => {
-  it('creates one from what was typed', async () => {
-    const user = userEvent.setup()
-    renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
-
-    await user.type(screen.getByLabelText(/Titel/), 'Møde #31')
-    fireEvent.change(screen.getByLabelText(/Dato/), { target: { value: '2026-12-03' } })
-    // A text field, not <input type="time">: the club writes "18.30", which the
-    // native control refuses outright.
-    await user.type(screen.getByLabelText(/Tidspunkt/), '18.30')
-    await user.type(screen.getByLabelText(/Sted/), 'Lord Nelson')
-    await user.type(screen.getByLabelText(/Beskrivelse/), 'Anders lægger op.')
-    await user.click(screen.getByRole('button', { name: 'Gem' }))
-
-    await waitFor(() => expect(writes).toHaveLength(1))
-    expect(writes[0]).toMatchObject({
-      table: 'events',
-      verb: 'insert',
-      values: {
-        title: 'Møde #31',
-        date: '2026-12-03',
-        time: '18.30',
-        location: 'Lord Nelson',
-        description: 'Anders lægger op.',
-      },
-    })
-  })
-
-  it('keeps what was typed when the keyboard is dismissed', async () => {
-    // Same bug, same shape, on the other table: leave every field by a route
-    // that is not Enter and nothing may be lost on the way to Gem.
-    const user = userEvent.setup()
-    renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
-
-    await user.type(screen.getByLabelText(/Titel/), 'Julefrokost')
-    await user.tab()
-    await user.type(screen.getByLabelText(/Sted/), 'Tivolihallen')
-    await user.click(screen.getByRole('button', { name: 'Gem' }))
-
-    await waitFor(() => expect(writes).toHaveLength(1))
-    expect(writes[0].values).toMatchObject({ title: 'Julefrokost', location: 'Tivolihallen' })
-  })
-
-  it('refuses to save a meeting with no title', async () => {
-    const user = userEvent.setup()
-    renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
-    expect(screen.getByRole('button', { name: 'Gem' })).toBeDisabled()
-  })
-
-  it('corrects a wrong date against the meeting’s own id', async () => {
+  it('corrects the date against the meeting’s own id', async () => {
     const user = userEvent.setup()
     renderPage('admin')
     await screen.findByText('Propaganda')
     await user.click(within(cardFor('Propaganda')).getByRole('button', { name: 'Rediger' }))
 
-    fireEvent.change(screen.getByLabelText(/Dato/), { target: { value: '2026-09-10' } })
+    const date = screen.getByLabelText(/Dato/)
+    fireEvent.change(date, { target: { value: '2026-09-10' } })
     await user.click(screen.getByRole('button', { name: 'Gem' }))
 
     await waitFor(() => expect(writes).toHaveLength(1))
-    expect(writes[0]).toMatchObject({
-      table: 'events',
-      verb: 'update',
-      id: 'e1',
-      values: { date: '2026-09-10', title: 'Erhvervsklub #29', location: 'Propaganda' },
-    })
-  })
-})
-
-/**
- * The card's face, T073 — and the row a map will one day hang off.
- *
- * Lukas, 2026-07-29, on the long view: "vi skal have et kort, som viser alle
- * steder vi har været implementeret på længere sigt." The venue is on its own
- * row with the set's pin rather than being one more muted line among three, so
- * that a link, a chip or a marker can arrive there without the card being
- * rebuilt around it. What is asserted is what the club can lose: the venue is
- * still printed, still says so in words when nobody has set one, and the date
- * still leads.
- */
-describe('the card’s face', () => {
-  it('says the venue is unset rather than leaving a blank line', async () => {
-    renderPage('user')
-    await screen.findByText('Propaganda')
-    // §9 has the venue settled after the date, so the second planned meeting
-    // routinely has none — and an empty heading would read as a card that failed
-    // to load rather than as a venue nobody has picked.
-    expect(
-      within(cardFor('Sted endnu ikke sat')).getByText('Sted endnu ikke sat'),
-    ).toBeInTheDocument()
+    // By id, never by title: two meetings can share one, and the club's data has
+    // duplicates of exactly that kind.
+    expect(writes[0]).toMatchObject({ table: 'events', verb: 'update', id: 'e1' })
   })
 
-  it('leads with the club’s own number and keeps the time beside the date', async () => {
-    renderPage('user')
-    await screen.findByText('Propaganda')
-    const card = within(cardFor('Propaganda'))
-
-    // 29 from "Erhvervsklub #29", not a position in the list — the same slot the
-    // meeting number occupies on a held meeting's card, which is the whole point
-    // of the two sharing MeetingHead.
-    expect(card.getByText('29')).toBeInTheDocument()
-    // The one thing a planned meeting has that a held one has not.
-    expect(card.getByText(/18\.30/)).toBeInTheDocument()
-  })
-})
-
-describe('deleting a meeting', () => {
-  it('asks first, and puts the date in the question', async () => {
+  it('asks before deleting, and names the row it asked about', async () => {
     const user = userEvent.setup()
     renderPage('admin')
     await screen.findByText('Propaganda')
     await user.click(within(cardFor('Propaganda')).getByRole('button', { name: 'Slet' }))
 
-    // Two meetings can share a title — "Erhvervsklub #29" is one typo away from
-    // existing twice — so the question carries the date that tells them apart.
-    // The *title*, not the card's derived heading: this asks about a row.
+    // The *title*, not the card's derived heading: this asks about a row, and the
+    // row is what the club typed. The date tells two same-titled rows apart.
     expect(screen.getByRole('alert')).toHaveTextContent('Erhvervsklub #29 ·')
-    expect(screen.getByRole('alert')).toHaveTextContent('Det kan ikke fortrydes.')
     expect(writes).toHaveLength(0)
-  })
 
-  it('deletes the meeting it asked about', async () => {
-    const user = userEvent.setup()
-    renderPage('admin')
-    await screen.findByText('JUBILÆUM')
-    await user.click(within(cardFor('JUBILÆUM')).getByRole('button', { name: 'Slet' }))
     await user.click(screen.getByRole('button', { name: 'Slet endeligt' }))
-
     await waitFor(() => expect(writes).toHaveLength(1))
-    expect(writes[0]).toMatchObject({ table: 'events', verb: 'delete', id: 'p1' })
+    expect(writes[0]).toMatchObject({ table: 'events', verb: 'delete', id: 'e1' })
   })
 })
 

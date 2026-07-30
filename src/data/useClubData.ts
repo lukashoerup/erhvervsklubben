@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { todayISO } from '../lib/dates'
 import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
 import type { Member } from './members'
 import type { FineRow } from './fines'
@@ -442,6 +443,14 @@ export type MeetingWrite = {
   attendance: Attendance
   /** What the database holds. A name missing from this has no row at all. */
   stored: Attendance
+  /**
+   * The start time, for a meeting that has not happened yet.
+   *
+   * Deliberately outside `record`: `attendance_records` has no `time` column, so
+   * a key inside `record` would ride into that insert and fail the whole write.
+   * It is only ever read on the calendar branch below.
+   */
+  time?: string | null
 }
 
 /**
@@ -477,7 +486,37 @@ export type MeetingWrite = {
 export function useSaveMeeting() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, record, attendance, stored }: MeetingWrite) => {
+    mutationFn: async ({ id, record, attendance, stored, time }: MeetingWrite) => {
+      // A meeting still ahead goes in the calendar, and this is the *only* place
+      // that decision is made. Lukas, 2026-07-30: "der ligger jo to knapper der
+      // laver møder … Det er jo alt sammen møder." One button, one form, and the
+      // date it is given decides which table it lands in — because the tables
+      // really are different (an attendance record is a record of who attended,
+      // which a future meeting cannot have) and that is the app's problem rather
+      // than his.
+      //
+      // Only on create. Correcting an existing record's date to a future one must
+      // not silently move the club's attendance rows into the calendar and orphan
+      // them; that is a mistyped year, and it stays visible where it is.
+      const planned = id === null && !!record.meeting_date && record.meeting_date > todayISO()
+
+      if (planned) {
+        // The club's own title convention, so a meeting planned here is
+        // indistinguishable from the twelve it typed itself — and `calendarHead`
+        // reads the number straight back out of it.
+        const row = {
+          title: `Erhvervsklub #${record.meeting_number}`,
+          date: record.meeting_date,
+          time: time?.trim() || '',
+          location: record.main_location || '',
+          description: record.description ?? '',
+        }
+        if (DEMO) return demoSave('events', null, row as unknown as Record<string, string>)
+        const { error } = await supabase().from('events').insert(row)
+        if (error) throw error
+        return
+      }
+
       // Before the client, exactly as useSaveRow does it: the demo bundle
       // carries the live project's URL and key.
       if (DEMO) return demoSaveMeeting({ id, record, attendance, stored })
@@ -531,7 +570,13 @@ export function useSaveMeeting() {
         if (error) throw error
       }
     },
-    onSuccess: () => refresh('attendance_records', qc),
+    // Both tables, because one form now writes either. `AFFECTED` maps
+    // attendance_records to ['attendance','finance'] and events to ['events'],
+    // and invalidating a key nothing fetched costs nothing.
+    onSuccess: () => {
+      refresh('attendance_records', qc)
+      refresh('events', qc)
+    },
   })
 }
 
@@ -558,6 +603,12 @@ export function useDeleteMeeting() {
       const { error } = await supabase().from('attendance_records').delete().eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => refresh('attendance_records', qc),
+    // Both tables, because one form now writes either. `AFFECTED` maps
+    // attendance_records to ['attendance','finance'] and events to ['events'],
+    // and invalidating a key nothing fetched costs nothing.
+    onSuccess: () => {
+      refresh('attendance_records', qc)
+      refresh('events', qc)
+    },
   })
 }
