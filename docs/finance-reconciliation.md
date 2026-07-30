@@ -993,3 +993,294 @@ never imported. Both have changed, so the two figures move:
 The 1.780 kr. of fines is now inside the month-by-month ledger in full, which is
 what §13 predicted would move the club **from ahead to behind**. The remaining
 distortion is the payer count, and that is §14.5, not the meeting dates.
+
+---
+
+## 15. The offences behind the fines — T075, 2026-07-30
+
+§9 Q4 asked the only question that could ever replace `historisk` with a real
+rule: *do the Leads still have their notes from those five dinners, or is the
+amount all that survives?* **They do**, on Lukas's phone, and they run past the
+spreadsheet entirely. Two sources, and it matters which is which:
+
+- **The notes**, one block per Lead in meeting order, plus a screenshot of the
+  note taken for the general assembly.
+- **Lukas himself, 2026-07-30**, answering for every fine the notes left
+  unexplained: *"De bøder som du har spærret for var alle pga. for sent
+  fremmøde. Jeg kan godt huske det. Så det må du gerne notere."*
+
+### 15.1 Lead first, before anything else
+
+**The club's fine total is no longer 1.780 kr. It is 2.510 kr., and the
+1.780 kr. was never wrong.** The two measure different things, exactly as
+1.730 and 1.780 did in §0:
+
+- **1.780 kr.** is what the club *collected*, and what the annual report
+  reports. It is still right, still reconciles to `E10 = 700+1545+235`, and
+  nothing in this section touches a single krone of it.
+- **2.510 kr.** is what the club *incurred*. The difference is **730 kr. of
+  fines that were noted by a Lead and never entered the sheet** — real money the
+  club is owed and has never asked for.
+
+```
+1.780  collected, per the annual report   (unchanged)
++ 730  noted by a Lead, never billed
+-----
+2.510  incurred
+```
+
+A line in the notes reading **"Bøder indkrævet"** — *fines collected* — sits
+after the fourth Lead block. Everything below it is an evening whose fines were
+written down and went no further. That is also the answer to **§9 Q10**, which
+asked whether fines simply stopped being recorded after Februar 26: **they did
+not stop being recorded, they stopped reaching the treasurer's sheet.**
+
+Two of the three unbilled evenings pre-date the sheet's last save (2026-06-09)
+and should have been in it. The general assembly on 2026-06-26 could not have
+been — the sheet was already seventeen days closed.
+
+**This is a decision for Lukas, not a bug to fix:** whether to bill 730 kr. now,
+and whether the annual report gets a note. The database records what happened;
+it does not collect.
+
+### 15.2 The standard of evidence, and why it changed mid-task
+
+The task began under one rule and finished under a stronger one. Both are worth
+stating, because the rows carry different provenance and a future reader will
+want to know which.
+
+**Rule 1 — a reason only where the note states it in words.** Never derived
+from the amount. 80 kr is arithmetically *only* `for-sent` at six minutes, and
+95 kr only nine — but "Holst: 95kr" says nothing about why, and a decomposition
+that happens to be unique is still a guess about an evening nobody wrote down.
+Under this rule, **three** of the eighteen imported fines gained an offence and
+fifteen kept `historisk`.
+
+**Rule 2 — the treasurer answered.** Lukas then said, of the fifteen: all late
+arrivals. That is not an inference from an amount; it is the member holding the
+club's records stating what happened, the same standing that closed
+`Holst = Rasmus` and `Tørring = Anders` in §11.3. So it is authorised where a
+decomposition would not have been.
+
+**And the arithmetic became a test of his memory rather than a conversion.**
+`for-sent` is 50 kr + 5 kr/minute, so a late arrival's amount *must* be
+`50 + 5n` for a whole n. Every one of the fourteen divides cleanly:
+
+| kr. | 60 | 70 | 75 | 80 | 95 | 100 | 110 | 155 | 185 | 200 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| min | 2 | 4 | 5 | 6 | 9 | 10 | 12 | 21 | 27 | 30 |
+
+**Fourteen of fourteen.** Nothing was left over, nothing needed rounding, and
+no amount moved. Had one failed the division it would have kept `historisk` and
+been reported, because a failure would mean the *classification* was wrong for
+that row and never that the amount was.
+
+That pairing is the point: *the treasurer remembers late arrivals* and *every
+amount is independently a whole number of minutes at the club's own rate* are
+much stronger together than either alone. Recollection four years deep would be
+thin on its own; so would arithmetic that only ever had one candidate rule.
+
+The same discipline applies in the other direction at 50 kr, where the formula
+proves nothing — 50 kr is late arrival at zero minutes *and* exactly what
+`skaal` and `drikkevare` cost. **Everything at 50 kr followed the note, never
+the formula.**
+
+### 15.3 Every fine, old rule and new
+
+`historisk → for-sent (n)` reads: was unknown, is now late arrival, n minutes.
+Amounts are unchanged throughout — this section set `rule_id` and `minutes` and
+nothing else.
+
+| Møde | Dato | Medlem | kr. | Før | Efter | Kilde | 50+5n? |
+|---:|---|---|---:|---|---|---|---|
+| 21 | 2025-05-31 | Kasper | 100 | `historisk` | `for-sent` (10) | treasurer | ✓ |
+| 21 | | Rasmus *(Holst)* | 95 | `historisk` | `for-sent` (9) | treasurer | ✓ |
+| 21 | | Anders *(Tørring)* | 80 | `historisk` | `for-sent` (6) | treasurer | ✓ |
+| 22 | 2025-08-30 | Kasper | 105 | `historisk` | `for-sent` (11) | **note** | ✓ |
+| 22 | | Emil | 50 | `historisk` | `skaal` | **note** | n/a |
+| 22 | | Rasmus *(Holst)* | 50 | `historisk` | `skaal` | **note** | n/a |
+| 22 | | Mads | 200 | `historisk` | `for-sent` (30) | treasurer | ✓ |
+| 23 | 2025-10-11 | Emil | 75 | `historisk` | `for-sent` (5) | treasurer | ✓ |
+| 23 | | Saaby | 75 | `historisk` | `for-sent` (5) | treasurer | ✓ |
+| 23 | | Esben *("Jan")* | 155 | `historisk` | `for-sent` (21) | treasurer | ✓ |
+| 24 | 2025-11-21 | Saaby *("Mathias")* | 200 | `historisk` | `for-sent` (30) | treasurer | ✓ |
+| 24 | | Esben | 70 | `historisk` | `for-sent` (4) | treasurer | ✓ |
+| 25 | 2026-01-24 | Kasper | 60 | `historisk` | `for-sent` (2) | treasurer | ✓ |
+| 25 | | Emil | 110 | `historisk` | `for-sent` (12) | treasurer | ✓ **but see 15.6** |
+| 25 | | Mads | 185 | `historisk` | `for-sent` (27) | treasurer | ✓ |
+| 25 | | Saaby | 60 | `historisk` | `for-sent` (2) | treasurer | ✓ |
+| 25 | | Esben | 60 | `historisk` | `for-sent` (2) | treasurer | ✓ |
+| 26 | 2026-02-21 | **Lukas** | 50 | `historisk` | **`historisk`** | — | — |
+| 26 | | Esben | 60 | *(new)* | `for-sent` (2) | **note** | ✓ |
+| 26 | | Rasmus *(Holst)* | 60 | *(new)* | `for-sent` (2) | **note** | ✓ |
+| 26 | | Have | 60 | *(new)* | `for-sent` (2) | **note** | ✓ |
+| 27 | 2026-04-24 | Saaby | 80 | *(new)* | `for-sent` (6) | **note** | ✓ |
+| 28 | 2026-06-26 | Mads | 80 | *(new)* | `for-sent` (6) | **note** | ✓ |
+| 28 | | Kasper | 80 | *(new)* | `for-sent` (6) | **note** | ✓ |
+| 28 | | Emil | 95 | *(new)* | `for-sent` (9) | **note** | ✓ |
+| 28 | | Anders | 65 | *(new)* | `for-sent` (3) | **note** | ✓ |
+| 28 | | Have | 50 | *(new)* | `drikkevare` | **note** | n/a |
+| 28 | | Rasmus *(Holst)* | 50 | *(new)* | `skaal` | **note** | n/a |
+| 28 | | Mads | 50 | *(new)* | `skaal` | **note** | n/a |
+
+**Every amount reconciled. None contradicted its rule.** Read back from
+production after writing:
+
+| `rule_id` | rows | kr. | `50 + 5·minutes = amount_kr` |
+|---|---:|---:|---|
+| `for-sent` | 23 | 2.210 | ✓ all 23 |
+| `skaal` | 4 | 200 | flat 50 ✓ |
+| `drikkevare` | 1 | 50 | flat 50 ✓ |
+| `historisk` | 1 | 50 | — |
+| | **29** | **2.510** | |
+
+Per meeting, with the five spreadsheet columns still at their own sums:
+
+| Møde | Lead | kr. | Sheet column |
+|---:|---|---:|---|
+| 21 | Esben | 275 | 275 ✓ |
+| 22 | Lukas | 405 | 405 ✓ |
+| 23 | Oskar | 305 | 305 ✓ |
+| 24 | Emil | 270 | 270 ✓ |
+| 25 | Saaby | 475 | 475 ✓ |
+| 26 | Anders | 230 | 50 — **+180 the sheet never had** |
+| 27 | Rasmus | 80 | — **new** |
+| 28 | Esben | 470 | — **new** |
+| | | **2.510** | **1.780 collected** |
+
+### 15.4 What the general assembly note contained
+
+The image referenced as "Esben lead (GF)" is a phone note headed **Bøder**,
+timestamped **27.06.2026 11.41** — the morning after the general assembly
+(møde #28, 2026-06-26, Propaganda). That timestamp is itself corroboration: it
+dates the note to the meeting it belongs to, independently of where the file sat.
+
+Verbatim:
+
+```
+Møder for sent:
+Mads = 6 min = 80
+Kasper = 6 min = 80
+Emil = 9 min = 95
+Anders = 3 min = 65
+
+Restaurant:
+- Have køber øl alene
+- Holst og Mads drikker før lead skåler
+```
+
+The four late arrivals carry **both** minutes and amount, and all four
+reproduce under 50 + 5·min. That is the cleanest evidence in the whole exercise:
+the Lead did the regulation's arithmetic himself, on the night, and it agrees
+with the code four weeks later.
+
+The **"Restaurant"** half is the mirror image of the sheet's problem — offences
+named in words with **no amounts beside them**. Both rules are flat 50 kr with
+no per-minute term, so the amount follows from the regulation exactly rather
+than being estimated: a named offence fixes its own price. `Have køber øl alene`
+is `drikkevare` (a different drink from the Lead's during the meal, waivable
+with his consent — and he is the man who wrote it down as a fine);
+`Holst og Mads drikker før lead skåler` is `skaal`, for both of them.
+
+**Mads is therefore fined twice at møde #28** — 80 kr late and 50 kr for
+toasting early. The regulation allows it: the cap is one fine per *offence* per
+meeting, which is also the table's unique key `(record_id, member_name,
+rule_id)`.
+
+All seven are on members recorded **present** at møde #28, which is that
+offence's own precondition. All ten members attended.
+
+### 15.5 Oskar — noted twice, charged nothing, in both records
+
+Lukas's notes fine **Oskar 75 kr.** under his own lead (møde #23) and **200 kr.**
+under Emil's (møde #24). **Neither appears in the spreadsheet** — not in the
+column totals, not in a row of his own, because he has no row — and **neither
+was imported here.** 275 kr. noted, 0 kr. charged.
+
+This is **the first independent evidence that the founding father's exemption
+was practised and not merely stated.** Until now §12's exemption rested on
+Lukas's ruling of 2026-07-29 alone, made a year after the fact. The notes show
+the Leads going on recording his offences exactly like anyone else's while the
+treasurer never billed a krone of them — two people behaving consistently with
+the rule, contemporaneously, without writing the rule down.
+
+Recording them now would invent a debt the club spent two years not collecting.
+
+### 15.6 What did not reconcile, and what stays open
+
+**One row disagrees with its own source, and it is flagged rather than
+resolved.** **Emil's 110 kr. at møde #25.** The sheet stores that cell as
+`{=60+50}` — the treasurer's own note that it was **two bundled offences**
+(§2, §11.3). Recorded now as a single twelve-minute late arrival, it satisfies
+both the formula and Lukas's answer. But it **cannot be two late arrivals**: the
+regulation caps one fine per offence per meeting. So either the `=60+50` was
+arithmetic convenience rather than two offences, or one of the two parts was
+*not* a late arrival and the blanket answer does not reach it.
+
+The krone total is identical under both readings and no member's balance moves,
+which is why it is recorded and flagged rather than held back. **If Lukas can
+remember that one evening specifically, it is worth one question.**
+
+**`Jan (Esben)` — most probably a guest, unconfirmed.** The notes read
+"Jan (Esben): 155kr" under Oskar's lead. There is **no Jan anywhere in the
+club's data** — not in `members`, not in any of the 261 attendance rows. §4
+Stk. 2 requires a prospective member to attend one event as a guest first, so
+the coherent reading is that Jan was Esben's guest and the parenthesis names the
+**member answerable for the fine**, which is how the sheet booked it: 155 kr. in
+Esben's row. Nothing was changed on the strength of it — the row was already
+Esben's and it stays Esben's. Recorded because it is the only name in the club's
+fine history that belongs to nobody in the club.
+
+**One fine still carries `historisk`: Lukas's own 50 kr. at møde #26.** The
+voluntary fine he transferred as treasurer (§14.4). It stays unknown on purpose
+— 50 kr. is late arrival at zero minutes *and* exactly what `skaal` and
+`drikkevare` cost, so the arithmetic decides nothing, and his answer was about
+the fines that had been blocked, not about his own.
+
+**Møde #25 has no note at all.** The club's most expensive evening — 475 kr.
+across five members — is covered only by the treasurer's blanket recollection,
+not by anything written on the night. It is the weakest block in the table above
+and is marked `treasurer` throughout for that reason.
+
+**Still open and unchanged by this section:** §5.3's 400 kr., §14.5's ninth
+member and his retroactive buy-in, and questions **7** and **9**. Questions
+**4** and **10** are now answered.
+
+### 15.7 How it was written, and how it renders
+
+`supabase/migrations/20260730120000_fine_reasons_from_lead_notes.sql`, applied
+to production `urlabzyihqrsdeasvrfe`. **`UPDATE` of `rule_id`/`minutes` on
+existing fines, plus `INSERT` of the eleven genuinely new ones, and nothing
+else.** `attendances` (261), `attendance_records` (28), `members` (10) and
+`payments` (13 / 13.280 kr.) were counted before and after and are unchanged. No
+`amount_kr` was written anywhere.
+
+Re-runnable, and verified so by running it twice: the updates are guarded on
+`rule_id = 'historisk'`, so a second pass matches nothing and a correction the
+treasurer later makes in the app is never quietly reasserted — the same
+reasoning as T068's `on conflict do nothing`. The second run left 29 rows /
+2.510 kr. / 1 `historisk`, unchanged.
+
+Guarded for other databases on **`id` + `lead` + `meeting_date` together**, not
+on `id` alone. A migration runs everywhere, and a bare existence check would
+happily hang this club's fines off some other database's record 26. On a fresh
+stack or in CI the whole file is a no-op, which is the correct outcome rather
+than an error: one club's history is not part of the schema.
+
+**Rendering.** `rule_id` is free text with no constraint and `src/data/rules.ts`
+is what the UI renders, through `describeRule()`. A fine that has gained a real
+rule now reads as the regulation's own words — `For sent fremmøde`,
+`Skål før Leads første skål`, `Bestille en anden type drikkevare end Lead under
+maden` — and `historisk` continues to read as
+`Historisk bøde — forseelse ikke registreret` rather than as a blank cell beside
+an amount. `/oekonomi` never selects `rule_id` at all (it reads `member_name,
+amount_kr, record_id`), so none of the money on that page could be affected by
+this either way; what changed there is the **totals**, from the eleven new rows.
+
+The club's 28 classified fines are pinned as a table in
+`src/data/rules.test.ts`, each row carrying its **provenance** (`note` or
+`treasurer`) and asserted against `fineAmount()`. The suite therefore re-proves
+the 50 + 5n corroboration on every run: if `FINE_RULES` is ever amended without
+dating the change, these historical amounts stop reproducing and it goes red.
+That is deliberate — a rate change must never silently rewrite what a member was
+charged in 2025. `npm test` is at **327**.

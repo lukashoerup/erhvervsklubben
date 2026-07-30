@@ -75,10 +75,186 @@ describe('membership dues', () => {
   })
 })
 
+/**
+ * The club's real fines, with the offence each one is now recorded under — T075.
+ *
+ * `source` is not decoration. Twenty-eight of the club's twenty-nine fines
+ * carry a rule from the regulation, and they got there two different ways:
+ *
+ * - **`note`** — a Lead wrote the offence down *in words* at the time
+ *   ("Emil: bøde for skål 50kr", "Saaby: 6 min for sent"). Contemporaneous.
+ * - **`treasurer`** — Lukas answered for the rest from memory on 2026-07-30,
+ *   *"De bøder som du har spærret for var alle pga. for sent fremmøde. Jeg kan
+ *   godt huske det."* Recollection, four years deep in places.
+ *
+ * Neither was allowed to stand on its own arithmetic. `for-sent` costs
+ * 50 kr + 5 kr/minute, so a late arrival's amount must be 50 + 5n for a whole
+ * n — and every one of these does divide, which is what turns a recollection
+ * into a corroborated one. The two together are much stronger than either:
+ * the treasurer remembers late arrivals, and every amount independently *is*
+ * a whole number of minutes at the club's own rate.
+ *
+ * Pinned here because that check is the club's evidence and not a one-off run
+ * at import time. If `FINE_RULES` is ever amended without dating the change,
+ * these historical amounts stop reproducing and this goes red — which is the
+ * point. A rate change must never silently rewrite what a member was charged
+ * in 2025.
+ */
+const CLUB_FINES: {
+  meeting: number
+  member: string
+  ruleId: string
+  minutes: number
+  kr: number
+  source: 'note' | 'treasurer'
+}[] = [
+  // Møde #21, Esben lead, Bjælkehuset, 2025-05-31.
+  { meeting: 21, member: 'Kasper', ruleId: 'for-sent', minutes: 10, kr: 100, source: 'treasurer' },
+  { meeting: 21, member: 'Rasmus', ruleId: 'for-sent', minutes: 9, kr: 95, source: 'treasurer' },
+  { meeting: 21, member: 'Anders', ruleId: 'for-sent', minutes: 6, kr: 80, source: 'treasurer' },
+
+  // Møde #22, Lukas lead, Tivolihallen, 2025-08-30 — the only one of the
+  // spreadsheet's five columns whose note records offences and not just sums.
+  { meeting: 22, member: 'Kasper', ruleId: 'for-sent', minutes: 11, kr: 105, source: 'note' },
+  { meeting: 22, member: 'Emil', ruleId: 'skaal', minutes: 0, kr: 50, source: 'note' },
+  { meeting: 22, member: 'Rasmus', ruleId: 'skaal', minutes: 0, kr: 50, source: 'note' },
+  { meeting: 22, member: 'Mads', ruleId: 'for-sent', minutes: 30, kr: 200, source: 'treasurer' },
+
+  // Møde #23, Oskar lead, Café Lindevang, 2025-10-11. Oskar's own 75 kr is
+  // noted in Lukas's records and is not here, and never was: §12's founding
+  // father incurs no fines, and the sheet never charged him either.
+  { meeting: 23, member: 'Emil', ruleId: 'for-sent', minutes: 5, kr: 75, source: 'treasurer' },
+  { meeting: 23, member: 'Saaby', ruleId: 'for-sent', minutes: 5, kr: 75, source: 'treasurer' },
+  { meeting: 23, member: 'Esben', ruleId: 'for-sent', minutes: 21, kr: 155, source: 'treasurer' },
+
+  // Møde #24, Emil lead, Les St Jacques, 2025-11-21. Oskar's 200 kr: as above.
+  { meeting: 24, member: 'Saaby', ruleId: 'for-sent', minutes: 30, kr: 200, source: 'treasurer' },
+  { meeting: 24, member: 'Esben', ruleId: 'for-sent', minutes: 4, kr: 70, source: 'treasurer' },
+
+  // Møde #25, Saaby lead, Marv og Ben, 2026-01-24 — the club's most expensive
+  // evening, and the one no note survives for at all.
+  { meeting: 25, member: 'Kasper', ruleId: 'for-sent', minutes: 2, kr: 60, source: 'treasurer' },
+  // The sheet stores this cell as `{=60+50}`, i.e. two bundled offences. As a
+  // single twelve-minute arrival it fits both the formula and Lukas's answer,
+  // but it cannot be two late arrivals — see the cap below. Flagged in §15.
+  { meeting: 25, member: 'Emil', ruleId: 'for-sent', minutes: 12, kr: 110, source: 'treasurer' },
+  { meeting: 25, member: 'Mads', ruleId: 'for-sent', minutes: 27, kr: 185, source: 'treasurer' },
+  { meeting: 25, member: 'Saaby', ruleId: 'for-sent', minutes: 2, kr: 60, source: 'treasurer' },
+  { meeting: 25, member: 'Esben', ruleId: 'for-sent', minutes: 2, kr: 60, source: 'treasurer' },
+
+  // Møde #26, Anders lead, Le Petit Rouge, 2026-02-21 — never in the sheet.
+  { meeting: 26, member: 'Esben', ruleId: 'for-sent', minutes: 2, kr: 60, source: 'note' },
+  { meeting: 26, member: 'Rasmus', ruleId: 'for-sent', minutes: 2, kr: 60, source: 'note' },
+  { meeting: 26, member: 'Have', ruleId: 'for-sent', minutes: 2, kr: 60, source: 'note' },
+
+  // Møde #27, Rasmus lead, Restaurant Tokyo, 2026-04-24 — never in the sheet.
+  { meeting: 27, member: 'Saaby', ruleId: 'for-sent', minutes: 6, kr: 80, source: 'note' },
+
+  // Møde #28, Esben lead, Propaganda, 2026-06-26, generalforsamlingen — after
+  // the sheet's last save, so it could never have been in it.
+  { meeting: 28, member: 'Mads', ruleId: 'for-sent', minutes: 6, kr: 80, source: 'note' },
+  { meeting: 28, member: 'Kasper', ruleId: 'for-sent', minutes: 6, kr: 80, source: 'note' },
+  { meeting: 28, member: 'Emil', ruleId: 'for-sent', minutes: 9, kr: 95, source: 'note' },
+  { meeting: 28, member: 'Anders', ruleId: 'for-sent', minutes: 3, kr: 65, source: 'note' },
+  // The two the note named in words with no amount beside them. A named
+  // offence fixes its own price — both rules are flat 50 kr — which is the
+  // opposite of the sheet's problem and the reason these are not guesses.
+  { meeting: 28, member: 'Have', ruleId: 'drikkevare', minutes: 0, kr: 50, source: 'note' },
+  { meeting: 28, member: 'Rasmus', ruleId: 'skaal', minutes: 0, kr: 50, source: 'note' },
+  { meeting: 28, member: 'Mads', ruleId: 'skaal', minutes: 0, kr: 50, source: 'note' },
+]
+
+describe('the offences behind the club’s fines (T075)', () => {
+  test('the regulation reproduces every amount the club charged', () => {
+    for (const f of CLUB_FINES) {
+      const rule = FINE_RULES.find((r) => r.id === f.ruleId)!
+      expect(
+        `#${f.meeting} ${f.member} ${f.ruleId} ${f.minutes}m = ${fineAmount(rule, f.minutes)}`,
+      ).toBe(`#${f.meeting} ${f.member} ${f.ruleId} ${f.minutes}m = ${f.kr}`)
+    }
+  })
+
+  test('every late arrival is a whole number of minutes at the club’s rate', () => {
+    // The test that corroborates Lukas's recollection. A fine that is not
+    // 50 + 5n for a whole, non-negative n is not a late arrival, whatever
+    // anyone remembers — it would have to stay `historisk` and be reported.
+    for (const f of CLUB_FINES.filter((x) => x.ruleId === 'for-sent')) {
+      expect((f.kr - 50) % 5).toBe(0)
+      expect(f.kr).toBeGreaterThanOrEqual(50)
+      expect((f.kr - 50) / 5).toBe(f.minutes)
+    }
+  })
+
+  test('the amounts are the ones the sheet and the annual report reconciled', () => {
+    // T075 set `rule_id` and `minutes`. It must never have moved money: these
+    // 28 plus Lukas's own 50 kr are the 2.510 kr the club has been fined, and
+    // the 1.780 kr the annual report collected is a subset of it.
+    expect(CLUB_FINES.reduce((n, f) => n + f.kr, 0) + 50).toBe(2510)
+  })
+
+  test('every offence charged is one the club actually voted', () => {
+    // A fine must name a rule from the regulation. `historisk` is the one id
+    // allowed to sit outside it, and no row here may quietly become it.
+    for (const f of CLUB_FINES) {
+      expect(FINE_RULES.map((r) => r.id)).toContain(f.ruleId)
+      expect(f.ruleId).not.toBe(HISTORIC_RULE_ID)
+    }
+  })
+
+  test('minutes belong to late arrival and to nothing else', () => {
+    // `minutes = 0` on a skål is not a claim that someone was zero minutes
+    // late; the rule has no minutes. Writing one would invent a measurement.
+    for (const f of CLUB_FINES) {
+      if (f.ruleId !== 'for-sent') expect(f.minutes).toBe(0)
+      else expect(f.minutes).toBeGreaterThan(0)
+    }
+  })
+
+  test('one fine per offence per meeting, per member — the regulation’s cap', () => {
+    // Also the table's unique key `(record_id, member_name, rule_id)`. Mads is
+    // fined twice at møde #28, which is allowed because the two are different
+    // offences; the same offence twice would not be — which is why Emil's
+    // bundled 110 kr at møde #25 cannot be two late arrivals.
+    const keys = CLUB_FINES.map((f) => `${f.meeting}/${f.member}/${f.ruleId}`)
+    expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  test('the founding father is charged nothing, at either meeting', () => {
+    // Oskar is named in Lukas's notes twice — 75 kr under his own lead and
+    // 200 kr under Emil's — and charged in neither. §12, and the first
+    // independent evidence the exemption was practised and not just stated.
+    expect(CLUB_FINES.filter((f) => f.member === 'Oskar')).toEqual([])
+  })
+
+  test('each of them renders as the offence, not as an unknown id', () => {
+    // The half of T075 that is a display question: a fine that has gained a
+    // real rule must read as the regulation's own words on the page, and not
+    // fall through to `Ukendt bøderegel (...)`.
+    for (const f of CLUB_FINES) {
+      expect(describeRule(f.ruleId)).not.toMatch(/^Ukendt/)
+      expect(describeRule(f.ruleId)).not.toMatch(/^Historisk/)
+    }
+    expect(describeRule('skaal')).toBe('Skål før Leads første skål')
+    expect(describeRule('drikkevare')).toBe(
+      'Bestille en anden type drikkevare end Lead under maden',
+    )
+  })
+
+  test('the one fine still without an offence keeps saying so', () => {
+    // Lukas's own 50 kr at møde #26 — the voluntary fine he transferred as
+    // treasurer (T071 §14.4). 50 kr is `for-sent` at zero minutes *and*
+    // exactly what skål and drikkevare cost, so the arithmetic decides
+    // nothing, and his answer was about the fines he had blocked, not this
+    // one. It is the last `historisk` row in the club's books.
+    expect(describeRule(HISTORIC_RULE_ID)).toBe('Historisk bøde — forseelse ikke registreret')
+  })
+})
+
 describe('rule ids this build does not know', () => {
-  // The 17 fines imported from the old spreadsheet (T068) all carry
-  // 'historisk', because the sheet stored amounts and never which offence
-  // produced them. The page must say so rather than render a blank reason.
+  // All 18 fines imported from the old spreadsheet (T068) carried 'historisk',
+  // because the sheet stored amounts and never which offence produced them.
+  // T075 left exactly one still carrying it. The page must say so rather than
+  // render a blank reason — and must keep being able to, for the next import.
   test('the historic import describes itself', () => {
     expect(describeRule(HISTORIC_RULE_ID)).toBe('Historisk bøde — forseelse ikke registreret')
   })

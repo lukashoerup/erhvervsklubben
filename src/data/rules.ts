@@ -59,20 +59,32 @@ export const FINE_RULES: FineRule[] = [
 export const ONE_FINE_PER_OFFENCE_PER_MEETING = true
 
 /**
- * The fines imported from the club's old spreadsheet (T068).
+ * A fine whose offence is not known.
  *
- * The sheet recorded amounts and nothing else, and against the five rules above
- * most amounts have several valid readings — 200 kr is `udeblivelse` *or*
- * thirty minutes late; 100 kr is `sent-afbud` *or* two 50-rules *or* ten
- * minutes late. Twelve of the eighteen cells are ambiguous that way. Writing a
- * specific offence against a named member on a guess would be worse than
- * recording none, so those rows carry this id instead: the money is exact and
- * the offence is honestly unknown.
+ * All eighteen fines imported from the club's old spreadsheet carried this
+ * (T068): the sheet recorded amounts and nothing else, and against the five
+ * rules above most amounts have several valid readings — 200 kr is
+ * `udeblivelse` *or* thirty minutes late; 100 kr is `sent-afbud` *or* two
+ * 50-rules *or* ten minutes late. Writing a specific offence against a named
+ * member on a guess would be worse than recording none, so the money was exact
+ * and the offence honestly unknown.
+ *
+ * **T075 emptied it down to one row.** The Leads' own notes named the offence
+ * for three of them outright, and Lukas answered for the rest from memory on
+ * 2026-07-30 — all late arrivals — which the regulation's own 50 + 5·minutes
+ * then corroborated on every single amount. What is left is his voluntary 50 kr
+ * at møde #26, where the arithmetic cannot decide: 50 kr is late arrival at
+ * zero minutes *and* exactly what `drikkevare` and `skaal` cost.
+ * See docs/finance-reconciliation.md §15.
+ *
+ * It stays in the code regardless of how few rows hold it. It is how this
+ * schema says "not known", and the next import from a paper record will need it
+ * again.
  *
  * Deliberately *not* a member of `FINE_RULES`. It is not a rule anyone can be
  * charged under — it has no amount and the club never voted it — so it must
  * never appear in the capture UI as something to tap. It exists only to be read
- * back off history. See docs/finance-reconciliation.md.
+ * back off history.
  */
 export const HISTORIC_RULE_ID = 'historisk'
 
