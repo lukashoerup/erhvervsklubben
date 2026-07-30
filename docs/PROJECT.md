@@ -418,6 +418,81 @@ without losing data and without taking the old site down until an approved cutov
   under-charges is worse than one that visibly over-charges, because nobody goes
   looking for it.
 
+- **2026-07-30 — a fine carries whether it has been paid (`fines.settled_at`), and
+  "pålagt" / "indbetalt" / "udestående" are three figures the app must never
+  conflate.** Lukas, reading the page: *"Der står i toppen af økonomisiden at der er
+  udestående bøder på 2510 kr. Det passer ikke."*
+
+  It did not. `/oekonomi` summed every fine the club had ever incurred and printed
+  the total under the word *udestående*, on the card that reads as authoritative —
+  overstating what the membership owes by the entire 1.780 kr. it had already paid.
+  The bug class is worth naming because the arithmetic was never wrong: **one number
+  was doing the job of three, and the label picked the wrong one.** The same
+  conflation sat one card down in "Bøder pr. medlem", which is a collection list, and
+  invited the treasurer to bill a member twice.
+
+  **It had to be a column, not a derivation.** `payments` holds one combined figure
+  per month covering kontingent and fines together, because that is all the bank
+  statement itemises (§16), so nothing on the payments side can say *which* fines a
+  month's money paid for. The fact therefore lives on the fine.
+
+  Three choices inside it that could have been made dishonestly:
+
+  * **Null means "not collected", never "unknown".** So a database that has not run
+    the migration reports every fine as outstanding — wrong in the direction that
+    under-claims collection. Over-claiming would let the club stop chasing money it
+    is owed, which is the failure that matters.
+  * **The 19-row split is T075's evidence, not a date cut-off.** The "Bøder
+    indkrævet" line divides møder 21–25 from #26–#28. 1.730 ≠ 1.780, and the 50 kr.
+    between them is the treasurer's own *voluntary* fine at møde #26 — money he
+    transferred, so settled, even though that evening was never billed. Hence
+    `meeting_number <= 25 OR rule_id = 'frivillig'`. A cut-off alone marks 1.730 kr.
+    and reconciles against nothing. The migration rolls back unless all three totals
+    close.
+  * **`settled_at` is the collection *round*, not the transfer.** Two bank transfers
+    a week apart make up the 1.780 kr. and the statement does not say which fine each
+    krone belonged to. The Bødekasseregulativ collects quarterly and `payments`
+    already stores the round, so that is the unit. Inventing a per-fine receipt date
+    is the class of fabrication T075 refused for the offences.
+
+- **2026-07-30 — the club's own habits are the club's, so the fine insights are not
+  gated to the treasurer.** Lukas, twice in one message: *"Alle medlemmer skal kunne
+  se det."* What stays his is the **bank balance** and the **list of who is behind**;
+  what every member sees is what the club charges and what it is like. Consistent
+  with the 2026-07-27 ruling that put `/oekonomi` on a member route at all (§8 lays
+  the accounts before the whole membership).
+
+  The tone decision inside it is the part worth recording, because the same 30 rows
+  make either object: **one bar per member is a ranking of who behaves worst; one bar
+  per offence is a club looking at its own habits.** He asked for *forseelser* first
+  and *hvem* second, so the offence is the subject and the members are its
+  composition — named in text beneath each bar rather than as nine coloured segments,
+  which at 420 px would have been eight pixels for the smallest share and nine hues
+  on a dimension carrying no order. `for-sent` is 86 % of every krone **by
+  construction** (it is the only rule with a per-minute component), so the collective
+  figure leads: 3 t 22 min of lateness across 7 of the 9 finable members. No log
+  scale and no broken axis — the dominance is the finding, and a direct label on every
+  bar is what makes the 50 kr. rows readable without distorting the scale.
+
+- **2026-07-30 — the chart sweep is 1600 ms on a nearly even curve: a considered
+  departure from §01's motion spec, on Lukas's word.** *"Det må godt gå lidt
+  langsommere, da man ikke når at se at den bygger op."*
+
+  T077 shipped the sweep at 900 ms on §01's `.16 1 .3 1` and predicted this exact
+  complaint. That curve reaches **95 % at 43 % of its duration**, so the chart snapped
+  and then spent most of its time creeping the last sliver — and a slower version of
+  the same curve only lengthens the creep. The duration *and* the easing had to move
+  together.
+
+  Two things this pulls in, both recorded so the next person does not undo them:
+  **all three charts share one rule** (three durations would undo T077's whole point),
+  and **the count-up is now explicitly coupled to it** — the figures under the finance
+  curve run 1600 ms so they still land with the line, which until now held by
+  accident because both happened to be 900 ms. `SWEEP_MS` in `src/lib/reveal.ts` must
+  equal the CSS duration and a test compares the two files. §01's 900 ms still governs
+  every other figure; `countMs()` decides per element rather than moving the global.
+  Full argument and the sampled curve profiles: `design/README.md`.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

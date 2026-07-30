@@ -206,8 +206,8 @@ admin — not read off the source. T066's notes carry the numbers.
 | Kun opacity og transform (§01) | ✅ asserted in `src/theme.test.ts` — **one** sanctioned exception since T077, the wordmark's letter-spacing |
 | Reveal ved scroll (§01) | ✅ all seven scrolling screens — and since T067 it runs on the phones the club actually holds |
 | IntersectionObserver, tærskel 0.18 (§05) | ✅ since T067 — `src/lib/reveal.ts` |
-| Nøgletal tæller op, 900 ms easeOutExpo (§01) | ✅ since T067 on Hjem and Anciennitet, and since T073 on Økonomi's three chart figures |
-| Kurver tegner sig ind (§01, "indhold træder frem") | ✅ since T073, as **one** gesture since T077 — `/oekonomi`, 900 ms, the same curve |
+| Nøgletal tæller op, 900 ms easeOutExpo (§01) | ✅ since T067 on Hjem and Anciennitet, and since T073 on Økonomi's three chart figures — those three run 1600 ms since T078, coupled to the sweep |
+| Kurver tegner sig ind (§01, "indhold træder frem") | ✅ since T073, as **one** gesture since T077 — `/oekonomi`, all three charts. **1600 ms on `.25 .35 .5 1` since T078, at Lukas's request: a deliberate departure from §01, argued below** |
 | Søjler vokser fra baseline, forskudt (§01) | ✅ since T067 |
 
 Contrast is at zero failing pairs across all eight screens in both themes, with
@@ -246,10 +246,10 @@ What the members' screens do now, all of it from §01:
 |---|---|
 | Reveal | 22 px up + fade, 700 ms, `.16 1 .3 1`, staggered 60 ms per element in a batch (capped at six) |
 | Bars | grow from the baseline over 900 ms on the same curve — §01 pairs them with the count-up, not with the cards |
-| Figures | count up in 900 ms, easeOutExpo, the export's own `1 − 2^(−10p)` |
+| Figures | count up in 900 ms, easeOutExpo, the export's own `1 − 2^(−10p)` — **except a figure inside a chart, which counts over the sweep's 1600 ms so the two finish together** |
 | Attendance strip | the ten pips arrive left to right, 26 ms apart, riding their card's own state |
 | Meeting card | the club's blue streg is drawn under the meeting's name as the card arrives — absolutely positioned, so 29 of them add no height |
-| Finance chart | one clipped edge travels up from the baseline over 900 ms and uncovers the whole plot at once — see below. T073 sequenced five marks here; T077 does not |
+| Charts (all three) | one clipped edge travels up from the baseline over **1600 ms on `.25 .35 .5 1`** and uncovers the whole plot at once — see below. T073 sequenced five marks here; T077 does not, and T078 slowed it at Lukas's request |
 | Date rail | the hairline beside a news item's or a meeting's date grows downwards, 120 ms behind its card |
 | Scroll indicator | the export's `#ek-progress`, as `scaleX` rather than its `width` |
 
@@ -305,15 +305,53 @@ along with the `--ek-len` machinery, the `getTotalLength()` measurement and the
 four staggered delays. `src/theme.test.ts` no longer sanctions the exception:
 a stale exception is a licence the next pass finds already granted.
 
-**900 ms and `.16 1 .3 1`, unchanged.** §01 gives that pair to the count-up and
-the bars, and the three figures beside the plot count over the same 900 ms, so
-the chart and the numbers it resolves to finish in the same instant — measured in
-Chromium, the sweep reaching full at +900 ms from `in` and the figures landing at
-+927. Lukas asked for that pairing in T073 and it is the one thing here kept
-exactly. It holds for a reason worth knowing: `show()` writes §01's 60 ms stagger
-onto the element it fires, and `data-draw` animates a *descendant*, so the plot
-takes no stagger — and neither does the count-up. Push the delay down onto the
-sweep and the gesture arrives up to 360 ms after the numbers it is the readout of.
+**1600 ms on `.25 .35 .5 1` — the one considered departure from §01 in the app,
+and it is Lukas's call.** 2026-07-30, on T077's sweep: *"Kan vi få en smule mere
+delay på den motion der er på grafen? Det må godt gå lidt langsommere, da man
+ikke når at se at den bygger op."*
+
+T077 shipped it at 900 ms on §01's own `.16 1 .3 1` and predicted this exact
+complaint, naming the cause: that curve is violently front-loaded. Sampled,
+progress at 10/20/30/50/70/90 % of the duration —
+
+| Curve | | | | | | | 95 % reached at |
+|---|---|---|---|---|---|---|---|
+| `.16 1 .3 1` (§01) | 49 | 75 | 88 | 97 | 100 | 100 | **43 %** of duration |
+| `.25 .35 .5 1` (now) | 15 | 32 | 48 | 74 | 91 | 99 | 77 % of duration |
+
+So three-quarters of the old sweep was over in the first 200 ms and the rest was
+the final sliver creeping — *snap, then settle*, which is precisely "man ikke når
+at se at den bygger op". **The duration alone would not have fixed it**: stretching
+a curve that does most of its work in the first fifth only lengthens the creep.
+What "bygger op" describes is a nearly even draw with a gentle ease out, which is
+the second row. §01's curve stays on the reveals and the bars, where an arrival
+*should* be front-loaded; `src/theme.test.ts` asserts both — the arrivals on
+`.16 1 .3 1`, and the sweep at ≥ 1400 ms with `y1 ≤ 0.5`.
+
+**All three charts share the one rule**, which was the whole point of T077. Bars
+and curves do read differently in principle, but not differently enough to justify
+two timings on one page.
+
+**The count-up moved with it, deliberately.** The three figures beside the finance
+plot count over the same 1600 ms, so the chart and the numbers it resolves to
+finish in the same instant — the pairing Lukas asked for in T073 and liked. Until
+now it held *by accident*: the sweep and §01's count-up were both 900 ms. The
+moment the sweep slowed, the numbers would have landed 700 ms early. The coupling
+is now explicit and asserted: `SWEEP_MS` in `src/lib/reveal.ts` must equal the
+duration in `[data-draw='in'] .ek-sweep`, a test compares the two source files,
+and both comments point at each other. **§01's 900 ms still governs every other
+figure** — the three stat tiles on `/hjem` have no sweep to synchronise with, so
+`countMs()` decides per element rather than moving the global.
+
+It also still takes no stagger, for the reason worth knowing: `show()` writes
+§01's 60 ms stagger onto the element it fires, and `data-draw` animates a
+*descendant*, so the plot takes none — and neither does the count-up. Push the
+delay down onto the sweep and the gesture arrives up to 360 ms after the numbers
+it is the readout of.
+
+`SETTLE_MS` went 1100 → 1800 with it. It has to clear the longest animation on the
+page, and marking a chart `done` while its edge is still travelling drops the clip
+and finishes the reveal in one frame — the snap that had just been removed.
 
 **Recharts' own animation is still not used.** Every series has carried
 `isAnimationActive={false}` since the chart was built; turning it back on would

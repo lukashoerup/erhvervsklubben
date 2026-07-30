@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-30 (T076 — books reconciled against the bank). Single source of truth for "where are we". Update this at the
+_Updated 2026-07-30 (T078 — udestående fixed, fine insights, income mix). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -16,6 +16,85 @@ existing row touched. **28** meetings and 235
 attendance rows intact — the junk duplicate of meeting #27 has since been
 removed, so record ids run 1–27 and 29. **17 of the 28 meetings now carry a
 date** (2026-07-29, T071) — see below.
+
+**`/oekonomi` was wrong about udestående, and it is fixed** (2026-07-30, T078).
+Lukas found it by reading the page: *"Der står i toppen af økonomisiden at der er
+udestående bøder på 2510 kr. Det passer ikke."* It did not. **Read this before
+quoting any fine figure**, because there are now three and they are all correct:
+
+```
+2.510 kr.  pålagt      every fine a Lead ever noted        30 rows
+1.780 kr.  indbetalt   what has reached the fine box       19 rows
+  730 kr.  udestående  what the club is owed               11 rows
+```
+
+The card summed the first and printed it under the third's name — it overstated
+what the membership owes **by the entire amount it had already paid**. Not an
+arithmetic error: every number was computed correctly, and one number was doing
+the job of three. The same conflation was one card down in "Bøder pr. medlem",
+which invited the treasurer to bill a member for fines he settled in February.
+
+**Why it could not be derived, and where the fact now lives.** `payments` holds
+one combined figure per month covering kontingent and fines together — that is all
+the bank statement itemises (§16) — so nothing on the payments side can say which
+fines it paid for. **`fines.settled_at`** carries it, added additively in
+`supabase/migrations/20260730180000_fines_settled.sql` and **applied to production
+2026-07-30**. Null means not collected, which is the safe default: an unmigrated
+database under-claims what the club has collected rather than over-claiming it.
+
+**The 19/1.780 split is evidence, not a cut-off, and one row decides it.** T075's
+"Bøder indkrævet" line divides møder 21–25 (1.730 kr., billed and collected) from
+#26–#28 (730 kr., noted and never billed). 1.730 is not 1.780: the difference is
+**the treasurer's own voluntary 50 kr. at møde #26**, which he transferred himself,
+so it is settled even though its evening was never invoiced. `meeting_number <= 25
+OR rule_id = 'frivillig'` — a cut-off alone marks 18 rows and 1.730 kr., which
+reconciles against nothing. The migration refuses and rolls back unless all three
+totals close.
+
+**The club can see what its fines are about** (2026-07-30, T078). Lukas: *"hvilke
+forseelser der er givet højeste bøder, og evt. også i samme visualisering, hvem det
+er. Masser af insights."* And twice: *"Alle medlemmer skal kunne se det."* So both
+new cards sit **outside every treasurer gate**; what stays his is the bank balance
+and the list of who is behind.
+
+The card leads with the club rather than with a member, and that is the tone
+decision: **the club has been late by 3 t 22 min in total, across 23 arrivals and
+7 of its 9 finable members.** `for-sent` is **86 %** of every krone, by
+construction — it is the only rule with a per-minute component — so any per-member
+chart makes whoever tops it look like the problem when the finding is that nearly
+everyone is in it. **One bar per offence, members named in text beneath it.** Nine
+members as stacked segments was tried and abandoned: the smallest share is eight
+pixels at 420 px, so identity would have fallen back to nine hues on a dimension
+with no order. No log scale and no broken axis either — every bar is
+direct-labelled, so the 50 kr. rows are read from the figure beside them and the
+dominance stays true.
+
+**Indtægtsfordeling pr. kvartal** (T078), also Lukas's: *"en graf længere nede som
+viser indtægtsfordeling (kontingenter, bødetyper) over tid."* **Quarters, not
+months** — the regulation collects fines quarterly and §9 puts a dinner on the
+calendar every other month, so a monthly axis draws the club's *calendar* as a
+sawtooth a reader would take for a collection problem. Two things it says on itself
+rather than leaving to be misread: the kontingent half is **derived** (rate ×
+members charged that month) because the bank has never itemised a month, and a
+payment belongs to the month it **settles**. Four segments in **one sequential ramp
+of the club's blue** rather than four hues — they are the parts of one figure, and
+four fresh hues would undo T072. The steps are measured with dataviz's
+`validate_palette.js` in both palettes, separately rather than flipped; the numbers
+are in `src/index.css` beside the tokens.
+
+**The chart motion is slower, and it is a considered departure from §01**
+(2026-07-30, T078). Lukas: *"Kan vi få en smule mere delay på den motion der er på
+grafen? Det må godt gå lidt langsommere, da man ikke når at se at den bygger op."*
+T077 predicted exactly this and named the cause, so the fix is the duration and the
+easing rather than a fourth mechanism: §01's `.16 1 .3 1` reaches **95 % at 43 % of
+its duration**, so the chart snapped and then crept, and stretching the same curve
+would only lengthen the creep. It is now **1600 ms on `.25 .35 .5 1`** — 95 % at
+77 % — on **all three charts, one shared rule**. The count-up moved with it
+deliberately: the three figures under the finance curve now run 1600 ms so the line
+and the number it resolves to still finish together, which until now held *by
+accident* because both were 900 ms. `SWEEP_MS` in `src/lib/reveal.ts` must equal the
+CSS duration and **a test compares the two source files**. §01's 900 ms still
+governs every other figure. Argued in `design/README.md`.
 
 **The books are reconciled against the real bank statement** (2026-07-30, T076).
 Read this before quoting any figure on this page: **`payments` is 14 rows summing
@@ -60,7 +139,8 @@ attended since møde #3 and was fined at møde #26 three months before his first
 transfer. Also: the remembered "ninth member joined June 2026" is refined by the
 bank to **May 2026**.
 
-**Fines were not touched, and incurred is still not collected.** The statement
+**Fines were not touched, and incurred is still not collected — and since T078 the
+app finally says which is which.** The statement
 independently confirms the **1.780 kr. collected** (`Emil bødekasse` 235 on 09.02
 + `Bøder` 1.545 on 16.02 — exactly the sheet's `E10 = 700+1545+235`, now seen as
 money moving). The club has **incurred 2.510 kr.** The **730 kr.** between them is
@@ -440,7 +520,7 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 348 component/derivation tests (jsdom, fast, offline). Eighteen of
+- `npm test` — 394 component/derivation tests (jsdom, fast, offline). Eighteen of
   them are T076's: the club's whole bank statement is pinned as a table and run
   through `allocateDues`, so the reconciliation to 14.880 kr. and the single
   200 kr. outstanding are re-proved on every run rather than remembered in a
@@ -525,7 +605,9 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    What §14.5 was reaching for was **Mads**, who did owe a year of arrears and
    **paid them in full on 01.05.2026** — 1.200 kr., twelve months, no remainder.
    Nobody owes a buy-in, so no receivable concept is needed.
-4. **Chase 200 kr. and decide about 730 kr.** — Anders's July 2026 kontingent
+4. **Chase 200 kr. and decide about 730 kr.** — since T078 the 730 is on the page
+   as its own figure rather than buried in a wrong total, stated once and with no
+   badge or nag, because whether to bill it is his call and not the app's. — Anders's July 2026 kontingent
    (he has changed bank; the club's only outstanding kontingent) and the 730 kr.
    of fines a Lead noted and nobody billed. Neither is a code task; both are the
    treasurer's.

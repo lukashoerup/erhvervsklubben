@@ -35,6 +35,17 @@ vi.mock('../lib/supabase', () => ({
 
 const { default: Oekonomi } = await import('./Oekonomi')
 
+/**
+ * Which chart, by name.
+ *
+ * `/oekonomi` carried exactly one `role="img"` until T078 and now carries three —
+ * the finance curve, the fine insights and the income mix. An unqualified
+ * `getByRole('img')` therefore stopped meaning anything, and it broke loudly
+ * rather than silently asserting against whichever chart came first in the DOM,
+ * which is the good version of this failure.
+ */
+const CURVE = /Kurve over klubbens indtægter/
+
 const ROSTER = ['Anders', 'Rasmus', 'Esben', 'Oskar', 'Emil', 'Saaby', 'Lukas', 'Mads', 'Kasper', 'Have']
 
 /**
@@ -71,12 +82,17 @@ function aClubWithBooks() {
       ROSTER.map((name) => ({ record_id: m.id, member_name: name, attended: true })),
     ),
     members: MEMBERS,
+    // Since T078 a fine carries its rule, its minutes and whether it has been
+    // collected. The first two evenings are settled and the last is not, so
+    // incurred (810), collected (500) and outstanding (310) are three different
+    // numbers here — the page printed the first of them under the third's name
+    // until Lukas caught it.
     fines: [
-      { member_name: 'Esben', amount_kr: 50, record_id: 1 },
-      { member_name: 'Mads', amount_kr: 185, record_id: 2 },
-      { member_name: 'Kasper', amount_kr: 265, record_id: 2 },
-      { member_name: 'Mads', amount_kr: 200, record_id: 3 },
-      { member_name: 'Saaby', amount_kr: 110, record_id: 3 },
+      { member_name: 'Esben', amount_kr: 50, record_id: 1, rule_id: 'skaal', minutes: null, settled_at: '2026-05-01' },
+      { member_name: 'Mads', amount_kr: 185, record_id: 2, rule_id: 'for-sent', minutes: 27, settled_at: '2026-05-01' },
+      { member_name: 'Kasper', amount_kr: 265, record_id: 2, rule_id: 'for-sent', minutes: 43, settled_at: '2026-05-01' },
+      { member_name: 'Mads', amount_kr: 200, record_id: 3, rule_id: 'for-sent', minutes: 30, settled_at: null },
+      { member_name: 'Saaby', amount_kr: 110, record_id: 3, rule_id: 'for-sent', minutes: 12, settled_at: null },
     ],
     payments: [
       { month: '2026-04-01', amount_kr: 900 },
@@ -131,7 +147,7 @@ describe('who the finance graph is for', () => {
   it('shows an ordinary member the club’s income against what it charged', async () => {
     aClubWithBooks()
     renderPage('user')
-    const chart = await screen.findByRole('img')
+    const chart = await screen.findByRole('img', { name: CURVE })
     // 6.210, not 6.810: the nine paying members, not the roster's ten. The
     // extra 600 kr. was a founding father being invoiced by arithmetic.
     expect(chart).toHaveAccessibleName(/Opkrævet i alt 6\.210 kr\., modtaget 3\.600 kr\./)
@@ -141,7 +157,7 @@ describe('who the finance graph is for', () => {
   it('still keeps the bank balance and the debtor list with the treasurer', async () => {
     aClubWithBooks()
     renderPage('user')
-    await screen.findByRole('img')
+    await screen.findByRole('img', { name: CURVE })
     expect(screen.queryByText(/kun kassereren/i)).not.toBeInTheDocument()
 
     renderPage('admin')
@@ -153,7 +169,7 @@ describe('the figures in the monthly table', () => {
   it('writes money the same way as the rest of the page', async () => {
     aClubWithBooks()
     renderPage('user')
-    await screen.findByRole('img')
+    await screen.findByRole('img', { name: CURVE })
     // February: the nine paying members at 100 kr. plus one 50 kr. fine. It
     // used to render as a bare 950 next to cards printing 3.600 kr.
     expect(screen.getByText('2026-02').closest('tr')).toHaveTextContent('950 kr.')
@@ -233,7 +249,7 @@ describe('the club as it actually stands', () => {
     expect(screen.getByText(/ingen af klubbens 29 møder har en dato/i)).toBeInTheDocument()
     // No plot, and no monthly table either — there is nothing honest to put in
     // one, and an empty grid reads as a club that charged nothing.
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: CURVE })).not.toBeInTheDocument()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 
@@ -301,20 +317,25 @@ describe('the imported spreadsheet history (T068)', () => {
   it('counts every krone of it, on a rule id this build never defined', async () => {
     theImportedBooks()
     renderPage('admin')
-    await screen.findByRole('img')
+    await screen.findByRole('img', { name: CURVE })
     // 13.280 received and 1.730 owed are the two figures the whole import has
     // to reproduce. If either moves, the import or the arithmetic is wrong.
     // Read off the treasurer's own card: both figures legitimately appear
     // elsewhere on the page, and a loose match would pass on the wrong one.
     const card = screen.getByText(/Klubkassen/).closest('section')!
-    expect(within(card).getByText('13.280 kr.')).toBeInTheDocument()
-    expect(within(card).getByText('1.730 kr.')).toBeInTheDocument()
+    expect(card).toHaveTextContent('13.280 kr.')
+    // Asserted through the sentence rather than as a bare figure, because since
+    // T078 the card names three quantities and this import's fines are all
+    // uncollected — so 1.730 is legitimately both what was incurred and what is
+    // outstanding, and `getByText` matched two nodes. The words are the part
+    // that must not drift.
+    expect(card).toHaveTextContent('Bøder pålagt 1.730 kr.')
   })
 
   it('says out loud that the fines sit on meetings with no date', async () => {
     theImportedBooks()
     renderPage('admin')
-    await screen.findByRole('img')
+    await screen.findByRole('img', { name: CURVE })
     // Not silently dropped and not dumped into an arbitrary month, either of
     // which would misstate a quarter. The page states the amount it left out.
     expect(
@@ -325,15 +346,20 @@ describe('the imported spreadsheet history (T068)', () => {
   it('names every fined member with the right total', async () => {
     theImportedBooks()
     renderPage('admin')
-    await screen.findByRole('img')
+    await screen.findByRole('img', { name: CURVE })
     // The sheet's own row totals, which is the second axis the grid balances
     // on. Rasmus and Anders are the sheet's "Holst" and "Tørring".
+    const owed = screen.getByText(/Udestående bøder pr\. medlem/).closest('section')!
     for (const [member, total] of [
       ['Kasper', '265 kr.'], ['Emil', '235 kr.'], ['Rasmus', '145 kr.'],
       ['Mads', '385 kr.'], ['Anders', '80 kr.'], ['Saaby', '335 kr.'], ['Esben', '285 kr.'],
     ]) {
-      expect(screen.getByText(member)).toBeInTheDocument()
-      expect(screen.getByText(total)).toBeInTheDocument()
+      // Scoped to the treasurer's own card. Since T078 every member is also
+      // named in the fine-insight chips that the whole club can see, so an
+      // unscoped query finds two of each — and the figure that has to be right
+      // here is the one on the collection list.
+      expect(within(owed).getByText(member)).toBeInTheDocument()
+      expect(within(owed).getByText(total)).toBeInTheDocument()
     }
   })
 })
@@ -363,7 +389,7 @@ describe('who the club charges', () => {
     // was measured.
     aClubWithBooks()
     renderPage('user')
-    await screen.findByRole('img')
+    await screen.findByRole('img', { name: CURVE })
     expect(screen.getByText(/opkrævede i den enkelte måned/)).toHaveTextContent(
       /kontingent fra de medlemmer, klubben\s*opkrævede i den enkelte måned\s*\(\s*9\s*i\s*dag\)/,
     )

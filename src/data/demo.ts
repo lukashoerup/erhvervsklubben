@@ -1,3 +1,4 @@
+import type { FineRow } from './fines'
 import type { AttendanceRow, RecordRow } from './derive'
 import type { Member } from './members'
 import type { EventItem, NewsItem } from './useClubData'
@@ -251,12 +252,27 @@ export function demoDeleteMeeting(id: number) {
   }
 }
 
-export const demoFines = [
-  { member_name: 'Mads', amount_kr: 200, record_id: 28 },
-  { member_name: 'Mads', amount_kr: 185, record_id: 27 },
-  { member_name: 'Saaby', amount_kr: 110, record_id: 28 },
-  { member_name: 'Esben', amount_kr: 50, record_id: 26 },
-  { member_name: 'Kasper', amount_kr: 265, record_id: 27 },
+/**
+ * Fabricated fines — and since T078 they carry a rule, minutes and a settlement.
+ *
+ * The demo is what gets shown to the club, so the shape has to be the real one.
+ * A fine book where nothing is settled would demonstrate an `/oekonomi` that
+ * reports every krone as outstanding, which is precisely the bug T078 fixed. Two
+ * rounds here: the older evenings collected, the newest not yet — so the three
+ * figures on the balance card (pålagt / indbetalt / udestående) are three
+ * different numbers in the demo as well as in production.
+ *
+ * Every amount still obeys `fineAmount`: `for-sent` is 50 + 5·minutes, the flat
+ * rules are 50.
+ */
+export const demoFines: FineRow[] = [
+  { member_name: 'Mads', amount_kr: 200, record_id: 28, rule_id: 'for-sent', minutes: 30, settled_at: null },
+  { member_name: 'Saaby', amount_kr: 110, record_id: 28, rule_id: 'for-sent', minutes: 12, settled_at: null },
+  { member_name: 'Emil', amount_kr: 50, record_id: 28, rule_id: 'skaal', minutes: null, settled_at: null },
+  { member_name: 'Mads', amount_kr: 185, record_id: 27, rule_id: 'for-sent', minutes: 27, settled_at: '2026-04-01' },
+  { member_name: 'Kasper', amount_kr: 265, record_id: 27, rule_id: 'for-sent', minutes: 43, settled_at: '2026-04-01' },
+  { member_name: 'Rasmus', amount_kr: 50, record_id: 27, rule_id: 'skaal', minutes: null, settled_at: '2026-04-01' },
+  { member_name: 'Esben', amount_kr: 50, record_id: 26, rule_id: 'drikkevare', minutes: null, settled_at: '2026-04-01' },
 ]
 
 export const demoPayments = [
