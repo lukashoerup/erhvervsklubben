@@ -128,12 +128,23 @@ export function Moedekalender() {
   if (isPending || error || !data) return null
 
   // Compared and sorted as text: `YYYY-MM-DD` orders correctly that way, so there
-  // is no Date here and therefore no zone to get wrong. Soonest first, because the
-  // one the club needs is the next one.
+  // is no Date here and therefore no zone to get wrong.
+  //
+  // **Newest first, like everything under it.** Lukas: *"Er det ikke lidt spøjst med
+  // rækkefølgen?"* It was: soonest-first here and newest-first below produced 29, 30,
+  // 28, 27 — the number climbing and then dropping back. That came across from
+  // `/moeder`, where the two halves were separate sections with their own headings
+  // and running each outward from today was right. In one continuous stream it is
+  // just a jag, and /anciennitet is one stream now.
   const today = todayISO()
   const planned = data
     .filter((e) => e.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => b.date.localeCompare(a.date))
+  // The next meeting, and therefore the one the design system marks by border
+  // weight. Found by id rather than by position: after the sort above it is the
+  // *last* of the planned, and `i === 0` quietly marking the furthest-off meeting
+  // instead is exactly the kind of thing a reader would not question.
+  const nextId = planned.length > 0 ? planned[planned.length - 1].id : null
 
   const form = (id: string | null) => (
     <EditForm
@@ -238,7 +249,7 @@ export function Moedekalender() {
           so these fall into the single stream of meetings on /anciennitet rather
           than sitting in a box above it. */}
       <SectionTitle>Planlagte møder</SectionTitle>
-      {planned.map((e, i) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0)))}
+      {planned.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, e.id === nextId)))}
     </>
   )
 }

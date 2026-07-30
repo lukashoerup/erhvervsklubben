@@ -588,3 +588,52 @@ describe('the calendar and the fines, now that /moeder is gone', () => {
     expect(order.indexOf('Esben')).toBeLessThan(order.indexOf('Saaby'))
   })
 })
+
+/**
+ * The order of the page, as one list rather than two.
+ *
+ * Lukas, on the screenshot: *"Er det ikke lidt spøjst med rækkefølgen?"* It was —
+ * the planned meetings ran soonest-first and the history newest-first, so the page
+ * read 29, 30, 28, 27: the number climbing and then dropping back. Two separate
+ * sections could each run outward from today and be right; one continuous stream
+ * cannot.
+ *
+ * Asserted as a property of the whole page rather than of either group, because that
+ * is the only form of the assertion that would have caught it: both groups were
+ * internally sorted correctly the whole time.
+ */
+describe('the order of the meetings', () => {
+  const PLANNED_TWO = [
+    { id: 'e29', title: 'Erhvervsklub #29', date: '2099-08-08', time: '18.30', location: 'Frk. Barners', description: '' },
+    { id: 'e30', title: 'Erhvervsklub #30', date: '2099-09-11', time: '17.00', location: 'Lukas', description: '' },
+  ]
+
+  beforeEach(() =>
+    reset({ attendance_records: RECORDS, attendances: ATTENDANCES, events: PLANNED_TWO }),
+  )
+
+  it('runs newest first the whole way down, planned and held alike', async () => {
+    renderPage('user')
+    // Both queries, not just the history: the events one settles second, and
+    // waiting on the history alone samples the page before the planned cards exist.
+    await screen.findByText('Esben')
+    await screen.findByText('Frk. Barners')
+
+    // Every card's serif figure, in the order they are on the page. RECORDS is
+    // meetings 28 and 27; the planned ones are the club's 30 and 29.
+    const figures = [...document.querySelectorAll('article .ek-figure')].map(
+      (el) => el.textContent,
+    )
+    expect(figures).toEqual(['30', '29', '28', '27'])
+  })
+
+  it('still marks the *next* meeting, not the furthest one', async () => {
+    renderPage('user')
+    await screen.findByText('Frk. Barners')
+    // The design system marks the live row by border weight. Newest-first puts the
+    // next meeting last among the planned, so a position-based check would have
+    // quietly moved the border to September.
+    expect(cardFor('Frk. Barners').className).toContain('border-accent')
+    expect(cardFor('Lukas').className).not.toContain('border-accent')
+  })
+})

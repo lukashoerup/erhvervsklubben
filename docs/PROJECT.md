@@ -629,6 +629,24 @@ without losing data and without taking the old site down until an approved cutov
   card leave the list, so the form says so **before** Gem. A card that vanishes on
   save with no explanation reads as data lost.
 
+- **2026-07-30 — /anciennitet runs newest-first the whole way down.** Lukas, on a
+  screenshot: *"Er det ikke lidt spøjst med rækkefølgen?"* It was: the planned
+  meetings ran soonest-first and the history newest-first, so the page read **29, 30,
+  28, 27** — the number climbing and then dropping back.
+
+  The bug came from a decision that had been correct: `/moeder` ran its two halves
+  outward from today, *"soonest first ahead, most recent first behind — because both
+  mean nearest to now"*, and with two headings and two sections that reads fine. It
+  stopped being fine when the two became one continuous stream, and neither group's
+  own sorting was wrong — which is why the test is a property of **the whole page**
+  (`['30','29','28','27']`) rather than of either group. A per-group assertion would
+  have passed throughout.
+
+  The blue border on the next meeting is now found **by id**, not by position: after
+  the flip the soonest planned meeting is the *last* of them, and `i === 0` silently
+  marking the furthest-off meeting instead is exactly the kind of thing a reader would
+  not think to question.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
