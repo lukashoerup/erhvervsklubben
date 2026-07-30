@@ -54,8 +54,14 @@ totals close.
 **The club can see what its fines are about** (2026-07-30, T078). Lukas: *"hvilke
 forseelser der er givet højeste bøder, og evt. også i samme visualisering, hvem det
 er. Masser af insights."* And twice: *"Alle medlemmer skal kunne se det."* So both
-new cards sit **outside every treasurer gate**; what stays his is the bank balance
-and the list of who is behind.
+new cards sit **outside every treasurer gate**.
+
+Later the same day he removed the last two gates as well — *"Alle medlemmer skal gerne
+kunne se udestående bøder … Det er fint med transparens"*, then *"så må alle også gerne
+se den øverste kasse"* — so **`/oekonomi` now shows every member everything on it**, the
+bank balance and the list of who is behind included. That retires the 2026-07-26
+decision that the balance was the treasurer's alone. RLS is unchanged: these were
+page-layer gates over data every member could already fetch. See PROJECT.md, 2026-07-30.
 
 The card leads with the club rather than with a member, and that is the tone
 decision: **the club has been late by 3 t 22 min in total, across 23 arrivals and
@@ -607,7 +613,8 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    Nobody owes a buy-in, so no receivable concept is needed.
 4. **Chase 200 kr. and decide about 730 kr.** — since T078 the 730 is on the page
    as its own figure rather than buried in a wrong total, stated once and with no
-   badge or nag, because whether to bill it is his call and not the app's. — Anders's July 2026 kontingent
+   badge or nag, because whether to bill it is his call and not the app's. Since
+   2026-07-30 the whole club can see it, which is a nudge no badge could be. — Anders's July 2026 kontingent
    (he has changed bank; the club's only outstanding kontingent) and the 730 kr.
    of fines a Lead noted and nobody billed. Neither is a code task; both are the
    treasurer's.

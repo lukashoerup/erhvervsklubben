@@ -493,6 +493,27 @@ without losing data and without taking the old site down until an approved cutov
   every other figure; `countMs()` decides per element rather than moving the global.
   Full argument and the sampled curve profiles: `design/README.md`.
 
+- **2026-07-30 — nothing on `/oekonomi` is gated by role any more.** Lukas, in two
+  messages: *"Alle medlemmer skal gerne kunne se udestående bøder på økonomisiden.
+  Det er fint med transparens."* and *"Når du nu er i gang, så må alle også gerne se
+  den øverste kasse på økonomisiden."*
+
+  The second sentence retires the 2026-07-26 entry above — *"not everyone should know
+  how much money is in the bank account"* — and it is his to retire: he is the
+  treasurer, and §8 already puts the accounts in front of the whole membership once a
+  year. The card is that §8 report, available the other 364 days.
+
+  It is better read as the 2026-07-27 entry finally landing. That one settled that
+  there is **no privacy line inside the membership**, but two in-page gates outlived
+  it: the balance card and the list of who still owes the fine box. Both are open now,
+  so the rule and the screen finally agree, and `Oekonomi.tsx` reads no role at all.
+
+  What did **not** change: RLS. `fines` and `payments` were already member-readable
+  and admin-writable, and `ADMIN_ONLY_TABLES` in `tests/rls/rules.ts` is untouched —
+  this was a page-layer gate over data every member could already fetch, which is
+  worth knowing before anyone reads it as a security change. Writing is still the
+  admin's.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

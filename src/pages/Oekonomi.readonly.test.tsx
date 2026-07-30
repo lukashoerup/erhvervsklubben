@@ -58,7 +58,14 @@ function renderPage(role: AuthState['role']) {
     ],
     attendances: ROSTER.map((name) => ({ record_id: 1, member_name: name, attended: true })),
     members: MEMBERS,
-    fines: [{ member_name: 'Mads', amount_kr: 200, record_id: 1 }],
+    // `rule_id` and `minutes` are NOT NULL in the real table, and this row had
+    // neither: the offence grouping keyed its bars on the rule, so a fixture
+    // without one produced a React key of `undefined` and a warning that looked
+    // like a defect in FineInsights. A fixture that cannot occur in production
+    // is not a cheaper fixture, it is a false alarm generator.
+    fines: [
+      { member_name: 'Mads', amount_kr: 200, record_id: 1, rule_id: 'for-sent', minutes: 30 },
+    ],
     payments: [{ month: '2026-06-01', amount_kr: 1800 }],
   }
   const value: AuthState = {

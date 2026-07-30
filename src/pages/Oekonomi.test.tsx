@@ -154,14 +154,41 @@ describe('who the finance graph is for', () => {
     expect(chart).toHaveAccessibleName(/klubben mangler 2\.610 kr\./)
   })
 
-  it('still keeps the bank balance and the debtor list with the treasurer', async () => {
+  // Lukas, 2026-07-30: "Når du nu er i gang, så må alle også gerne se den
+  // øverste kasse på økonomisiden." That reverses his 2026-07-26 decision that
+  // the bank balance was the treasurer's alone, so the assertion reverses with
+  // it — and it is asserted for the *member*, because that is the case that used
+  // to fail. Nothing on the page is gated by role now, which is what the second
+  // half checks: not one "kun kassereren" survives for anyone.
+  it('shows an ordinary member the club’s balance', async () => {
     aClubWithBooks()
     renderPage('user')
     await screen.findByRole('img', { name: CURVE })
-    expect(screen.queryByText(/kun kassereren/i)).not.toBeInTheDocument()
+    const kasse = screen.getByText(/Klubkassen/).closest('section')!
+    expect(within(kasse).getByText('3.600 kr.')).toBeInTheDocument()
 
-    renderPage('admin')
-    expect((await screen.findAllByText(/kun kassereren/i)).length).toBeGreaterThan(0)
+    for (const role of ['user', 'admin'] as const) {
+      renderPage(role)
+      expect(screen.queryByText(/kun kassereren/i)).not.toBeInTheDocument()
+    }
+  })
+
+  // Lukas, 2026-07-30: "Alle medlemmer skal gerne kunne se udestående bøder på
+  // økonomisiden. Det er fint med transparens." It was the treasurer's alone
+  // until then, and it is the only block on the page that names a member
+  // against a debt — so the assertion is that it is reachable *without* a role,
+  // not merely that it renders somewhere.
+  it('shows an ordinary member who still owes the fine box', async () => {
+    theImportedBooks()
+    renderPage('user')
+    await screen.findByRole('img', { name: CURVE })
+    const owed = screen.getByText(/Udestående bøder pr\. medlem/).closest('section')!
+    expect(within(owed).getByText('Mads')).toBeInTheDocument()
+    expect(within(owed).getByText('385 kr.')).toBeInTheDocument()
+    // The heading carried "· kun kassereren" until today, and a stale label on
+    // an open section is worse than a gate: it tells nine members not to read
+    // something they can see.
+    expect(owed).not.toHaveTextContent(/kun kasserer/i)
   })
 })
 

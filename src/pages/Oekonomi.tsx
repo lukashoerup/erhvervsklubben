@@ -259,8 +259,11 @@ export default function Oekonomi() {
   // Every member sees what the club holds and what it is owed. Who owes it is
   // the treasurer's business: a standing list naming who is behind turns a
   // shared account into a public debt notice at the table.
-  const { role } = useAuth()
-  const isTreasurer = role === 'admin'
+  // No role is read here any more. Since 2026-07-30 every block on this page is
+  // open to every member — the balance, the collection list and both charts —
+  // so a gate would be a lie about who the page is for. `RecordFines` and
+  // `MissingDates` still refuse a read-only build; that is a build flag, not a
+  // person.
 
   if (isPending) return <Loading what="klubkassen" />
   if (error) return <Problem />
@@ -367,47 +370,56 @@ export default function Oekonomi() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* The balance itself stays with the treasurer (Lukas, 2026-07-26: "not
-          everyone should know how much money is in the bank account"), while
-          the club's income against what it should have collected is for every
-          member (Lukas, 2026-07-27). Both hold at once — one is a bank
-          balance, the other is whether the club collects what it is owed. */}
-      {isTreasurer && (
-        <section data-reveal className="rounded-2xl border border-accent-d bg-surface p-4">
-          <Eyebrow>Klubkassen · kun kassereren</Eyebrow>
-          {/* The one figure on the page that is a balance rather than a series,
-              so it is the one set as display type — §04's scroll-scene does
-              exactly this with "13.150 kr." at 34 px in Instrument Serif. */}
-          <p className="ek-figure mt-2 text-[1.75rem] leading-none">{kr(received)}</p>
-          {/* Three figures where there used to be one, because there were always
-              three and the card named the wrong one. `Udestående` must be the
-              730 kr. the club has not been paid — never the 2.510 kr. it has
-              ever charged, of which 1.780 kr. has been in the bank since
-              February 2026.
+      {/* **The club's balance is now the club's business.** Lukas, 2026-07-30:
+          "Når du nu er i gang, så må alle også gerne se den øverste kasse på
+          økonomisiden."
 
-              Said as a sentence rather than as a second figure row: this card is
-              the one balance on the page (§ the Klubkassen note above), and
-              three tiles under it would read as four balances. */}
-          <p className="mt-2 text-xs leading-relaxed text-muted">
-            Indbetalt i alt. Bøder pålagt{' '}
-            <span className="tabular">{kr(totals.incurredKr)}</span>, heraf indbetalt{' '}
-            <span className="tabular">{kr(totals.collectedKr)}</span> — udestående{' '}
-            <span className="tabular font-semibold text-ink">{kr(totals.outstandingKr)}</span>.
+          That reverses his 2026-07-26 decision — "not everyone should know how
+          much money is in the bank account" — and it is his to reverse: he is
+          the treasurer, and §8 already puts the accounts in front of the whole
+          membership once a year. The card is what that §8 report says, available
+          the other 364 days. Recorded in PROJECT.md as a reversal rather than
+          quietly re-worded here, because the old decision is the reason the gate
+          existed and a future session will find both.
+
+          Nothing on this page is gated any more, which is why `role` no longer
+          reaches the render. */}
+      <section data-reveal className="rounded-2xl border border-accent-d bg-surface p-4">
+        <Eyebrow>Klubkassen</Eyebrow>
+        {/* The one figure on the page that is a balance rather than a series,
+            so it is the one set as display type — §04's scroll-scene does
+            exactly this with "13.150 kr." at 34 px in Instrument Serif. */}
+        <p className="ek-figure mt-2 text-[1.75rem] leading-none">{kr(received)}</p>
+        {/* Three figures where there used to be one, because there were always
+            three and the card named the wrong one. `Udestående` must be the
+            730 kr. the club has not been paid — never the 2.510 kr. it has
+            ever charged, of which 1.780 kr. has been in the bank since
+            February 2026.
+
+            Said as a sentence rather than as a second figure row: this card is
+            the one balance on the page (§ the Klubkassen note above), and
+            three tiles under it would read as four balances.
+
+            No full stop after the last figure: `kr()` ends in one, and the
+            sentence used to add a second — "730 kr.." on Lukas's own screen. */}
+        <p className="mt-2 text-xs leading-relaxed text-muted">
+          Indbetalt i alt. Bøder pålagt{' '}
+          <span className="tabular">{kr(totals.incurredKr)}</span>, heraf indbetalt{' '}
+          <span className="tabular">{kr(totals.collectedKr)}</span> — udestående{' '}
+          <span className="tabular font-semibold text-ink">{kr(totals.outstandingKr)}</span>
+        </p>
+        {/* The 730 kr. is not a rounding gap, it is three evenings nobody
+            billed (§15.1), and whether to collect it is Lukas's decision and
+            not the app's. So the card states the fact once and stops — no
+            badge, no red, no "husk at opkræve". A number that nags every time
+            he opens the page is a number he stops reading. */}
+        {totals.outstandingKr > 0 && (
+          <p className="mt-1.5 text-[0.68rem] leading-relaxed text-faint">
+            De <span className="tabular">{kr(totals.outstandingKr)}</span> er bøder, en Lead
+            har noteret, og som aldrig er blevet opkrævet.
           </p>
-          {/* The 730 kr. is not a rounding gap, it is three evenings nobody
-              billed (§15.1), and whether to collect it is Lukas's decision and
-              not the app's. So the card states the fact once and stops — no
-              badge, no red, no "husk at opkræve". A number that nags every time
-              he opens the page is a number he stops reading. */}
-          {totals.outstandingKr > 0 && (
-            <p className="mt-1.5 text-[0.68rem] leading-relaxed text-faint">
-              De{' '}
-              <span className="tabular">{kr(totals.outstandingKr)}</span> er bøder,
-              en Lead har noteret, og som aldrig er blevet opkrævet.
-            </p>
-          )}
-        </section>
-      )}
+        )}
+      </section>
 
       {READONLY && (
         <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
@@ -445,51 +457,54 @@ export default function Oekonomi() {
         budgetNotes={budgetNotes}
       />
 
-      {/* Both new cards sit outside every `isTreasurer` gate, and that is
-          Lukas's instruction rather than an oversight — 2026-07-30, twice in one
-          sentence: "Alle medlemmer skal kunne se det. Det samme med bøderne."
-          What stays the treasurer's is the bank balance and the list of who is
-          still behind; what the club is like is the club's. */}
+      {/* Open to every member, and that is Lukas's instruction rather than an
+          oversight — 2026-07-30, twice in one sentence: "Alle medlemmer skal
+          kunne se det. Det samme med bøderne." Later the same day he opened the
+          last two blocks as well, so there is no longer anything on this page a
+          member cannot read. */}
       <FineInsights fines={data.fines} />
 
       <RecordFines />
       <MissingDates />
 
-      {/* The treasurer's collection list, and it is now what its name says.
-          It used to be `balancesByMember` over every fine ever incurred under
-          the heading "Bøder pr. medlem", on a card next to the word udestående —
-          the same conflation as the balance card, one screen down: it invited
-          the treasurer to bill a member for fines the man paid in February.
-          What a collection list has to contain is what is still owed.
+      {/* The collection list, and it is now what its name says. It used to be
+          `balancesByMember` over every fine ever incurred under the heading
+          "Bøder pr. medlem", on a card next to the word udestående — the same
+          conflation as the balance card, one screen down: it invited the
+          treasurer to bill a member for fines the man paid in February. What a
+          collection list has to contain is what is still owed.
 
-          Who has been fined *at all* is not lost — it is the chart below, which
-          every member can see. This card is the subset that is unpaid, and it
-          stays the treasurer's because a standing list naming who is behind
-          turns a shared account into a public debt notice at the table. */}
-      {isTreasurer && (
-        <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
-          <SectionTitle onCard>Udestående bøder pr. medlem · kun kassereren</SectionTitle>
-          {stillOwed.length === 0 ? (
-            <p className="mt-3 text-xs text-muted">
-              {totals.incurred === 0
-                ? 'Ingen bøder registreret endnu.'
-                : 'Alle registrerede bøder er betalt.'}
-            </p>
-          ) : (
-            <ul className="mt-2">
-              {stillOwed.map((o) => (
-                <li
-                  key={o.member}
-                  className="flex items-baseline justify-between border-b border-line py-2 text-xs last:border-0"
-                >
-                  <span>{o.member}</span>
-                  <span className="ek-figure text-[0.95rem]">{kr(o.kr)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+          **Every member, not the treasurer alone.** Lukas, 2026-07-30: "Alle
+          medlemmer skal gerne kunne se udestående bøder på økonomisiden. Det er
+          fint med transparens."
+
+          It is the one block on this page that names a member against a debt,
+          which is why it was gated in the first place. His call to open it, and
+          it is a defensible one in a club of ten: the fine box is funded by the
+          members, the insight chart above already names who the offences belong
+          to, and a debt the table can see is a debt that settles itself. */}
+      <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
+        <SectionTitle onCard>Udestående bøder pr. medlem</SectionTitle>
+        {stillOwed.length === 0 ? (
+          <p className="mt-3 text-xs text-muted">
+            {totals.incurred === 0
+              ? 'Ingen bøder registreret endnu.'
+              : 'Alle registrerede bøder er betalt.'}
+          </p>
+        ) : (
+          <ul className="mt-2">
+            {stillOwed.map((o) => (
+              <li
+                key={o.member}
+                className="flex items-baseline justify-between border-b border-line py-2 text-xs last:border-0"
+              >
+                <span>{o.member}</span>
+                <span className="ek-figure text-[0.95rem]">{kr(o.kr)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* "længere nede", as asked (Lukas, 2026-07-30) — under the curve and the
           fine insights, above the two ledger tables it is a summary of. */}
