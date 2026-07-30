@@ -490,7 +490,11 @@ describe('the calendar and the fines, now that /moeder is gone', () => {
 
   it('shows a member what is planned, on the page that survived', async () => {
     renderPage('user')
-    expect(await screen.findByText('Erhvervsklub #29')).toBeInTheDocument()
+    // By its heading, which for a plain numbered title is the venue — the card
+    // and the held meetings below now share one head (MeetingHead), at Lukas's
+    // word: "planlagte møder skal fremgå som de tidligere. Blot uden anciennitet."
+    expect(await screen.findByText('Frk. Barners')).toBeInTheDocument()
+    expect(screen.getByText('29')).toBeInTheDocument()
     expect(screen.getByText('Planlagte møder')).toBeInTheDocument()
     // The calendar's own editing is the admin's, exactly as it was on /moeder.
     expect(

@@ -2,8 +2,8 @@ import { useAuth } from '../auth/AuthContext'
 import { useEvents, type EventItem } from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
 import { daDate, todayISO } from '../lib/dates'
-import { DateRail } from './DateRail'
 import { Icon } from './Icon'
+import { MeetingHead } from './MeetingCard'
 import { SectionTitle } from './SectionTitle'
 import {
   blankDraft,
@@ -42,6 +42,52 @@ const draftOf = (e: EventItem): Draft => ({
 })
 
 const blank = () => blankDraft(FIELDS, { date: todayISO() })
+
+/** Short month, so the date sits in one line beside the heading. As MeetingCard. */
+const SHORT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
+
+/**
+ * A calendar entry, read as the same three things a held meeting is read as: a
+ * number, a name for the evening, and a date.
+ *
+ * The club writes its meeting number into the *title* — "Erhvervsklub #29",
+ * "Erhvervsklub #25 JUBILÆUM" — so the figure is lifted out of it and what remains
+ * becomes the heading. Where nothing remains (the ordinary case, the club's own
+ * name and a number) the venue takes over, which is what a member opening the
+ * calendar actually wants and is the same slot the lead occupies behind.
+ *
+ * Titles with no number at all — "Generalforsamling 2026", "Udarbejdelse af
+ * vedtægtsudkast" — keep their whole title as the heading and take the day of the
+ * month as the figure. Those are the entries where the title *is* the information.
+ *
+ * **This reads the number, it never joins on it.** T071 established that the
+ * club's own numbering ran a meeting ahead of the database's through the middle of
+ * the history, so "#20" is not record 20 — which is why the 2026-07-30 backfill
+ * matched on dates and leads instead. Printing the club's own label back to the
+ * club is a different act from using it as a key.
+ */
+/**
+ * The club's own word for "a meeting", which every numbered title opens with —
+ * "Erhvervsklub #29", "Møde #30". Stripped from the heading because the figure
+ * beside it has already said which meeting this is, and a card labelled
+ * "Erhvervsklub" in the club's own app labels nothing.
+ */
+const GENERIC = /^\s*(erhvervsklub(ben)?|m(ø|oe)de(t)?)\b/i
+
+export function calendarHead(e: EventItem): { figure: string; heading: string } {
+  const numbered = e.title.match(/#\s*(\d+)/)
+  if (!numbered) {
+    return { figure: e.date.slice(8, 10).replace(/^0/, ''), heading: e.title }
+  }
+  // What the club said about this evening beyond naming and numbering it.
+  // "Erhvervsklub #25 JUBILÆUM" keeps JUBILÆUM, because that is exactly the sort
+  // of thing that must survive; "Erhvervsklub #29" keeps nothing and stands aside
+  // for the venue. Only the leading club word goes — anything else is kept, which
+  // is why the pattern is one short anchored alternation rather than a list that
+  // would start eating real titles.
+  const rest = e.title.replace(numbered[0], ' ').replace(GENERIC, ' ').replace(/\s+/g, ' ').trim()
+  return { figure: numbered[1], heading: rest || e.location || 'Sted endnu ikke sat' }
+}
 
 /**
  * The club's calendar — what is planned, and what is on the books behind.
@@ -111,61 +157,66 @@ export function Moedekalender() {
     />
   )
 
-  const card = (e: EventItem, next: boolean, ahead: boolean) => (
-    <article
-      key={e.id}
-      data-reveal
-      /* 1.5px blue on the next one — the design system marks the live row by
-         border weight, never by fill. */
-      className={`rounded-2xl border bg-surface p-4 ${next ? 'border-[1.5px] border-accent' : 'border-line'}`}
-    >
-      {/* The date is the card's face rather than a 10 px line above its title:
-          what a member scans a calendar for is *when*, so the day is a 26 px
-          serif numeral in a rail with the time under it. The rail's hairline
-          carries the club's blue while the meeting is still ahead and the
-          ordinary line once it has been held. See components/DateRail.tsx. */}
-      <div className="flex gap-3">
-        <DateRail iso={e.date} time={e.time} ahead={ahead} />
-        <div className="min-w-0 flex-1">
-          <h3 className="text-[0.95rem] leading-snug font-semibold">{e.title}</h3>
-          {/* The venue on its own line with the set's pin, blue because §04
-              draws `place` in #2563EB by name — an icon is a mark, not an
-              emphasis (T072).
+  const card = (e: EventItem, next: boolean) => {
+    const { figure, heading } = calendarHead(e)
+    // The venue is the heading in the ordinary case, so printing it again below
+    // would be the same fact twice on a card four lines tall.
+    const place = e.location && e.location !== heading ? e.location : null
+    return (
+      <article
+        key={e.id}
+        data-reveal
+        /* 1.5px blue on the next one — the design system marks the live row by
+           border weight, never by fill. */
+        className={`rounded-2xl border bg-surface p-4 ${next ? 'border-[1.5px] border-accent' : 'border-line'}`}
+      >
+        {/* The same head as a held meeting, from the same component. Lukas,
+            2026-07-30: "Synes bare at planlagte møder skal fremgå som de
+            tidligere. Blot uden anciennitet." These cards arrived from /moeder
+            with a 26 px date rail down the left, and sitting above the history on
+            one page that read as two different products. What a planned meeting
+            has that a held one has not is the *time*, so that is what rides
+            beside the date. */}
+        <MeetingHead
+          figure={figure}
+          heading={heading}
+          aside={`${daDate(e.date, SHORT)}${e.time ? ` · ${e.time}` : ''}`}
+        />
 
-              **This row is where the map will live.** Lukas, 2026-07-29: "vi
-              skal have et kort, som viser alle steder vi har været implementeret
-              på længere sigt." Given its own row, its own icon and the full
-              width of the card, it can become a link or a chip without the card
-              being rebuilt around it. Nothing here reaches for a map today and
-              no dependency was added for one.
+        {/* Where the held card puts its route. The pin is blue because §04 draws
+            `place` in #2563EB by name — an icon is a mark, not an emphasis (T072).
 
-              Stated rather than left blank: the venue is usually settled after
-              the date, so an empty line reads as a page that failed to load. */}
-          <p className="mt-2 flex items-baseline gap-1.5 text-xs">
+            **This row is where the map will live.** Lukas, 2026-07-29: "vi skal
+            have et kort, som viser alle steder vi har været implementeret på
+            længere sigt." Given its own row and the full width of the card, it can
+            become a link or a chip without the card being rebuilt around it.
+            Nothing here reaches for a map today and no dependency was added. */}
+        {place && (
+          <p className="mt-2.5 flex items-baseline gap-1.5 text-xs">
             <Icon name="place" className="shrink-0 text-sm text-accent" />
-            <span className={e.location ? 'font-medium text-ink' : 'text-faint'}>
-              {e.location || 'Sted endnu ikke sat'}
-            </span>
+            <span className="font-medium text-ink">{place}</span>
           </p>
-          {e.description && (
-            <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{e.description}</p>
-          )}
-        </div>
-      </div>
+        )}
+        {e.description && (
+          <p className="mt-2 text-[0.8rem] leading-relaxed text-muted">{e.description}</p>
+        )}
 
-      {mayEdit && (
-        <div className="mt-3 flex flex-wrap items-start gap-2">
-          <EditButton onClick={() => editor.edit(e.id, draftOf(e))} />
-          <DeleteConfirm
-            what={`${e.title} · ${daDate(e.date)}`}
-            onDelete={() => editor.remove(e.id)}
-            pending={editor.removing(e.id)}
-            failed={editor.removeFailed(e.id)}
-          />
-        </div>
-      )}
-    </article>
-  )
+        {mayEdit && (
+          <div className="mt-3 flex flex-wrap items-start gap-2">
+            <EditButton onClick={() => editor.edit(e.id, draftOf(e))} />
+            <DeleteConfirm
+              // The title, not the derived heading: this asks about a row, and the
+              // row is what the club typed.
+              what={`${e.title} · ${daDate(e.date)}`}
+              onDelete={() => editor.remove(e.id)}
+              pending={editor.removing(e.id)}
+              failed={editor.removeFailed(e.id)}
+            />
+          </div>
+        )}
+      </article>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -189,7 +240,7 @@ export function Moedekalender() {
         </p>
       ) : (
         planned.map((e, i) =>
-          mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0, true),
+          mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0),
         )
       )}
 
@@ -203,7 +254,7 @@ export function Moedekalender() {
               with a mistyped — and therefore past — date can be reached on, so
               an admin still gets Rediger and Slet on every one of them. */}
           <div className="flex flex-col gap-2.5 border-t border-line p-4">
-            {held.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false, false)))}
+            {held.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false)))}
           </div>
         </details>
       )}

@@ -137,25 +137,29 @@ export const demoNews: NewsItem[] = [
 export const demoEvents: EventItem[] = [
   {
     id: 'u1',
-    title: 'Møde #29',
+    title: 'Erhvervsklub #29',
     date: new Date(Date.now() + 18 * 864e5).toISOString().slice(0, 10),
-    time: '18:30',
-    location: '',
+    time: '18.30',
+    // Named on the nearer one and unset on the further: §9 has the lead calling a
+    // meeting two weeks ahead, so both states are real and the card has to read
+    // in each. Titled the way the club titles them, so `calendarHead` is exercised
+    // by the demo rather than only by its tests.
+    location: 'Frk. Barners',
     description: 'Oskar lægger op.',
   },
   {
     id: 'u2',
-    title: 'Møde #30',
+    title: 'Erhvervsklub #30',
     date: new Date(Date.now() + 79 * 864e5).toISOString().slice(0, 10),
-    time: '18:30',
+    time: '18.30',
     location: '',
     description: 'Lukas lægger op.',
   },
   {
     id: 'p1',
-    title: 'Møde #28',
+    title: 'Erhvervsklub #28 JUBILÆUM',
     date: new Date(Date.now() - 44 * 864e5).toISOString().slice(0, 10),
-    time: '18:30',
+    time: '18.30',
     location: 'Propaganda',
     description: 'Esben lagde op. Otte af ti mødte frem.',
   },
@@ -163,7 +167,7 @@ export const demoEvents: EventItem[] = [
     id: 'p2',
     title: 'Generalforsamling 2026',
     date: new Date(Date.now() - 98 * 864e5).toISOString().slice(0, 10),
-    time: '17:00',
+    time: '17.00',
     location: 'Tivolihallen',
     description: 'Kontingentet blev fordoblet med virkning fra juni.',
   },

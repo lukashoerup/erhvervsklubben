@@ -83,6 +83,28 @@ cannot — **meetings still ahead** (#29 and #30 are planned and dated; without 
 the club's next meeting is unchangeable, on the front page as much as here) and
 **a held meeting whose record has no date** (#20's description lives here).
 
+**3b. And the planned cards read as the same object as the held ones.** Lukas, on
+seeing the merge: *"Synes bare at planlagte møder skal fremgå som de tidligere.
+Blot uden anciennitet."* He was right and it was the obvious flaw — the calendar's
+cards had come across from `/moeder` with their own layout, a 26 px date rail down
+the left, and two renderings of "a meeting" stacked on one page is exactly how this
+app once came to look like two products.
+
+The head row is now one component, `MeetingHead`, used by both: serif figure,
+heading, date, blue streg. What differs is what the two *contain*, which is real —
+a held meeting has its route, its attendance and its fines; a planned one has its
+time and its venue, and no anciennitet at all.
+
+The figure and heading for a planned meeting come from `calendarHead`, which reads
+the club's own title: `Erhvervsklub #29` → **29** and the venue, `Erhvervsklub #25
+JUBILÆUM` → **25** and *JUBILÆUM*, `Generalforsamling 2026` → the day of the month
+and the whole title. Only the leading club word is stripped, and only when a number
+is present — strip one word more and the club's 25th meeting stops saying it was its
+jubilee, which is a silent failure on a card that still looks fine, so the rule has
+its own tests against all four title shapes production holds. **It reads the number,
+it never joins on it**: printing the club's own label back to the club is a
+different act from using it as a key, which T071 forbade.
+
 **4. `/moeder` is gone** — the route, the tab, the page and its import. Five
 columns in the tab bar instead of six. `pages/Moeder.test.tsx` moved to
 `components/Moedekalender.test.tsx` with its 16 assertions intact; only the
@@ -97,7 +119,7 @@ rather than two that can drift.
 
 ## Verification
 
-* Tests **393 → 402**. New: the card's disclosure (five cases, including the
+* Tests **393 → 408**. New: the card's disclosure (five cases, including the
   empty one), the page-level merge (four, one of which asserts the *order* of the
   page rather than its contents — a merge that quietly reorders the club's longest
   page has broken the instruction even with every feature present), and the

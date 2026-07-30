@@ -31,7 +31,7 @@ function renderAsAdmin(page: keyof typeof PAGES) {
       { id: 'n1', title: 'Sommerfest 2026', excerpt: 'Hos Saaby.', author: 'Saaby', date: '2026-06-09' },
     ],
     events: [
-      { id: 'e1', title: 'Møde #29', date: '2026-08-13', time: '18.30', location: 'Propaganda', description: '' },
+      { id: 'e1', title: 'Erhvervsklub #29', date: '2099-08-13', time: '18.30', location: 'Propaganda', description: '' },
     ],
     attendance_records: [
       {
@@ -77,8 +77,13 @@ describe('a read-only preview', () => {
 
   it('still shows the calendar, and offers no way to change it', async () => {
     renderAsAdmin('kalender')
-    expect(await screen.findByText('Møde #29')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Nyt møde' })).not.toBeInTheDocument()
+    // By its heading: a plain numbered title puts the number in the serif slot
+    // and the venue in the heading (`calendarHead`), so no element holds the
+    // title text. The date is far ahead so the card stays in the planned half.
+    expect(await screen.findByText('Propaganda')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Nyt møde i kalenderen' }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
   })

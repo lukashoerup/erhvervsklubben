@@ -15,6 +15,58 @@ export type MeetingFine = {
   amount_kr: number
 }
 
+/**
+ * The head of a meeting card: a serif figure, a heading, a date, and the club's
+ * blue streg under all three.
+ *
+ * Its own component because two different kinds of meeting now sit on one page.
+ * Lukas, 2026-07-30, having seen the merge: *"Synes bare at planlagte møder skal
+ * fremgå som de tidligere. Blot uden anciennitet."* The calendar's cards had come
+ * across from `/moeder` with their own layout — a 26 px date rail down the left —
+ * and two renderings of "a meeting" on one screen is exactly how this app once
+ * came to look like two products.
+ *
+ * So the identity lives here rather than being written twice and kept in step by
+ * hand: a planned meeting and a held one now differ in what they *contain*, which
+ * is real, and in nothing else.
+ *
+ * - **figure** — the number you scan for. The meeting number behind, and the
+ *   number the club gave the evening ahead.
+ * - **aside** — the date, or "uden dato" for the eleven that never got one.
+ */
+export function MeetingHead({
+  figure,
+  heading,
+  aside,
+}: {
+  figure: ReactNode
+  heading: string
+  aside: string
+}) {
+  return (
+    <div className="relative flex items-baseline gap-2.5">
+      {/* /anciennitet is the club's rhythm — twenty-eight evenings, one after
+          another — and the figure is the only thing that changes at the same
+          place on every card. It was 15 px of the same blue as the section labels
+          and the links, so it read as one more emphasis rather than as the count
+          it is. Serif at 20 px, in ink: the beat is legible from a thumb-scroll,
+          and the blue it gives up is on the streg below, where §01 puts the
+          club's signature. */}
+      <span className="ek-figure text-[1.25rem] leading-none">{figure}</span>
+      <h3 className="min-w-0 text-[0.92rem] font-semibold">{heading}</h3>
+      <span className="tabular ml-auto shrink-0 text-[0.65rem] text-faint">{aside}</span>
+      {/* "Én blå streg som signatur" (§01), giving every card a masthead.
+          Absolute, so it costs no height on the longest page in the app: it lands
+          in the gap the line under it already leaves.
+
+          Not drawn, though the drawing was built and measured. Animating this one
+          extra element per card cost Anciennitet 7 fps at a 6× CPU throttle, and
+          almost all of what the rule gives the card it gives by being there. */}
+      <span aria-hidden="true" className="absolute -bottom-1 inset-x-0 h-px bg-accent/30" />
+    </div>
+  )
+}
+
 /** Short month, because 29 of these stack down a phone. The year stays. */
 const SHORT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
 
@@ -94,31 +146,11 @@ export function MeetingCard({
        scroll itself: the cards enter one after another because they are
        stacked, so the thumb supplies the offset. */
     <article data-reveal className="rounded-2xl border border-line bg-surface p-4">
-      <div className="relative flex items-baseline gap-2.5">
-        {/* The meeting's number, and the page's face.
-            /anciennitet is the club's rhythm — twenty-nine evenings, one after
-            another, and the number is the only thing that changes at the same
-            place on every card. It was 15 px of the same blue as the section
-            labels and the links, so it read as one more emphasis rather than as
-            the count it is. Serif at 20 px, in ink: the beat is now legible
-            from a thumb-scroll, and the blue it gives up is on the streg under
-            the lead's name, where §01 puts the club's signature. */}
-        <span className="ek-figure text-[1.25rem] leading-none">{meeting.number}</span>
-        <h3 className="text-[0.92rem] font-semibold">{meeting.lead || 'Ukendt lead'}</h3>
-        <span className="tabular ml-auto text-[0.65rem] text-faint">
-          {meeting.date ? daDate(meeting.date, SHORT) : 'uden dato'}
-        </span>
-        {/* The club's signature blue streg — "én blå streg som signatur" (§01)
-            — under the meeting's name, giving each of the twenty-nine cards a
-            masthead. Absolute, so it costs no height on the longest page in the
-            app: it lands in the gap the route line already leaves.
-
-            Not drawn, though the drawing was built and measured. Animating this
-            one extra element per card cost Anciennitet 7 fps at a 6× CPU
-            throttle, and almost all of what the rule gives the card it gives by
-            being there. */}
-        <span aria-hidden="true" className="absolute -bottom-1 inset-x-0 h-px bg-accent/30" />
-      </div>
+      <MeetingHead
+        figure={meeting.number}
+        heading={meeting.lead || 'Ukendt lead'}
+        aside={meeting.date ? daDate(meeting.date, SHORT) : 'uden dato'}
+      />
 
       {/* The step between venues was a literal → — which is how §04's own
           Anciennitet mock writes it, and which neither Instrument subset
