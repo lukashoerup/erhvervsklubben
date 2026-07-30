@@ -70,28 +70,24 @@ describe('the landing animation', () => {
     // Covers the members' reveals too: ek-reveal and ek-bar are matched by the
     // same @keyframes sweep below.
     // The design system's own rule: "Kun opacity og transform, så det kører
-    // 60 fps på telefonen." Two sanctioned exceptions, and both are gestures no
-    // transform can express rather than conveniences:
+    // 60 fps på telefonen." **One** sanctioned exception now, and it is a
+    // gesture no transform can express rather than a convenience: letter-spacing,
+    // the wordmark tightening in the logo intro, which §01 asks for by name.
     //
-    //   letter-spacing — the wordmark tightening in the logo intro, which §01
-    //   asks for by name;
-    //   stroke-dashoffset — the finance curves drawing themselves in (T073,
-    //   Lukas: "Så linjerne sådan kommer frem, når man åbner siden"). Two paths
-    //   inside one SVG layer on one screen, and nothing in a list.
+    // stroke-dashoffset was the second, for the finance curves drawing
+    // themselves in (T073). T077 replaced that with one clipped edge sweeping up
+    // from the baseline — scaling a rect is a transform — so the exception is
+    // gone rather than left standing over nothing. A stale exception is worse
+    // than none: it is a licence the next pass finds already granted.
     //
-    // Neither is layout: the rule exists because height, top and margin
-    // reflow, and these do not. Anything *else* appearing here does.
+    // letter-spacing is not layout either: the rule exists because height, top
+    // and margin reflow, and it does not. Anything *else* appearing here does.
     const inside = [...css.matchAll(/@keyframes ek-[a-z-]+\s*\{([\s\S]*?)\n\}/g)]
     expect(inside.length).toBeGreaterThan(0)
     const props = new Set(
       inside.flatMap((m) => [...m[1].matchAll(/^\s{4}([a-z-]+):/gm)].map((p) => p[1])),
     )
-    expect([...props].sort()).toEqual([
-      'letter-spacing',
-      'opacity',
-      'stroke-dashoffset',
-      'transform',
-    ])
+    expect([...props].sort()).toEqual(['letter-spacing', 'opacity', 'transform'])
   })
 })
 
@@ -239,14 +235,17 @@ describe('the members’ reveals', () => {
   }))
 
   it('leaves the bare attribute selecting nothing that could hide content', () => {
-    // The one property that can make the club's history disappear, and the one
-    // selector a browser reaches without any script having run.
+    // The properties that can make the club's history disappear, and the
+    // selectors a browser reaches without any script having run. `data-draw`
+    // joined the sweep here in T077: a collapsed clip over the plot is the
+    // finance chart gone, and `[data-draw]` bare is what React renders.
     const bare = rules.filter((r) =>
-      /(^|,\s*)\[data-(reveal|bar)\](\s|,|$)/.test(r.selector),
+      /(^|,\s*)\[data-(reveal|bar|draw)\](\s|,|$)/.test(r.selector),
     )
+    expect(bare.length).toBeGreaterThan(0)
     for (const r of bare) {
       expect(r.body, `${r.selector} hides content with no script involved`).not.toMatch(
-        /opacity:\s*0|scale[XY]?\(0|animation(-name)?:\s*ek-/,
+        /opacity:\s*0|scale[XY]?\(0|animation(-name)?:\s*ek-|clip-path:\s*url/,
       )
     }
   })
@@ -267,31 +266,51 @@ describe('the members’ reveals', () => {
   })
 
   /**
-   * The curve's own hiding property, which the opacity sweep above cannot see.
+   * The sweep's own hiding property, which the opacity sweep above cannot see.
    *
-   * A path with `stroke-dashoffset` equal to its length is invisible exactly
-   * the way `opacity: 0` is, so it needs the same guarantee — and one more
-   * besides: `--ek-len` is written by lib/reveal.ts *after* the geometry
-   * answered, so every rule that uses it has to name a fallback that draws the
-   * club's finances whole. An unmeasured path, a thrown observer, jsdom, no
-   * script at all: `none` and `0` are a complete line.
+   * A clip collapsed to the baseline hides the plot exactly the way
+   * `opacity: 0` hides a card, so it needs the same guarantee — and T077 can
+   * give it the strong form T073 could not. There is nothing to measure now, so
+   * the clip is scoped to a state `arm()` sets *after* `observe()` returned on
+   * that element. No script, an old browser, a thrown observer, jsdom, a curve
+   * recharts inserted late: the plot is simply never clipped.
+   *
+   * The reduced-motion block is the one place `clip-path` may appear
+   * unconditionally, and only as `none` — see the test below it.
    */
-  it('never leaves a curve short of its own length', () => {
-    const dashed = rules.filter((r) => /stroke-dash(array|offset):/.test(r.body))
-    expect(dashed.length).toBeGreaterThan(0)
-    for (const r of dashed) {
-      // The reduced-motion block undraws the dashes outright, and says so in
-      // literals rather than through the variable.
-      if (/stroke-dasharray:\s*none/.test(r.body) && /stroke-dashoffset:\s*0/.test(r.body)) continue
-      expect(r.selector, `${r.selector} chops a curve with no script involved`).toMatch(
+  it('never clips the plot except while something is uncovering it', () => {
+    const clipped = rules.filter((r) => /clip-path:/.test(r.body))
+    expect(clipped.length).toBeGreaterThan(0)
+    for (const r of clipped) {
+      if (/clip-path:\s*none/.test(r.body)) continue
+      expect(r.selector, `${r.selector} clips the plot with no script involved`).toMatch(
         /\[data-draw='(armed|in)'\]/,
       )
-      for (const use of r.body.matchAll(/var\(([^)]*)\)/g)) {
-        expect(use[1], `${r.selector} has no fallback for an unmeasured curve`).toMatch(
-          /--ek-len,\s*(none|0)/,
-        )
-      }
     }
+  })
+
+  /**
+   * The sweep is a transform, and that is the point of it.
+   *
+   * T073 drew the curves with `stroke-dashoffset` and had to buy its safety from
+   * CSS fallbacks — `--ek-len` was written by lib/reveal.ts after the geometry
+   * answered, so every rule using it named a default that drew a complete line.
+   * Both are gone. This fails if either comes back without the machinery and the
+   * sanctioned exception that went with it.
+   */
+  it('draws the chart with a transform rather than a dash offset', () => {
+    expect(sheet).not.toMatch(/stroke-dash(array|offset)/)
+    expect(sheet).not.toMatch(/--ek-len/)
+    const armed = rules.find((r) => r.selector === "[data-draw='armed'] .ek-sweep")
+    expect(armed, 'no armed state for the sweep').toBeDefined()
+    expect(armed!.body).toMatch(/transform:\s*scaleY\(0\)/)
+    // The pivot lives on the element, not in the keyframe, so the finished state
+    // stays the element's own plain CSS — the same shape .ek-rail and [data-bar]
+    // use.
+    const el = rules.find((r) => r.selector === '.ek-sweep')
+    expect(el, 'no .ek-sweep rule').toBeDefined()
+    expect(el!.body).toMatch(/transform-origin:\s*bottom/)
+    expect(el!.body).toMatch(/transform-box:\s*fill-box/)
   })
 
   it('plays on a clock now, not a scroll timeline', () => {
@@ -300,7 +319,7 @@ describe('the members’ reveals', () => {
     // brings its @supports guard and its silent no-op with it.
     expect(sheet).not.toMatch(/animation-timeline/)
     expect(sheet).not.toMatch(/@supports \(animation-timeline/)
-    for (const state of ["[data-reveal='in']", "[data-bar='in']"]) {
+    for (const state of ["[data-reveal='in']", "[data-bar='in']", "[data-draw='in'] .ek-sweep"]) {
       const rule = rules.find((r) => r.selector === state)
       expect(rule, `no rule for ${state}`).toBeDefined()
       // §01: "Element · reveal 700 ms", "Kurve .16, 1, .3, 1".
@@ -318,5 +337,16 @@ describe('the members’ reveals', () => {
     expect(rule![1]).toMatch(/animation:\s*none/)
     expect(rule![1]).toMatch(/opacity:\s*1/)
     expect(rule![1]).toMatch(/transform:\s*none/)
+    // The chart's own pair. `clip-path: none` is the one that matters: an
+    // element already armed when the preference is switched on mid-session would
+    // otherwise keep a collapsed clip with no observer left to open it, which is
+    // the club's finances gone rather than merely still.
+    const plot = block[1].match(/\[data-draw\] \.ek-plot\s*\{([^}]*)\}/)
+    expect(plot, 'the plot keeps its clip under reduced motion').not.toBeNull()
+    expect(plot![1]).toMatch(/clip-path:\s*none/)
+    const sweep = block[1].match(/\[data-draw\] \.ek-sweep\s*\{([^}]*)\}/)
+    expect(sweep, 'the sweep keeps its start state under reduced motion').not.toBeNull()
+    expect(sweep![1]).toMatch(/animation:\s*none/)
+    expect(sweep![1]).toMatch(/transform:\s*none/)
   })
 })

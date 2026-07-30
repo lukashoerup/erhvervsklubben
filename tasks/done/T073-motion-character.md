@@ -18,6 +18,18 @@ name, all of them already in §01 Bevægelse.
 > "Det kunne også være fedt med noget motion på finansgrafen. Så linjerne sådan
 > kommer frem, når man åbner siden."
 
+> **Superseded by T077 (2026-07-30).** The mechanism below — a dash-offset draw
+> per path, then the band, the dots and the forecast in a queue — is gone. Lukas,
+> on seeing it: *"Nu kommer den ind sådan i stykker (en linje ad gangen), hvilket
+> får det til at se lidt ud som om at den blot loader langsomt."* He is right, and
+> the diagnosis is the sequencing rather than the easing: five marks arriving one
+> after another is what a slow page load looks like. The plot is now uncovered by
+> one clipped edge travelling up from the baseline (`.ek-sweep`), in one duration
+> on one curve. `--ek-len`, `getTotalLength()`, the four staggered delays and the
+> `stroke-dashoffset` exception are all removed. **What survives from this section
+> is the timing** — 900 ms on `.16 1 .3 1`, and the three figures landing with the
+> gesture, which Lukas liked and which T077 kept exactly.
+
 900 ms on `.16 1 .3 1` — the timing §01 gives the count-up and the bars, not the
 700 ms it gives a card, because a drawn line is one quantity being read out
 rather than an element arriving. `data-draw` sits on the plot rather than on the
@@ -39,6 +51,13 @@ is not what the club's books did. Lines first, gap filled in behind them at
 620 ms, end dots at 780 ms with the lines that reach them, dashed forecast last
 at 900 ms — the only mark on the chart that has not happened yet. All four of
 those are opacity.
+
+> **T077: the objection was right and the answer was wrong.** A dash-offset draw
+> does show the gap between two unfinished curves, so this argument held against
+> *that* mechanism. A clip never shows an unfinished shape — every frame of the
+> sweep is a horizontal slice of the finished chart, and nothing on it is a value
+> on its way somewhere. The band arrives with everything else because the reason it
+> could not has been removed, not overruled.
 
 ### 2. More motion on the numbers
 > "Og lidt mere motion på tallene."
@@ -84,11 +103,18 @@ The year on the rail appears only when it is not the current one — the trap
   two paths inside one SVG layer on one screen, none of them in a list.
   `theme.test.ts` asserts the exception by name so a third cannot arrive
   quietly.
+  > **Withdrawn by T077.** Scaling a clip rect is a transform, so the gesture
+  > needs no exception at all — and `theme.test.ts` now asserts one sanctioned
+  > property rather than two. The exception was removed rather than left standing
+  > over nothing: a stale exception is a licence the next pass finds granted.
 - **The draw's guarantee is a fallback, not an ordering.** `arm()`'s
   observe-then-hide cannot cover these paths: recharts inserts them some frames
   after React commits the card. Every rule that hides a curve names a default
   instead — `stroke-dasharray: none`, `stroke-dashoffset: 0`, a complete line —
   and `theme.test.ts` fails if one ever uses `--ek-len` without one.
+  > **T077 got the ordering back**, which is the stronger form. Nothing per-path
+  > is measured any more, so the only rule that clips the plot is scoped to
+  > `[data-draw='armed']` — set after `observe()` returned on that element.
 - **The venue row is where the map goes, and that is the whole of the room left
   for it.** Lukas: *"Derudover skal vi have et kort, som viser alle steder vi
   har været implementeret på længere sigt."* Before this the venue was one muted
@@ -138,6 +164,11 @@ screens — the same sweep T066 and T072 used, same machine, same session.
 - **The count-up and the draw, sampled per frame** on `/oekonomi`: figures step
   6.210 → 2.265 → 4.385 → … → 6.210 kr. and dash offsets 145 px → 0 over
   ~900 ms, landing exactly on the string React rendered.
+  > T077 re-measured the pairing against the sweep: full at +900 ms from `in`,
+  > figures landing at +927. Still together, and for a reason worth knowing —
+  > `show()` writes §01's stagger onto the element it fires, and `data-draw`
+  > animates a descendant, so neither the plot nor the count-up takes one.
+  > `lib/reveal.ts` says so beside the line that writes it.
 - **Reduced motion**: figures at their final value, curves at full length, no
   element ever armed. Asserted in `reveal.test.ts` and in the sweep, which runs
   with `reducedMotion: 'reduce'`.
@@ -150,6 +181,8 @@ every measurement above is Chromium. What that leaves unproven is narrow:
 `--ek-len` into the draw. Its failure mode is benign in the direction that
 matters — an unresolvable `var()` makes `stroke-dashoffset` invalid, the
 animation's from-value falls back to the computed value, and the curve appears
-whole with no draw. Everything else here (`getTotalLength`, custom properties
+whole with no draw. *(T077: still unavailable — the download host answers 403,
+"host not permitted", by egress policy. What is unproven there is now
+`transform-box: fill-box`; see `design/README.md`.)* Everything else here (`getTotalLength`, custom properties
 set on an element, dash animation on an SVG path, `IntersectionObserver`) has
 been in iOS Safari for a decade. **It wants Lukas's eye on a phone.**

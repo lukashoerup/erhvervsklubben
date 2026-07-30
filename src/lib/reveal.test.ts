@@ -393,35 +393,32 @@ describe('the figures counting up', () => {
 })
 
 /**
- * The finance chart's curves, drawing themselves in.
+ * The finance chart, swept in from the baseline.
  *
  * Lukas, 2026-07-29: "Det kunne også være fedt med noget motion på
- * finansgrafen. Så linjerne sådan kommer frem, når man åbner siden."
+ * finansgrafen." And 2026-07-30, on what T073 built for it: "Nu kommer den ind
+ * sådan i stykker (en linje ad gangen) ... Ideelt så skulle den ligesom komme
+ * frem som om at den blev tegnet frem fra bunden."
  *
- * The animation itself is four CSS rules; what is testable — and what actually
- * matters — is that the club's finances are never drawn short. A path is
- * hidden only by `--ek-len`, which is only ever written after the geometry
- * answered, so every path this cannot measure is a whole line.
+ * **The interesting change here is what this file stopped doing.** T073 measured
+ * every path with `getTotalLength()` and wrote `--ek-len` onto it, because a
+ * curve drawn by `stroke-dashoffset` has to know its own length. It also meant
+ * the safety came from CSS fallbacks rather than from `arm()`'s ordering:
+ * recharts inserts those paths some frames after React commits the card, too
+ * late for observe-then-hide to reach. One clipped edge over the whole plot
+ * needs no measurement, so `data-draw` is an ordinary marker again and the
+ * ordering — which is a behaviour, and therefore testable — covers the chart.
  */
-describe('the finance curves drawing in', () => {
+describe('the finance chart sweeping in', () => {
   const chart = () =>
     markup(
-      '<div data-draw><svg><g class="ek-curve"><path d="M0 0 L10 10"></path></g></svg></div>',
+      '<div data-draw><svg><clipPath id="ek-plot-sweep"><rect class="ek-sweep"/></clipPath></svg>' +
+        '<div class="ek-plot"><svg><g><path d="M0 0 L10 10"></path></g></svg></div></div>',
     )
-
-  /** jsdom has no geometry, so a length has to be lent to the path. */
-  const withLength = (root: ParentNode, len: number) => {
-    const path = root.querySelector<SVGPathElement>('.ek-curve path')!
-    // jsdom implements the element but not its geometry: getTotalLength is
-    // declared and throws. Lending it one is what stands in for layout.
-    path.getTotalLength = () => len
-    return path
-  }
 
   it('hides nothing until the plot is being watched', () => {
     const io = useFakeIO()
     const root = chart()
-    withLength(root, 420)
     install(root)
 
     const plot = root.querySelector('[data-draw]')!
@@ -429,20 +426,9 @@ describe('the finance curves drawing in', () => {
     expect(io().watched).toContain(plot)
   })
 
-  it('measures each curve so the CSS has something to draw', async () => {
-    useFakeIO()
-    const root = chart()
-    const path = withLength(root, 420)
-    install(root)
-    await mutations()
-
-    expect(path.style.getPropertyValue('--ek-len')).toBe('420')
-  })
-
-  it('draws when the plot comes into view', () => {
+  it('sweeps when the plot comes into view', () => {
     const io = useFakeIO()
     const root = chart()
-    withLength(root, 420)
     install(root)
 
     const plot = root.querySelector<HTMLElement>('[data-draw]')!
@@ -452,26 +438,36 @@ describe('the finance curves drawing in', () => {
   })
 
   /**
-   * The guarantee, in the one form it can take here: a path with no length
-   * carries no `--ek-len`, and the two rules that hide it fall back to
-   * `stroke-dasharray: none` and `stroke-dashoffset: 0` — a complete curve.
-   * recharts fills the SVG in some frames after React commits the card, so
-   * "not measured yet" is a state this passes through on every page load.
+   * One attribute on the plot is the whole of the state, and nothing per-curve.
+   *
+   * The path here stands in for one recharts has not inserted yet — the state
+   * every page load passes through. T073 had to reach inside and measure it, and
+   * a path it never reached was kept whole by a CSS fallback. Nothing reaches
+   * inside now, so a curve that arrives late, early or not at all is an ordinary
+   * curve under a clip that is on its way open.
    */
-  it('leaves an unmeasured curve whole', async () => {
+  it('touches nothing inside the plot', async () => {
     useFakeIO()
     const root = chart()
-    const path = root.querySelector<SVGPathElement>('.ek-curve path')!
+    // Lent, so a call would succeed rather than throw — the point is that none
+    // is made. jsdom declares getTotalLength and does not implement it.
+    const path = root.querySelector<SVGPathElement>('.ek-plot path')!
+    let asked = 0
+    path.getTotalLength = () => {
+      asked += 1
+      return 420
+    }
     install(root)
     await mutations()
 
-    expect(path.style.getPropertyValue('--ek-len')).toBe('')
+    expect(asked).toBe(0)
+    expect(path.getAttribute('style')).toBeNull()
+    expect(root.querySelector('.ek-sweep')!.getAttribute('style')).toBeNull()
   })
 
   it('hands the plot back if it is torn down before it was ever seen', () => {
     useFakeIO()
     const root = chart()
-    withLength(root, 420)
     const stop = install(root)
 
     stop()

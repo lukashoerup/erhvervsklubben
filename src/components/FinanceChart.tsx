@@ -246,13 +246,6 @@ export function FinanceChart({
         />
       </dl>
 
-      {/* The budget is deliberately not a fourth cell in the row above. Those
-          three are money — charged, arrived, and the difference between them —
-          and a figure standing in line with them is read as a fourth of the
-          same kind. It gets its own block, its own word, and a dashed key that
-          matches the only dashed thing on the chart. */}
-      {showBudget && <BudgetNote budget={budget} until={budgetSpan} notes={budgetNotes} />}
-
       {/* role="img" with the whole story in words: the SVG underneath is a
           thousand path nodes to a screen reader, and the tooltip does not exist
           for one. The same figures are in the row above and in the table below,
@@ -273,112 +266,182 @@ export function FinanceChart({
            than widened-and-scrolled on purpose: two smooth curves stay
            readable compressed, and the one month a member actually wants —
            the last one — would be the one off the right-hand edge. */
-        /* `data-draw` sits here rather than on the card, so the curves start
-           drawing when the plot itself is 18 % into view: the heading, the
-           sentence and the three figures stand above it, and armed from the
-           card the whole gesture would play with the plot still off-screen.
-           lib/reveal.ts measures the paths; the `[data-draw]` rules in
-           index.css carry the timing and the order. */
+        /* `data-draw` sits here rather than on the card, so the sweep starts
+           when the plot itself is 18 % into view: the heading, the sentence and
+           the three figures stand above it, and armed from the card the whole
+           gesture would play with the plot still off-screen. lib/reveal.ts sets
+           the state; the `[data-draw]` rules in index.css carry the gesture. */
         data-draw
         className="mt-3 -mx-1 overflow-x-auto"
       >
-        <ResponsiveContainer width="100%" height={210}>
-          <ComposedChart data={points} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} className="stroke-line" strokeWidth={1} />
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={false}
-              minTickGap={8}
-              interval="preserveStartEnd"
-              tick={{ className: 'fill-faint tabular', fontSize: 10 }}
-            />
-            <YAxis
-              width={46}
-              tickLine={false}
-              axisLine={false}
-              /* From zero, and on round numbers. A money scale that starts at
-                 the first month's balance makes any gap look like whatever the
-                 crop chose. */
-              domain={[0, ticks[ticks.length - 1]]}
-              ticks={ticks}
-              tickFormatter={(v: number) => v.toLocaleString('da-DK')}
-              tick={{ className: 'fill-faint tabular', fontSize: 10 }}
-            />
-            <Tooltip content={<Readout />} cursor={{ className: 'stroke-line-hi', strokeWidth: 1 }} />
-            {/* `currentColor` plus a text-* class on the wrapper, not a fill-*
-                class and not a hex. recharts paints its own colour onto the
-                <path> as a presentation attribute and puts any className on the
-                <g> around it, so a fill-* utility loses to the attribute and
-                the whole chart comes out recharts blue — it did. `color` is
-                inherited, and currentColor resolves on the path itself, so the
-                token wins and still swaps with the light and dark palettes on
-                its own. */}
-            <Area
-              dataKey="behind"
-              className="text-absent ek-band"
-              fill="currentColor"
-              fillOpacity={0.28}
-              stroke="none"
-              isAnimationActive={false}
-              activeDot={false}
-            />
-            <Area
-              dataKey="ahead"
-              className="text-present ek-band"
-              fill="currentColor"
-              fillOpacity={0.28}
-              stroke="none"
-              isAnimationActive={false}
-              activeDot={false}
-            />
-            <Line
-              dataKey="expected"
-              className="text-accent ek-curve"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              isAnimationActive={false}
-              dot={endDot('fill-accent')}
-              activeDot={false}
-            />
-            <Line
-              dataKey="received"
-              className="text-present ek-curve"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              isAnimationActive={false}
-              dot={endDot('fill-present')}
-              activeDot={false}
-            />
-            {/* The budget. Same hue as the expected curve, because it is the
-                same quantity continued — a fourth colour would say a fourth
-                thing is being measured. Dashed is what carries the difference,
-                and it is the only dashed mark on the card: the gridlines are
-                solid hairlines precisely so that a dash can mean "this part is
-                not counted, it is budgeted". No end dot either — the dot on the
-                other two says "this is where the club stands now", and the far
-                end of a forecast is the one point that is least true. */}
-            {showBudget && (
+        {/* The sweep's edge, and the whole of the motion on this card.
+            Lukas, 2026-07-30: "Nu kommer den ind sådan i stykker (en linje ad
+            gangen), hvilket får det til at se lidt ud som om at den blot loader
+            langsomt. Ideelt så skulle den ligesom komme frem som om at den blev
+            tegnet frem fra bunden."
+
+            T073 gave every mark its own arrival — two curves on their own
+            dash-offsets, then the band, then the dots, then the forecast. Five
+            things landing in turn is what a slow page load looks like, and no
+            easing on any one of them fixes that. This is one clip over the
+            whole plot, scaled up from the baseline: the curves, the band, the
+            dots, the forecast, the grid and both axes are uncovered together by
+            a single moving edge, in one duration on one curve.
+
+            A rect in a clipPath rather than a CSS `clip-path: inset()` because
+            scaling a rect is a *transform*, which is what §01 allows and what
+            composites; and `clipPathUnits="objectBoundingBox"` so it is the
+            plot's own box in fractions and nothing here has to know how tall
+            the chart is.
+
+            0 × 0 and `block`: an inline <svg> would open a line box and add its
+            line-height to the card. It is in the DOM rather than in a sprite
+            sheet so the reference cannot dangle — the rules that use it are
+            scoped to a state lib/reveal.ts sets on this very element, so the
+            clip and the thing it clips arrive and leave together.
+
+            No series below carries a motion hook any more, and recharts' own
+            animation stays off as it always has (`isAnimationActive={false}`
+            everywhere): one clip over the plot is the whole gesture, so there is
+            nothing left for a per-curve class to be the handle for. */}
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          width="0"
+          height="0"
+          /* `0 0 1 1`, matching the clipPath's own objectBoundingBox units, and
+             it is here for WebKit rather than for Chromium. `.ek-sweep` pivots on
+             `transform-box: fill-box`; if a browser ignores that property the
+             pivot falls back to `view-box`, and `transform-origin: bottom` is
+             then 50% 100% of *this* viewBox. With the viewBox declared both
+             paths resolve to the same point — the bottom of the plot. Without it
+             the fallback would resolve against a 0 × 0 viewport, put the pivot at
+             the origin, and sweep the chart down from the top instead of up from
+             the baseline. The Playwright WebKit build cannot be downloaded from
+             this environment (T073 hit the same wall), so this is unproven there
+             and cheap enough to make unnecessary. */
+          viewBox="0 0 1 1"
+          className="block size-0"
+        >
+          <clipPath id="ek-plot-sweep" clipPathUnits="objectBoundingBox">
+            <rect className="ek-sweep" x="0" y="0" width="1" height="1" />
+          </clipPath>
+        </svg>
+        <div className="ek-plot">
+          <ResponsiveContainer width="100%" height={210}>
+            <ComposedChart data={points} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
+              <CartesianGrid vertical={false} className="stroke-line" strokeWidth={1} />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                minTickGap={8}
+                interval="preserveStartEnd"
+                tick={{ className: 'fill-faint tabular', fontSize: 10 }}
+              />
+              <YAxis
+                width={46}
+                tickLine={false}
+                axisLine={false}
+                /* From zero, and on round numbers. A money scale that starts at
+                   the first month's balance makes any gap look like whatever the
+                   crop chose. */
+                domain={[0, ticks[ticks.length - 1]]}
+                ticks={ticks}
+                tickFormatter={(v: number) => v.toLocaleString('da-DK')}
+                tick={{ className: 'fill-faint tabular', fontSize: 10 }}
+              />
+              <Tooltip content={<Readout />} cursor={{ className: 'stroke-line-hi', strokeWidth: 1 }} />
+              {/* `currentColor` plus a text-* class on the wrapper, not a fill-*
+                  class and not a hex. recharts paints its own colour onto the
+                  <path> as a presentation attribute and puts any className on the
+                  <g> around it, so a fill-* utility loses to the attribute and
+                  the whole chart comes out recharts blue — it did. `color` is
+                  inherited, and currentColor resolves on the path itself, so the
+                  token wins and still swaps with the light and dark palettes on
+                  its own. */}
+              <Area
+                dataKey="behind"
+                className="text-absent"
+                fill="currentColor"
+                fillOpacity={0.28}
+                stroke="none"
+                isAnimationActive={false}
+                activeDot={false}
+              />
+              <Area
+                dataKey="ahead"
+                className="text-present"
+                fill="currentColor"
+                fillOpacity={0.28}
+                stroke="none"
+                isAnimationActive={false}
+                activeDot={false}
+              />
               <Line
-                dataKey="budgeted"
-                className="text-accent ek-forecast"
+                dataKey="expected"
+                className="text-accent"
                 stroke="currentColor"
                 strokeWidth={2}
-                strokeDasharray="5 4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 isAnimationActive={false}
-                dot={false}
+                dot={endDot('fill-accent')}
                 activeDot={false}
               />
-            )}
-          </ComposedChart>
-        </ResponsiveContainer>
+              <Line
+                dataKey="received"
+                className="text-present"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                isAnimationActive={false}
+                dot={endDot('fill-present')}
+                activeDot={false}
+              />
+              {/* The budget. Same hue as the expected curve, because it is the
+                  same quantity continued — a fourth colour would say a fourth
+                  thing is being measured. Dashed is what carries the difference,
+                  and it is the only dashed mark on the card: the gridlines are
+                  solid hairlines precisely so that a dash can mean "this part is
+                  not counted, it is budgeted". No end dot either — the dot on the
+                  other two says "this is where the club stands now", and the far
+                  end of a forecast is the one point that is least true. */}
+              {showBudget && (
+                <Line
+                  dataKey="budgeted"
+                  className="text-accent"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeDasharray="5 4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  isAnimationActive={false}
+                  dot={false}
+                  activeDot={false}
+                />
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
+
+      {/* The budget explains the plot, so it stands under it. Lukas, 2026-07-30:
+          "Jeg synes at grafen skal være over 'forventet bøder budget' teksten,
+          da man så vil kunne se den på skærmen når man logger ind." It was
+          above, and on a 420 × 900 phone its heading, figure, paragraph and
+          three bullets — 222 px of them — pushed the plot to y 651 with the tab
+          bar's own floor at 841. On the viewport an iPhone actually gives
+          Safari, none of the chart was on screen at all. The chart is what this
+          card is; the budget is a note about it.
+
+          Still deliberately not a fourth cell in the figure row above. Those
+          three are money — charged, arrived, and the difference between them —
+          and a figure standing in line with them is read as a fourth of the
+          same kind. It gets its own block, its own word, and a dashed key that
+          matches the only dashed thing on the chart. */}
+      {showBudget && <BudgetNote budget={budget} until={budgetSpan} notes={budgetNotes} />}
     </section>
   )
 }
@@ -415,8 +478,33 @@ function BudgetNote({
       <p className="text-[0.6rem] tracking-[0.14em] text-muted uppercase">
         Forventede bøder · budget
       </p>
+      {/* Both figures in the same face, and the leading one leads by weight.
+          Lukas, 2026-07-30: the line read as though its first glyph came from a
+          different font than the rest — "314" as a serif 3 followed by a sans
+          14. It did, and `.ek-figure` was why.
+
+          **Instrument Serif has one figure set and it is an old-style one.** Its
+          `3` drops below the baseline, its `1` is a bare stem with no flag and no
+          foot serifs — "111" renders as "lll" — and its digits are proportional:
+          measured in Chromium at 16.8 px, `3` `1` `4` advance 6.06, 4.03 and
+          6.44 px. There is no `tnum` in the face to switch out of any of it, so
+          `.ek-figure`'s own `font-variant-numeric: tabular-nums` buys nothing
+          here (Instrument Sans has it and delivers a flat 10.08 px). At 26–52 px
+          leading a card, those are the shapes that make the register worth
+          having. At 16.8 px inline in a 14 px sans sentence they are three
+          digits at three widths on two baselines, three pixels bigger than the
+          prose around them — and a reader does not see a display register, he
+          sees the wrong font applied to part of a line.
+
+          **The register rule never covered this case.** `.ek-figure` in
+          index.css draws the line at "the figure that leads a block is serif; a
+          figure in a tile with its label beneath it stays Sans 700", with a
+          floor at ~14 px. A number in the middle of a running sentence is
+          neither, and the floor let it through. So it stays in the sentence's
+          own face and leads on weight — which is §03's "tal i 700" and the
+          idiom `Row` below already uses for a figure in a line of text. */}
       <p className="mt-1.5 text-sm leading-snug text-ink">
-        <span className="ek-figure text-[1.05rem]">{kr(budget.perMeetingKr)}</span> pr. møde
+        <span className="tabular font-semibold">{kr(budget.perMeetingKr)}</span> pr. møde
         {' — '}
         <span className="tabular">{kr(budget.perMonthKr)}</span> pr. måned i gennemsnit
         {until && `, frem til ${until}`}.
@@ -473,7 +561,7 @@ function Figure({
           to be exact" — and Klubkassen, the balance a member checks his own
           arithmetic against, still does not move. These are not that. They are
           the readout of the curve directly below them, they count over the same
-          900 ms it takes to draw, and the number they land on is the string
+          900 ms the plot takes to sweep in, and the number they land on is the string
           React rendered rather than one this arrived at (lib/reveal.ts refuses
           any figure it cannot rebuild exactly). The line and the figure it
           resolves to finish together, which is the whole point of the card. */}

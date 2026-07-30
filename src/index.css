@@ -584,77 +584,80 @@ body {
   }
 }
 
-/* ---------------------------------------------------------- the curve drawn
+/* --------------------------------------------------------- the chart swept in
    Lukas, 2026-07-29: "Det kunne også være fedt med noget motion på
    finansgrafen. Så linjerne sådan kommer frem, når man åbner siden."
+   And 2026-07-30, on what T073 built for it: "Nu kommer den ind sådan i stykker
+   (en linje ad gangen), hvilket får det til at se lidt ud som om at den blot
+   loader langsomt. Ideelt så skulle den ligesom komme frem som om at den blev
+   tegnet frem fra bunden."
 
-   900 ms on the system's own curve — which is what §01 gives the count-up and
-   the bars rather than what it gives a card: "Nøgletal tæller op i 900 ms med
-   easeOutExpo. Søjler vokser fra baseline med samme kurve." A drawn line is
-   that kind of object, one quantity being read out rather than an element
-   arriving. The three figures under the chart count over the same 900 ms, so
-   the line and the number it resolves to finish in the same moment.
+   **He is right, and the fault was the sequencing rather than the gesture.**
+   T073 drew each curve on its own `stroke-dashoffset`, then settled the band at
+   620 ms, the end dots at 780 and the dashed forecast at 900 — five marks
+   arriving one after another. That is what a page loading in pieces looks like,
+   whatever the easing on each piece. It was a design mistake, not a bug.
 
-   `--ek-len` is written onto each path by lib/reveal.ts. **The fallbacks are
-   the guarantee**: unmeasured, the dash array is `none` and the offset `0`,
-   which is an ordinary complete curve. No script, no layout, jsdom, a thrown
-   observer — the club's finances are drawn whole.
+   One gesture now: a single edge travelling up from the baseline, uncovering
+   both curves, the band, the dots, the forecast, the grid and the axes
+   together. `.ek-sweep` is the rect of a clipPath over the plot, scaled from
+   `scaleY(0)` at the bottom — so this is a transform, and §01's "kun opacity og
+   transform" needs no exception for it. stroke-dashoffset is gone from the app
+   with the machinery that measured the paths, and `src/theme.test.ts` no longer
+   sanctions it.
 
-   stroke-dashoffset is the one property in the members' motion that is neither
-   opacity nor transform, and it is here for the reason the logo intro animates
-   letter-spacing: the gesture cannot be said any other way. §01's rule is about
-   what composites — two paths inside one SVG layer, on one screen, and nothing
-   in a list. Everything else on this card is opacity.
+   900 ms and the system's own `.16 1 .3 1`, unchanged: §01 gives that pair to
+   the count-up and the bars — "Nøgletal tæller op i 900 ms med easeOutExpo.
+   Søjler vokser fra baseline med samme kurve" — and the three figures beside
+   the plot count over the same 900 ms, so the chart and the numbers it resolves
+   to finish in the same instant. Lukas asked for that synchronisation in T073
+   and it is the one thing here worth keeping exactly.
 
-   **The band settles after the curves rather than drawing with them.** It is
-   not a third series; it is the distance between the two lines, which is the
-   one number the card exists to report. Drawn alongside them it would read as
-   a third thing arriving on its own account — and for 900 ms it would be
-   showing the gap between two curves that are not finished, a shortfall that
-   grows as you watch, which is not what the club's books did. The two lines
-   are drawn first and the gap is filled in behind them once both are standing,
-   which is also the order a person reads the card in. The forecast waits a beat
-   longer again: it is the only mark on the chart that has not happened yet. */
-@keyframes ek-draw {
+   **The clip is what makes the band honest, which is what T073 needed the
+   stagger for.** Its objection was real: two curves drawn by dashoffset are
+   genuinely incomplete while they draw, so the gap between them is a shortfall
+   that grows while you watch, and the card exists to report that gap. A clip
+   never shows an unfinished shape. Every frame of the sweep is a horizontal
+   slice of the finished chart, revealed from the bottom; nothing on it is ever
+   a value on its way somewhere. So the band can arrive with everything else,
+   and the reason it could not has been removed rather than overruled.
+
+   **The guarantee is back to being an ordering**, which is the stronger form.
+   T073 could only offer a fallback — it had to measure paths recharts inserts
+   some frames after React commits the card, so `arm()`'s observe-then-hide
+   could not cover them. Nothing is measured now: the only rule that clips
+   anything is scoped to `[data-draw='armed']`, and lib/reveal.ts sets that
+   attribute only after `observe()` has returned on that element. No script, an
+   old browser, a thrown observer, jsdom, a curve that arrived late — every one
+   of them leaves the plot unclipped and the club's finances whole. */
+@keyframes ek-sweep {
   from {
-    stroke-dashoffset: var(--ek-len, 0);
+    transform: scaleY(0);
   }
 }
 
-@keyframes ek-fade-in {
-  from {
-    opacity: 0;
-  }
+/* fill-box, so the scale pivots on the rect rather than on the clipPath's own
+   origin — the same reason .ek-square needs it in the logo intro. */
+.ek-sweep {
+  transform-box: fill-box;
+  transform-origin: bottom;
 }
 
-[data-draw='armed'] .ek-curve path {
-  stroke-dasharray: var(--ek-len, none);
-  stroke-dashoffset: var(--ek-len, 0);
+/* The clip exists only while the sweep does. Bare `[data-draw]` — which is what
+   React renders and what a browser with no JavaScript is left holding — selects
+   neither of these, so the plot is never clipped by anything that is not on its
+   way to being uncovered. */
+[data-draw='armed'] .ek-plot,
+[data-draw='in'] .ek-plot {
+  clip-path: url(#ek-plot-sweep);
 }
 
-/* The end dot says "this is where the club stands now", so it cannot be there
-   before the line that reaches it. */
-[data-draw='armed'] .ek-curve circle,
-[data-draw='armed'] .ek-band,
-[data-draw='armed'] .ek-forecast {
-  opacity: 0;
+[data-draw='armed'] .ek-sweep {
+  transform: scaleY(0);
 }
 
-[data-draw='in'] .ek-curve path {
-  stroke-dasharray: var(--ek-len, none);
-  animation: ek-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-[data-draw='in'] .ek-band {
-  animation: ek-fade-in 560ms cubic-bezier(0.16, 1, 0.3, 1) 620ms both;
-}
-
-[data-draw='in'] .ek-curve circle {
-  animation: ek-fade-in 400ms cubic-bezier(0.16, 1, 0.3, 1) 780ms both;
-}
-
-[data-draw='in'] .ek-forecast {
-  animation: ek-fade-in 560ms cubic-bezier(0.16, 1, 0.3, 1) 900ms both;
+[data-draw='in'] .ek-sweep {
+  animation: ek-sweep 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* The scroll indicator, from the export's own `#ek-progress`. scaleX rather
@@ -735,22 +738,16 @@ body {
     transform: none;
   }
 
-  /* The chart, whole and at rest: the curves complete, the band and the
-     forecast present, nothing on its way in. `stroke-dasharray: none` is what
-     undraws the dashes rather than an offset of zero alone — a path left with
-     an array and no offset is still chopped into segments. The forecast's own
-     `5 4` is a presentation attribute on the path and is not touched here, so
-     the budgeted line stays dashed, as it must. */
-  [data-draw] .ek-curve path {
-    animation: none;
-    stroke-dasharray: none;
-    stroke-dashoffset: 0;
+  /* The chart, whole and at rest. `clip-path: none` is the one that matters:
+     an element already armed when the preference is switched on mid-session
+     would otherwise keep a collapsed clip over the plot with no observer left
+     to open it, which is the club's finances gone rather than merely still. */
+  [data-draw] .ek-plot {
+    clip-path: none;
   }
 
-  [data-draw] .ek-curve circle,
-  [data-draw] .ek-band,
-  [data-draw] .ek-forecast {
+  [data-draw] .ek-sweep {
     animation: none;
-    opacity: 1;
+    transform: none;
   }
 }

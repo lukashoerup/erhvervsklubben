@@ -266,18 +266,17 @@ describe('the fine budget', () => {
   })
 
   /**
-   * The handle the draw-in hangs off, asserted here because it is invisible
-   * from the screen it animates and silent when it breaks: drop `data-draw`
-   * and the club loses the motion and nothing else, so nothing else would ever
-   * fail.
+   * The handle the sweep hangs off, asserted here because it is invisible from
+   * the screen it animates and silent when it breaks: drop `data-draw` and the
+   * club loses the motion and nothing else, so nothing else would ever fail.
    *
-   * Only the plot marker can be checked in jsdom. ResponsiveContainer measures
-   * itself and jsdom reports every box as zero, so recharts renders no SVG at
-   * all here — which is also why `.ek-curve`, `.ek-band` and `.ek-forecast`
-   * are verified in a browser instead (T073's notes) rather than asserted
-   * against a chart that was never drawn.
+   * ResponsiveContainer measures itself and jsdom reports every box as zero, so
+   * recharts renders no chart at all here. What *is* checkable is the structure
+   * the stylesheet reaches through — the marker, the box that gets clipped, and
+   * the clipPath the rule names — and that is exactly the part with no runtime
+   * error to announce it. The gesture itself is measured in a browser (T077).
    */
-  it('marks the plot so the curves can be drawn into it', () => {
+  it('marks the plot so the whole chart can be swept into view', () => {
     const { container } = draw()
 
     expect(container.querySelector('[data-draw]')).toBeTruthy()
@@ -287,12 +286,109 @@ describe('the fine budget', () => {
   })
 
   /**
-   * "Og lidt mere motion på tallene" (Lukas, 2026-07-29). The three figures the
-   * curve resolves to count over the same 900 ms the curve takes to draw — and
-   * they carry the *exact* value, because lib/reveal.ts rebuilds the rendered
-   * string or leaves the figure alone.
+   * The clip's reference, which is not allowed to dangle.
+   *
+   * `clip-path: url(#ek-plot-sweep)` naming a clipPath that is not in the
+   * document is not a no-op in SVG — it is grounds for not rendering the
+   * referencing element, which here is the club's whole chart. The id lives in
+   * one place in the markup and one in the stylesheet, and this is the only thing
+   * that would notice the two drifting apart.
    */
-  it('lets the three figures under the curve count up to what they say', () => {
+  it('keeps the sweep’s clip, its rect and the box it clips together', () => {
+    const { container } = draw()
+    const plot = container.querySelector('[data-draw]')!
+
+    const clip = plot.querySelector('clipPath')
+    expect(clip?.getAttribute('id')).toBe('ek-plot-sweep')
+    // Fractions of the plot's own box, so nothing here has to know how tall the
+    // chart is.
+    expect(clip?.getAttribute('clipPathUnits')).toBe('objectBoundingBox')
+    expect(clip?.querySelector('rect')).toHaveClass('ek-sweep')
+    // The clipped box, which `[data-draw='armed'] .ek-plot` reaches for.
+    expect(plot.querySelector('.ek-plot')).toBeTruthy()
+    // The clip defined beside what it clips rather than inside it.
+    expect(plot.querySelector('.ek-plot')!.querySelector('clipPath')).toBeNull()
+  })
+
+  /**
+   * The chart stands above the budget, because the chart is what the card is.
+   *
+   * Lukas, 2026-07-30: *"Jeg synes at grafen skal være over 'forventet bøder
+   * budget' teksten, da man så vil kunne se den på skærmen når man logger ind."*
+   * That block is 222 px of heading, figure, paragraph and three bullets, and
+   * with it above the plot there was no viewport an iPhone gives Safari on which
+   * any of the chart was on screen unscrolled.
+   *
+   * Document order rather than pixels: it is the part jsdom can actually know,
+   * and it is the part that decides it.
+   */
+  it('puts the plot above the budget block', () => {
+    const { container } = draw()
+    const plot = container.querySelector('[data-draw]')!
+    const budget = screen.getByText(/forventede bøder · budget/i)
+
+    expect(plot.compareDocumentPosition(budget) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  /**
+   * No display figure shares a line with body text.
+   *
+   * Lukas, 2026-07-30, on the budget sentence: its first glyph came from a
+   * different face than the rest — "314" as a serif 3 followed by a sans 14. It
+   * did. `.ek-figure` is Instrument Serif, whose only figure set is an old-style
+   * one: the `3` drops below the baseline, the `1` is a bare stem with no flag and
+   * no foot serifs ("111" renders as "lll"), the digits are proportional
+   * (6.06 / 4.03 / 6.44 px at 16.8 px, measured), and the face carries no `tnum`
+   * to switch out of any of it. At 26–52 px leading a card those shapes are the
+   * register. At 16.8 px inline in a 14 px sans sentence they are a font glitch.
+   *
+   * The rule `.ek-figure` states in index.css — serif leads a block, Sans 700 in
+   * a tile — never covered a number in the middle of a sentence, and its ~14 px
+   * floor let this one through. So this asserts the shape of the rule rather than
+   * a size: a display figure may not have prose beside it in its own line box.
+   * Sibling *elements* are fine — that is the legend's own dt/dd — but a text node
+   * with letters in it is not.
+   */
+  it('never sets a serif figure inside a line of body text', () => {
+    const { container } = draw()
+    const figures = [...container.querySelectorAll('.ek-figure')]
+    expect(figures.length).toBeGreaterThan(0)
+
+    for (const fig of figures) {
+      const prose = [...(fig.parentElement?.childNodes ?? [])]
+        .filter((n) => n.nodeType === Node.TEXT_NODE && /\p{L}/u.test(n.nodeValue ?? ''))
+        .map((n) => n.nodeValue?.trim())
+      expect(prose, `"${fig.textContent}" is a serif figure set in a sans sentence`).toEqual([])
+    }
+  })
+
+  /**
+   * And the sentence itself, in one face, with the leading figure still leading.
+   *
+   * The per-meeting figure is the measured one and has to come first — see
+   * data/projection.ts. It does that on weight now, in the sentence's own face,
+   * which is §03's "tal i 700" and the idiom the hover readout already used.
+   */
+  it('sets both figures in the budget sentence in the same face', () => {
+    draw()
+    const perMeeting = screen.getByText('200 kr.')
+    const perMonth = screen.getByText('100 kr.')
+
+    for (const el of [perMeeting, perMonth]) {
+      expect(el).toHaveClass('tabular')
+      expect(el).not.toHaveClass('ek-figure')
+    }
+    expect(perMeeting).toHaveClass('font-semibold')
+    expect(perMonth).not.toHaveClass('font-semibold')
+  })
+
+  /**
+   * "Og lidt mere motion på tallene" (Lukas, 2026-07-29). The three figures the
+   * curve resolves to count over the same 900 ms the sweep takes — and they carry
+   * the *exact* value, because lib/reveal.ts rebuilds the rendered string or
+   * leaves the figure alone.
+   */
+  it('lets the three figures above the curve count up to what they say', () => {
     draw()
     const figures = screen.getAllByText(/kr\./).filter((el) => el.hasAttribute('data-count'))
 
