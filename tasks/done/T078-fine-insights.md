@@ -110,6 +110,29 @@ second, so the offence is the subject and the members are its composition.
   fine each; as segments they are two pixels. One `Øvrige bøder` segment, itemised
   in the table under the chart.
 
+## 3. The motion
+
+T077 predicted this complaint and named the cause, so **no fourth mechanism**.
+§01's `.16 1 .3 1` reaches **95 % at 43 % of its duration** — the chart snapped and
+then crept, which is exactly "man ikke når at se at den bygger op" — and stretching
+the same curve only lengthens the creep. Sampled progress at 10/20/30/50/70/90 % of
+the duration:
+
+| Curve | | | | | | | 95 % at |
+|---|---|---|---|---|---|---|---|
+| `.16 1 .3 1` | 49 | 75 | 88 | 97 | 100 | 100 | **43 %** |
+| `.25 .35 .5 1` | 15 | 32 | 48 | 74 | 91 | 99 | 77 % |
+
+**1600 ms on `.25 .35 .5 1`, one rule, all three charts.** A considered departure
+from §01, written up in `design/README.md` as Lukas's call.
+
+**The count-up moved with it deliberately.** T077 noted the synchronisation held
+*by accident* — both were 900 ms. `SWEEP_MS` in `src/lib/reveal.ts` must equal the
+CSS duration, `countMs()` applies it only to figures inside a `[data-draw]` chart
+(so `/hjem`'s stat tiles keep §01's 900 ms), and **a test compares the two source
+files** so they cannot drift apart again. `SETTLE_MS` 1100 → 1800: marking a chart
+`done` mid-sweep drops the clip and finishes in one frame — the snap just removed.
+
 ## What was built
 - `supabase/migrations/20260730180000_fines_settled.sql` — the column, guarded on
   the club's own fine book (30 rows / 2.510 kr.) and rolling back unless the three

@@ -58,11 +58,47 @@ const MAX_STAGGER_STEPS = 6
 const COUNT_MS = 900
 
 /**
+ * How long the chart sweep takes — **and this must equal the duration in
+ * `[data-draw='in'] .ek-sweep` in index.css.** The two are coupled on purpose and
+ * the comment there says so from the other side.
+ *
+ * A figure inside a chart that sweeps counts over the *sweep's* duration rather
+ * than §01's 900 ms, so the curve and the number it resolves to finish in the same
+ * instant. That is the synchronisation Lukas asked for in T073 — "the line and the
+ * figure it resolves to finish together" — and until 2026-07-30 it held by
+ * accident: both happened to be 900 ms. When he asked for a slower sweep
+ * ("man ikke når at se at den bygger op") the accident broke, and the numbers would
+ * have landed 700 ms before the chart they are the readout of.
+ *
+ * §01's 900 ms still governs every other figure, and that is the reason this is a
+ * per-element decision rather than a new global: the three stat tiles on `/hjem`
+ * have no sweep to synchronise with, so slowing them would be a departure from the
+ * system bought for nothing.
+ */
+const SWEEP_MS = 1600
+
+/**
+ * How long this figure counts for: the sweep's duration inside a chart, §01's
+ * elsewhere. `closest` rather than a prop, because the coupling is a fact about
+ * where the figure sits — under a plot that is being uncovered — and a caller that
+ * had to remember to pass a duration is a caller that will forget.
+ */
+function countMs(el: HTMLElement): number {
+  return el.closest('[data-draw]') ? SWEEP_MS : COUNT_MS
+}
+
+/**
  * How long after `in` an element is finished, and can stop being an animation.
  *
- * The longest arrival on any screen is a card that came in six places into its
- * batch: 360 ms of stagger and then 700 ms of its own. Its pips end sooner
+ * The longest arrival on any screen is the chart sweep: 1600 ms, taking no
+ * stagger (see the `data-draw` note in `show`). A card six places into its batch
+ * is 360 ms of stagger and then 700 ms of its own; its pips end sooner
  * (354 + 420) and so does its rule (90 + 550).
+ *
+ * Raised from 1100 to 1800 on 2026-07-30 with the slower sweep. It has to clear
+ * the *longest* animation on the page, and marking a chart `done` while its edge
+ * is still travelling would drop the clip and finish the reveal in one frame —
+ * the snap Lukas had just asked to be rid of.
  *
  * This is not tidying. A CSS animation with `fill-mode: both` never ends — the
  * element keeps a filling animation for the life of the page, and the compositor
@@ -72,7 +108,7 @@ const COUNT_MS = 900
  * puts every one of them back to plain CSS with no animation attached, and the
  * finished look is identical because the finished state *is* the plain CSS.
  */
-const SETTLE_MS = 1100
+const SETTLE_MS = 1800
 
 /**
  * The two kinds of arrival, and the figures — matching only the ones this file
@@ -139,14 +175,24 @@ function stateAttr(el: Element): 'data-reveal' | 'data-bar' | 'data-draw' | null
  * the one thing §05 asks of an arriving figure is that nothing moves under it —
  * "Ingen loading-hop. Reserveret plads til billeder og tal."
  */
-type Counter = { el: HTMLElement; text: Text; before: string; after: string; from: number }
+type Counter = {
+  el: HTMLElement
+  text: Text
+  before: string
+  after: string
+  from: number
+  /** Resolved once, at start — see `countMs`. */
+  ms: number
+}
 
 /**
  * Every figure currently counting, on one animation frame between them.
  *
  * Anciennitet starts ten at once — the roster's ten anciennitet counts, beside
  * the ten bars growing. Ten independent rAF loops would be ten callbacks and
- * ten closures to schedule for the same 900 ms; this is one.
+ * ten closures to schedule for the same 900 ms; this is one. Each carries its own
+ * duration (`Counter.ms`) since 2026-07-30, because a figure under a sweeping
+ * chart runs longer than one in a stat tile.
  */
 const counting = new Set<Counter>()
 let ticker = 0
@@ -173,7 +219,7 @@ function tick(now: number) {
     // bank balance renders as "-24.643 kr." for a frame. Found on /oekonomi
     // (T073), where a figure being briefly, confidently wrong about money is
     // the one failure this count-up was allowed on the page to avoid.
-    const p = Math.min(1, Math.max(0, (now - c.from) / COUNT_MS))
+    const p = Math.min(1, Math.max(0, (now - c.from) / c.ms))
     if (p < 1) {
       // easeOutExpo, the export's own formula. It never quite reaches 1, which
       // is why the last frame is written from the target rather than from it.
@@ -219,6 +265,7 @@ function count(el: HTMLElement) {
     before: finished.slice(0, at),
     after: finished.slice(at + printed.length),
     from: performance.now(),
+    ms: countMs(el),
   })
   if (!ticker) ticker = requestAnimationFrame(tick)
 }
@@ -268,9 +315,10 @@ function show(el: HTMLElement, step: number) {
   // (`.ek-sweep`), and animation-delay does not inherit — so the plot takes no
   // stagger, and that is what makes the chart and the three figures beside it
   // finish together: the count-up takes none either (see `count()` above, called
-  // straight from `show`). Measured: the sweep completes at +900 ms from `in`
-  // and the figures land at +927. Push the delay down onto the sweep and the
-  // gesture arrives up to 360 ms after the numbers it is the readout of.
+  // straight from `show`). Both now run 1600 ms rather than 900 (see `SWEEP_MS`),
+  // and they still start together for this reason. Push the delay down onto the
+  // sweep and the gesture arrives up to 360 ms after the numbers it is the
+  // readout of.
   if (step > 0) el.style.animationDelay = `${Math.min(step, MAX_STAGGER_STEPS) * STAGGER_MS}ms`
   el.setAttribute(attr, 'in')
   // See SETTLE_MS. A timer rather than `animationend`, because what has to be

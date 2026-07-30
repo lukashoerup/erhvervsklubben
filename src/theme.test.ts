@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 // `?raw` rather than node:fs — the app's tsconfig has no node types, and adding
 // them to read one file would be a dependency for a one-line convenience.
 import css from './index.css?raw'
+// Read as text for the same reason the stylesheet is: the coupling between the
+// sweep's duration and the count-up's is a fact about two source files, and
+// jsdom has no layout to observe it in.
+import revealSource from './lib/reveal.ts?raw'
 
 /**
  * A guard on the stylesheet, because this failure is invisible.
@@ -319,12 +323,59 @@ describe('the members’ reveals', () => {
     // brings its @supports guard and its silent no-op with it.
     expect(sheet).not.toMatch(/animation-timeline/)
     expect(sheet).not.toMatch(/@supports \(animation-timeline/)
-    for (const state of ["[data-reveal='in']", "[data-bar='in']", "[data-draw='in'] .ek-sweep"]) {
+    // §01: "Element · reveal 700 ms", "Kurve .16, 1, .3, 1". The arrivals still
+    // use the system's own curve and nothing may quietly move off it.
+    for (const state of ["[data-reveal='in']", "[data-bar='in']"]) {
       const rule = rules.find((r) => r.selector === state)
       expect(rule, `no rule for ${state}`).toBeDefined()
-      // §01: "Element · reveal 700 ms", "Kurve .16, 1, .3, 1".
       expect(rule!.body).toMatch(/animation:\s*ek-\w+ \d+ms cubic-bezier\(0\.16, 1, 0\.3, 1\) both/)
     }
+  })
+
+  /**
+   * The one animation on the app that is *not* §01's curve, and it is asserted
+   * rather than allowed to drift.
+   *
+   * Lukas, 2026-07-30: *"Kan vi få en smule mere delay på den motion der er på
+   * grafen? Det må godt gå lidt langsommere, da man ikke når at se at den bygger
+   * op."* §01's `.16 1 .3 1` reaches 95 % at 43 % of its duration, so the chart
+   * snapped and then crept; a slower version of the same curve would only creep
+   * for longer. The sweep therefore runs 1600 ms on a nearly even curve. See
+   * index.css for the sampled profile and design/README.md for the departure.
+   */
+  it('draws the chart sweep slowly, and on a curve that is not front-loaded', () => {
+    const rule = rules.find((r) => r.selector === "[data-draw='in'] .ek-sweep")
+    expect(rule, 'no rule for the sweep').toBeDefined()
+    const match = rule!.body.match(
+      /animation:\s*ek-sweep (\d+)ms cubic-bezier\(([\d.]+), ([\d.]+), ([\d.]+), ([\d.]+)\) both/,
+    )
+    expect(match, 'the sweep is not a plain duration + cubic-bezier any more').not.toBeNull()
+
+    // Long enough to be watched. Below about a second the build-up is the thing
+    // he could not see.
+    expect(Number(match![1])).toBeGreaterThanOrEqual(1400)
+
+    // And not front-loaded: y1 is what decides that, and §01's is 1.0 — the
+    // curve leaves the origin almost vertically. Anything near it reinstates the
+    // snap whatever the duration says.
+    expect(Number(match![3])).toBeLessThanOrEqual(0.5)
+  })
+
+  /**
+   * The sweep and the count-up are one gesture, and nothing in CSS can see that.
+   *
+   * The duration lives in two files — `[data-draw='in'] .ek-sweep` here and
+   * `SWEEP_MS` in lib/reveal.ts — because one is a stylesheet and the other is a
+   * rAF loop. They were both 900 ms by coincidence until Lukas asked for a slower
+   * sweep, at which point the figures under the finance curve would have landed
+   * 700 ms before the curve they read out. This is what stops the two drifting
+   * apart again.
+   */
+  it('counts the figures over exactly as long as the sweep takes', () => {
+    const rule = rules.find((r) => r.selector === "[data-draw='in'] .ek-sweep")
+    const cssMs = Number(rule!.body.match(/ek-sweep (\d+)ms/)![1])
+    const jsMs = Number(revealSource.match(/const SWEEP_MS = (\d+)/)![1])
+    expect(jsMs).toBe(cssMs)
   })
 
   it('turns the whole of it off for someone who asked for less motion', () => {

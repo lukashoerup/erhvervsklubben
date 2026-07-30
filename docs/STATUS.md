@@ -82,6 +82,20 @@ four fresh hues would undo T072. The steps are measured with dataviz's
 `validate_palette.js` in both palettes, separately rather than flipped; the numbers
 are in `src/index.css` beside the tokens.
 
+**The chart motion is slower, and it is a considered departure from §01**
+(2026-07-30, T078). Lukas: *"Kan vi få en smule mere delay på den motion der er på
+grafen? Det må godt gå lidt langsommere, da man ikke når at se at den bygger op."*
+T077 predicted exactly this and named the cause, so the fix is the duration and the
+easing rather than a fourth mechanism: §01's `.16 1 .3 1` reaches **95 % at 43 % of
+its duration**, so the chart snapped and then crept, and stretching the same curve
+would only lengthen the creep. It is now **1600 ms on `.25 .35 .5 1`** — 95 % at
+77 % — on **all three charts, one shared rule**. The count-up moved with it
+deliberately: the three figures under the finance curve now run 1600 ms so the line
+and the number it resolves to still finish together, which until now held *by
+accident* because both were 900 ms. `SWEEP_MS` in `src/lib/reveal.ts` must equal the
+CSS duration and **a test compares the two source files**. §01's 900 ms still
+governs every other figure. Argued in `design/README.md`.
+
 **The books are reconciled against the real bank statement** (2026-07-30, T076).
 Read this before quoting any figure on this page: **`payments` is 14 rows summing
 to 14.880 kr.**, not the 13 rows / 13.280 kr. the sheet had. The club's actual

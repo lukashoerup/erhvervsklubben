@@ -474,6 +474,25 @@ without losing data and without taking the old site down until an approved cutov
   scale and no broken axis — the dominance is the finding, and a direct label on every
   bar is what makes the 50 kr. rows readable without distorting the scale.
 
+- **2026-07-30 — the chart sweep is 1600 ms on a nearly even curve: a considered
+  departure from §01's motion spec, on Lukas's word.** *"Det må godt gå lidt
+  langsommere, da man ikke når at se at den bygger op."*
+
+  T077 shipped the sweep at 900 ms on §01's `.16 1 .3 1` and predicted this exact
+  complaint. That curve reaches **95 % at 43 % of its duration**, so the chart snapped
+  and then spent most of its time creeping the last sliver — and a slower version of
+  the same curve only lengthens the creep. The duration *and* the easing had to move
+  together.
+
+  Two things this pulls in, both recorded so the next person does not undo them:
+  **all three charts share one rule** (three durations would undo T077's whole point),
+  and **the count-up is now explicitly coupled to it** — the figures under the finance
+  curve run 1600 ms so they still land with the line, which until now held by
+  accident because both happened to be 900 ms. `SWEEP_MS` in `src/lib/reveal.ts` must
+  equal the CSS duration and a test compares the two files. §01's 900 ms still governs
+  every other figure; `countMs()` decides per element rather than moving the global.
+  Full argument and the sampled curve profiles: `design/README.md`.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
