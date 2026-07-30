@@ -17,12 +17,26 @@
 export function LogoMark({
   size,
   animated = false,
+  walk = false,
 }: {
   /** Rendered edge length, in px. The design system's floor is 24. */
   size: number
   /** Play the intro once. A reduced-motion request turns it off in CSS. */
   animated?: boolean
+  /**
+   * Walk the blue line around the mark, and nothing else — no plate fading up,
+   * no letters sliding in. This is the app bar's version of the landing page's
+   * finale, on Lukas's request (2026-07-30), and it plays once on arrival at a
+   * page rather than looping: see `.ek-walk` in index.css for why not.
+   */
+  walk?: boolean
 }) {
+  // The frame is inset and weighted off the rendered size, so the small mark in
+  // the app bar does not wear the 104 px lockup's proportions. At 104 this is
+  // 5 px and 2 px — exactly the values that were hardcoded here before, so the
+  // landing page is unchanged to the pixel.
+  const inset = Math.max(3, Math.round(size * 0.048))
+  const line = size >= 64 ? 2 : 1.5
   return (
     <span
       className="relative inline-block shrink-0"
@@ -65,13 +79,30 @@ export function LogoMark({
 
       {/* The blue line that walks around the mark. Four elements because it has
           to hand off at each corner; without the animation they are simply an
-          open frame, so the mark still reads. */}
-      {animated && (
-        <span aria-hidden="true">
-          <span className="ek-frame ek-frame-t absolute -top-[5px] -right-[5px] -left-[5px] h-[2px] bg-accent" />
-          <span className="ek-frame ek-frame-r absolute -top-[5px] -right-[5px] -bottom-[5px] w-[2px] bg-accent" />
-          <span className="ek-frame ek-frame-b absolute -right-[5px] -bottom-[5px] -left-[5px] h-[2px] bg-accent" />
-          <span className="ek-frame ek-frame-l absolute -top-[5px] -bottom-[5px] -left-[5px] w-[2px] bg-accent" />
+          open frame, so the mark still reads.
+
+          `ek-walk` on the wrapper rather than on each edge: it only shifts the
+          four delays, and putting it here means the sequence is described in one
+          place. The wrapper is unpositioned, so the edges still lay themselves
+          out against the outer `relative` span. */}
+      {(animated || walk) && (
+        <span aria-hidden="true" className={walk ? 'ek-walk' : undefined}>
+          <span
+            className="ek-frame ek-frame-t absolute bg-accent"
+            style={{ top: -inset, right: -inset, left: -inset, height: line }}
+          />
+          <span
+            className="ek-frame ek-frame-r absolute bg-accent"
+            style={{ top: -inset, right: -inset, bottom: -inset, width: line }}
+          />
+          <span
+            className="ek-frame ek-frame-b absolute bg-accent"
+            style={{ right: -inset, bottom: -inset, left: -inset, height: line }}
+          />
+          <span
+            className="ek-frame ek-frame-l absolute bg-accent"
+            style={{ top: -inset, bottom: -inset, left: -inset, width: line }}
+          />
         </span>
       )}
     </span>

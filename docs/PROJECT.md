@@ -545,6 +545,33 @@ without losing data and without taking the old site down until an approved cutov
   `data/useClubData.ts` and both pages share the one `['finance']` query rather than each
   keeping a copy of the fines retry ladder.
 
+- **2026-07-30 — the app bar's mark walks its blue line once per arrival, not on a
+  loop.** Lukas asked for the landing intro's line to travel around the small logo
+  on the members' screens — *"sådan stille og roligt kører rundt om logoet som står
+  oppe i venstre hjørne"* — and asked outright whether it was a bad idea.
+
+  **The gesture is good; "forever" is the bad part**, and that is the only thing
+  that was changed. A loop in a sticky app bar is motion in the reader's periphery
+  on every screen at all times: the eye is drawn to movement, so it would compete
+  permanently with the club's own figures, and WCAG 2.2.2 wants a way to stop any
+  non-essential motion running past five seconds — a pause control in this app bar
+  is absurd. Measured: nothing is animating five seconds after arrival, so a phone
+  left open on the page costs nothing.
+
+  So it plays once when you land on a page. The mechanism is `key={pathname}` on
+  the mark in `Shell.tsx` and nothing else: the Shell outlives every navigation, so
+  a CSS animation inside it would run once per *session* — a failure nothing visible
+  would report, because the frame ends in its finished position and the bar looks
+  right. Re-keying replaces the element, which is what restarts it. No timer, no
+  state, no effect.
+
+  The line **stays** when it stops, which is what makes reduced motion correct
+  rather than blank: the finished state is the elements' plain CSS, so someone who
+  asked for less motion gets the completed frame immediately.
+
+  Told to him plainly as a departure from what he described, with the loop offered
+  as a one-line change if he prefers it after seeing this.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

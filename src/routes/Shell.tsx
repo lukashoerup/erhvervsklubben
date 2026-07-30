@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useMyMemberName } from '../data/useClubData'
 import { Icon } from '../components/Icon'
@@ -20,6 +20,10 @@ export function Shell() {
   const { signOut, userId } = useAuth()
   const { data: me } = useMyMemberName(userId)
   const navigate = useNavigate()
+  // Only to re-key the mark below, so its walk replays on each arrival. Reading
+  // the location here also means the Shell re-renders on navigation, which it
+  // already did through the Outlet.
+  const { pathname } = useLocation()
   const progress = useRef<HTMLDivElement>(null)
   useScrollProgress(progress)
 
@@ -90,8 +94,22 @@ export function Shell() {
                 logo is part of how the app came to look like two products, and
                 §02 is explicit that the vector is the mark — "skarp i alle
                 størrelser". 26 px matches the landing header and clears the
-                24 px floor. */}
-            <LogoMark size={26} />
+                24 px floor.
+
+                **`key={pathname}`, and it is the whole mechanism.** Lukas asked
+                for the landing intro's blue line to travel around this mark on
+                the members' screens (2026-07-30). The Shell outlives every
+                navigation, so the mark is never remounted and a CSS animation
+                inside it would play once in the session and never again;
+                re-keying it on the path makes React replace the element, which
+                restarts the animation. No timer, no state, no effect — and
+                tapping the tab you are already on changes nothing, which is
+                right: nothing arrived.
+
+                Once per arrival rather than on a loop, which is a deliberate
+                departure from what he described — see `.ek-walk` in index.css
+                for the argument. */}
+            <LogoMark key={pathname} size={26} walk />
             <span className="flex flex-col leading-none">
               <span className="text-xs font-bold tracking-[0.13em] uppercase">Erhvervsklubben</span>
               {/* Who is signed in, on every page rather than only the front one.

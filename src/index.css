@@ -478,6 +478,45 @@ body {
   transform-origin: center bottom;
 }
 
+/* ------------------------------------------------- the same walk, in the app bar
+   Lukas, 2026-07-30: "Kan man lave det sådan at den der blå ting rundt om logoet
+   i animationen på forsiden, sådan stille og roligt kører rundt om logoet som
+   står oppe i venstre hjørne, når man er logget ind og er på de øvrige sider?
+   Synes at det kunne være lidt cool. Eller er det en dårlig idé?"
+
+   He asked, so: **the gesture is good and "forever" is the bad part.** A loop in
+   a sticky app bar is motion in the reader's periphery on every screen, at all
+   times — the eye is drawn to movement, so it would compete with the club's own
+   figures for attention permanently, and WCAG 2.2.2 asks for a way to stop any
+   motion running past five seconds that is not essential. A permanent loop needs
+   a pause control, and a pause control in this app bar is absurd.
+
+   So it walks **once per arrival**: tap a tab and the club's blue line travels
+   around the mark, then rests. Same signature, and it rewards navigating rather
+   than becoming wallpaper. Shell.tsx keys the mark on the pathname, which
+   remounts it and restarts these animations; there is no JavaScript timer.
+
+   The line stays when it stops, which is deliberate and is also what makes the
+   reduced-motion case correct: the finished state is the elements' plain CSS, so
+   someone who asked for less motion gets the finished frame immediately — the
+   same lockup the landing page ends on, rather than nothing at all.
+
+   Same 550 ms per edge and the same overlap as the intro, offset only by where
+   the sequence starts: 120 ms rather than 1350, because here there is no plate
+   fading up and no letters sliding in to wait for. Total 2.02 s. */
+.ek-walk .ek-frame-t {
+  animation-delay: 120ms;
+}
+.ek-walk .ek-frame-r {
+  animation-delay: 570ms;
+}
+.ek-walk .ek-frame-b {
+  animation-delay: 1020ms;
+}
+.ek-walk .ek-frame-l {
+  animation-delay: 1470ms;
+}
+
 .ek-word {
   animation-name: ek-word;
   animation-delay: 1200ms;
