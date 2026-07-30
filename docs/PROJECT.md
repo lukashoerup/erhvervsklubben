@@ -514,6 +514,37 @@ without losing data and without taking the old site down until an approved cutov
   worth knowing before anyone reads it as a security change. Writing is still the
   admin's.
 
+- **2026-07-30 — one meetings page, and it is `/anciennitet`.** Lukas: *"Ancinitetssiden
+  er den rigtige. Den må der ikke ændres på"*, then *"Men den skal merges ind … Så
+  skal mødesiden fjernes."*
+
+  The constraint governs the scope: the merge is **additive by construction**.
+  Everything that was on `/anciennitet` is still on it in the order it was, and three
+  things joined it — the calendar as a section on top, `attendance_records.description`,
+  and a `<details>` on the card that opens onto the full text and that evening's fines.
+  A page-level test asserts the *order* of the page, not only its contents, because a
+  merge that quietly reorders the club's longest screen has broken the instruction with
+  every feature present.
+
+  **`events` was not deleted with its page**, and this is the decision most likely to be
+  undone by someone tidying up. It holds two things `attendance_records` structurally
+  cannot: **meetings still ahead** (an attendance record for a meeting that has not
+  happened is a record of who attended it — this is why the two tables were never one),
+  and **a held meeting whose record has no date** (`2025-04-26 #20` carries real prose
+  and record #20 is one of the eleven undated ones). Delete the calendar section and the
+  club's next meeting becomes unchangeable, on the front page as much as here.
+
+  **The backfill matched on date, corroborated by lead** — 8 of 12 events, only where the
+  date carries exactly one row on each side. Seven of the eight name their lead in their
+  own text and every one agrees with `attendance_records.lead`; the eighth matches on
+  venue. The number in the title is **never** used: T071 established the club's numbering
+  ran a meeting ahead of the database's through the middle of the history, so joining on
+  "#20" would move a third of it by one.
+
+  Also here, because it belonged nowhere else: `useFinance` moved to
+  `data/useClubData.ts` and both pages share the one `['finance']` query rather than each
+  keeping a copy of the fines retry ladder.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

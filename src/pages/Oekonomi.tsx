@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { READONLY, supabase } from '../lib/supabase'
 import { buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
-import { fineTotals, incomeByQuarter, outstandingByMember, type FineRow } from '../data/fines'
-import { HISTORIC_RULE_ID } from '../data/rules'
+import { fineTotals, incomeByQuarter, outstandingByMember } from '../data/fines'
 import { FineInsights } from '../components/FineInsights'
 import { IncomeMix } from '../components/IncomeMix'
 import { budgetFines, budgetHorizon, budgetLimits, projectBudget } from '../data/projection'
@@ -11,9 +10,8 @@ import { canBeFined, paysDues, payingMembersIn } from '../data/members'
 import { Loading, Problem } from '../components/State'
 import { FineCapture, type DraftFine } from '../components/FineCapture'
 import { FinanceChart, kr } from '../components/FinanceChart'
-import { useAttendance } from '../data/useClubData'
+import { useAttendance, useFinance } from '../data/useClubData'
 import { useAuth } from '../auth/AuthContext'
-import { DEMO, demoFines, demoPayments } from '../data/demo'
 import { Eyebrow, SectionTitle } from '../components/SectionTitle'
 
 /**
@@ -43,69 +41,6 @@ import { Eyebrow, SectionTitle } from '../components/SectionTitle'
  * writes on its own (see lib/supabase), and the write-shaped UI below is not
  * rendered, so nothing is protected by also refusing to read.
  */
-/** Postgres `undefined_column`, as PostgREST passes the SQLSTATE through. */
-const UNDEFINED_COLUMN = '42703'
-
-/**
- * The fine rows, tolerating a database older than this code.
- *
- * Three columns arrived after the club's project did — `rule_id` and `minutes`
- * with T054's capture, and `settled_at` on 2026-07-30 — and asking for a column
- * that does not exist fails the *whole* read. The club's books disappearing
- * behind "kunne ikke hente data" because one field is missing is the trade
- * `readRecords` already refused for `meeting_date`, so a missing column costs
- * that column and nothing else.
- *
- * What it costs is stated rather than hidden: without `settled_at` every fine
- * reads as outstanding, which is wrong in the direction that under-claims what
- * the club has collected. Over-claiming would be the dangerous way round.
- */
-async function readFines() {
-  const full = await supabase()
-    .from('fines')
-    .select('member_name, amount_kr, record_id, rule_id, minutes, settled_at')
-  if (!full.error) return (full.data ?? []) as FineRow[]
-  if (full.error.code !== UNDEFINED_COLUMN) throw full.error
-
-  const { data, error } = await supabase().from('fines').select('member_name, amount_kr, record_id')
-  if (error) throw error
-  return ((data ?? []) as Omit<FineRow, 'rule_id' | 'minutes' | 'settled_at'>[]).map((f) => ({
-    ...f,
-    rule_id: HISTORIC_RULE_ID,
-    minutes: null,
-    settled_at: null,
-  }))
-}
-
-/**
- * Its own async function, and not an inline `supabase().from(...)` in the
- * `Promise.all` below — the same trap `readMembers` documents in useClubData.ts.
- *
- * `supabase()` throws *synchronously* when it has no configuration, and a
- * synchronous throw while the argument array is being built abandons the sibling
- * promise mid-flight: an unhandled rejection, reported from the wrong place, in a
- * test file that never opened this page. It was inline until T078 made the fines
- * read a function and moved the throw to the second element, which is how it
- * surfaced. Inside an async function the same throw is an ordinary rejection,
- * which `Promise.all` is built to handle.
- */
-async function readPayments() {
-  const { data, error } = await supabase().from('payments').select('month, amount_kr')
-  if (error) throw error
-  return (data ?? []) as { month: string; amount_kr: number }[]
-}
-
-function useFinance() {
-  return useQuery({
-    queryKey: ['finance'],
-    queryFn: async () => {
-      if (DEMO) return { fines: demoFines, payments: demoPayments }
-      const [fines, payments] = await Promise.all([readFines(), readPayments()])
-      return { fines, payments }
-    },
-  })
-}
-
 /**
  * Danish has a singular and a plural, and neither of them is "bøde(r)".
  *

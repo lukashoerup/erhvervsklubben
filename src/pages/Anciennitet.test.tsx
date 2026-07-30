@@ -451,3 +451,83 @@ describe('the club’s history with no observer at all', () => {
     }
   })
 })
+
+/**
+ * The meetings page folded into this one on 2026-07-30. Lukas: *"Ancinitetssiden
+ * er den rigtige. Den må der ikke ændres på"*, then *"Så skal mødesiden fjernes"*.
+ *
+ * So the assertions are of two kinds, and the second is the one that matters:
+ * the calendar and the fines arrived, **and everything that was already here is
+ * still here, in the order it was.** A merge that quietly reorders the club's
+ * longest page has broken the instruction even with every feature present.
+ */
+describe('the calendar and the fines, now that /moeder is gone', () => {
+  const PLANNED = [
+    {
+      id: 'e1',
+      title: 'Erhvervsklub #29',
+      // Far enough ahead that the suite cannot age into calling it held.
+      date: '2099-08-08',
+      time: '18.30',
+      location: 'Frk. Barners',
+      description: 'Kasper er Lead.',
+    },
+  ]
+  const FINES = [
+    { member_name: 'Mads', amount_kr: 95, record_id: 1, rule_id: 'for-sent', minutes: 9 },
+    { member_name: 'Anders', amount_kr: 60, record_id: 1, rule_id: 'skaal', minutes: null },
+  ]
+
+  beforeEach(() =>
+    reset({
+      attendance_records: RECORDS,
+      attendances: ATTENDANCES,
+      events: PLANNED,
+      fines: FINES,
+      payments: [],
+    }),
+  )
+
+  it('shows a member what is planned, on the page that survived', async () => {
+    renderPage('user')
+    expect(await screen.findByText('Erhvervsklub #29')).toBeInTheDocument()
+    expect(screen.getByText('Planlagte møder')).toBeInTheDocument()
+    // The calendar's own editing is the admin's, exactly as it was on /moeder.
+    expect(
+      screen.queryByRole('button', { name: 'Nyt møde i kalenderen' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('gives the admin the calendar’s controls, which had no other home', async () => {
+    renderPage('admin')
+    expect(
+      await screen.findByRole('button', { name: 'Nyt møde i kalenderen' }),
+    ).toBeInTheDocument()
+    // Distinct from the history's own button, which writes the other table.
+    expect(screen.getByRole('button', { name: 'Registrér møde' })).toBeInTheDocument()
+  })
+
+  it('puts each meeting’s fines on its own card, for a member', async () => {
+    renderPage('user')
+    await screen.findByText('Esben')
+    // Meeting 1 (Esben) has both fines; meeting 2 (Saaby) has none, and gets no
+    // fold at all — which is 20 of the club's 28 real meetings.
+    const esben = cardFor('Esben')
+    expect(within(esben).getByText('95 kr.')).toBeInTheDocument()
+    expect(within(esben).getByText('60 kr.')).toBeInTheDocument()
+    expect(within(esben).getByText(/155 kr\./)).toBeInTheDocument()
+    expect(cardFor('Saaby').querySelector('details')).toBeNull()
+  })
+
+  it('leaves the history below the calendar, in the order it was', async () => {
+    renderPage('user')
+    await screen.findByText('Esben')
+    const order = [...document.querySelectorAll('h2, article h3, [class*="ek-figure"]')]
+      .map((el) => el.textContent?.trim())
+      .filter(Boolean)
+    // Planned meetings first, then the club's own history newest-first: 28
+    // before 27. Anciennitet's own summary and cards keep their places.
+    expect(order.indexOf('Planlagte møder')).toBeLessThan(order.indexOf('Esben'))
+    expect(order.indexOf('Esben')).toBeLessThan(order.indexOf('Saaby'))
+  })
+})

@@ -26,6 +26,19 @@ const FIELDS: Field[] = [
   { name: 'pre_location', label: 'Før' },
   { name: 'main_location', label: 'Sted' },
   { name: 'post_location', label: 'Efter' },
+  // Lukas, 2026-07-30: "der skal være mulighed for at lave en kort beskrivelse i
+  // ancinitetssiden". Last, because the six fields above are what a meeting *is*
+  // and this is what was said about it — and because it is the one field that
+  // grows: a textarea between two single-line inputs pushes the venues off a
+  // phone screen. The eight seeded from the calendar run from four words to a
+  // full paragraph, so the hint states the intent without the form enforcing a
+  // length nobody agreed to.
+  {
+    name: 'description',
+    label: 'Beskrivelse',
+    kind: 'textarea',
+    hint: 'kort — vises på kortet, fuldt når man klikker ind',
+  },
 ]
 
 const TICK =
@@ -70,6 +83,7 @@ const draftOf = (m: Meeting | null, nextNumber: number): Draft =>
           pre_location: m.venues.pre ?? '',
           main_location: m.venues.main,
           post_location: m.venues.post ?? '',
+          description: m.description ?? '',
         }
       : { meeting_number: String(nextNumber) },
   )
@@ -153,6 +167,7 @@ export function MeetingEditor({
           pre_location: draft.pre_location?.trim() || null,
           main_location: draft.main_location.trim(),
           post_location: draft.post_location?.trim() || null,
+          description: draft.description?.trim() || null,
         },
         attendance: ticks,
         stored,

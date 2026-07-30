@@ -16,6 +16,12 @@ export type RecordRow = {
   post_location: string | null
   /** Null for meetings recorded before dates were captured. */
   meeting_date?: string | null
+  /**
+   * Free prose about the evening, added 2026-07-30. Optional in the type for the
+   * same reason `meeting_date` is: a database that predates the column returns
+   * rows without it, and the app has to keep working on one.
+   */
+  description?: string | null
 }
 
 export type AttendanceRow = {
@@ -42,6 +48,14 @@ export type Meeting = {
    * write it back. `route` is for reading; this is for correcting.
    */
   venues: { pre: string | null; main: string; post: string | null }
+  /**
+   * What the club wrote about the evening, or null.
+   *
+   * Eight of these were seeded from the calendar's own announcements, which is
+   * where the club had always written them — see the 2026-07-30 migration. Empty
+   * strings normalise to null so a card cannot open a disclosure onto nothing.
+   */
+  description: string | null
   present: string[]
   absent: string[]
 }
@@ -186,6 +200,10 @@ export function buildMeetings(
           main: r.main_location,
           post: r.post_location,
         },
+        // Trimmed to null, not passed through. A row holding "" or a stray
+        // newline is indistinguishable from one holding nothing, and the card
+        // decides whether to offer a "læs mere" on exactly this value.
+        description: r.description?.trim() || null,
         present,
         absent,
       }

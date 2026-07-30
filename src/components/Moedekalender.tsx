@@ -1,12 +1,10 @@
-import type { ReactNode } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { useEvents, type EventItem } from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
 import { daDate, todayISO } from '../lib/dates'
-import { DateRail } from '../components/DateRail'
-import { Icon } from '../components/Icon'
-import { Loading, Problem } from '../components/State'
-import { SectionTitle } from '../components/SectionTitle'
+import { DateRail } from './DateRail'
+import { Icon } from './Icon'
+import { SectionTitle } from './SectionTitle'
 import {
   blankDraft,
   DeleteConfirm,
@@ -16,7 +14,7 @@ import {
   useEditor,
   type Draft,
   type Field,
-} from '../components/AdminEdit'
+} from './AdminEdit'
 
 /**
  * `time` is a text column, so the field is a text field.
@@ -46,22 +44,31 @@ const draftOf = (e: EventItem): Draft => ({
 const blank = () => blankDraft(FIELDS, { date: todayISO() })
 
 /**
- * The club's calendar — what is planned, and what has been held.
+ * The club's calendar — what is planned, and what is on the books behind.
  *
- * It exists because the meetings had nowhere to live. The front page names the
- * next one, the public page shows two, and neither can be corrected: an admin
- * with a wrong date had no screen to fix it on. §9 promises two meetings ahead
- * at all times, so how many are actually in the calendar is a fact members are
- * entitled to see rather than a thing only the app knows.
+ * **This was `/moeder` until 2026-07-30.** Lukas asked for the meetings page and
+ * the anciennitet page to become one — *"Så skal mødesiden fjernes"* — with
+ * /anciennitet as the surviving screen, untouched. So the calendar moved onto it
+ * as a section rather than being deleted, because `events` holds two things
+ * `attendance_records` structurally cannot:
  *
- * Held meetings stay on the page, below. They are what a mistyped date turns
- * into, and a list that showed only the future would hide the row that needs
- * fixing — the club would lose a meeting by getting its year wrong.
+ *   * **Meetings still ahead.** #29 and #30 are planned and dated. An attendance
+ *     record for a meeting that has not happened would be a record of who
+ *     attended it, which is why the two tables were never merged in the database.
+ *     Delete this and the club's next meeting is unchangeable, on the front page
+ *     as much as here.
+ *   * **A held meeting whose record has no date.** `2025-04-26 Erhvervsklub #20`
+ *     carries a real description, and record #20 is one of the eleven the history
+ *     never dated — so the 2026-07-30 backfill could not match it and it lives on
+ *     here. A calendar showing only the future would hide it, along with any
+ *     evening whose year was mistyped: that is what the second section is for,
+ *     and it is why it is folded rather than dropped.
  *
- * These are `events`, not `attendance_records`: the calendar, not the
- * attendance history. Anciennitet reads the other table.
+ * Held entries are shut by default. /anciennitet is the longest page in the app
+ * and the history below already tells the club what happened; open, this answers
+ * "what did the calendar say" and lets an admin fix it.
  */
-export default function Moeder() {
+export function Moedekalender() {
   const { data, isPending, error } = useEvents()
   const { role } = useAuth()
   const editor = useEditor('events')
@@ -71,8 +78,10 @@ export default function Moeder() {
   // stops the app offering a button that could only fail.
   const mayEdit = role === 'admin' && !READONLY
 
-  if (isPending) return <Loading what="møder" />
-  if (error) return <Problem />
+  // No spinner and no error box. This section sits above a page that renders its
+  // own state for the club's history, and two competing "henter…" blocks on one
+  // screen read as a page that is broken rather than as one that is loading.
+  if (isPending || error || !data) return null
 
   // Compared and sorted as text: `YYYY-MM-DD` orders correctly that way, so
   // there is no Date here and therefore no zone to get wrong. The two halves
@@ -110,18 +119,11 @@ export default function Moeder() {
          border weight, never by fill. */
       className={`rounded-2xl border bg-surface p-4 ${next ? 'border-[1.5px] border-accent' : 'border-line'}`}
     >
-      {/* The date became the card's face rather than a 10 px line above its
-          title. Both halves of this page are the same card repeated, and what
-          a member scans for is *when* — so the day is a 26 px serif numeral in
-          a rail, with the time under it, and the whole "hvornår" is one block
-          on the left instead of a sentence across the top. The rail's hairline
+      {/* The date is the card's face rather than a 10 px line above its title:
+          what a member scans a calendar for is *when*, so the day is a 26 px
+          serif numeral in a rail with the time under it. The rail's hairline
           carries the club's blue while the meeting is still ahead and the
-          ordinary line once it has been held: scrolled past the boundary, the
-          page says which half you are in without a chip or a second heading.
-          See components/DateRail.tsx.
-
-          The blue on the card itself is still its border and only its border,
-          which is how the system marks the live row. */}
+          ordinary line once it has been held. See components/DateRail.tsx. */}
       <div className="flex gap-3">
         <DateRail iso={e.date} time={e.time} ahead={ahead} />
         <div className="min-w-0 flex-1">
@@ -132,13 +134,10 @@ export default function Moeder() {
 
               **This row is where the map will live.** Lukas, 2026-07-29: "vi
               skal have et kort, som viser alle steder vi har været implementeret
-              på længere sigt." A place is a different kind of thing from a
-              title and a description, and it was previously indistinguishable
-              from either — one more muted 12 px line in a stack of them. Given
-              its own row, its own icon and the full width of the card, it can
-              become a link, a chip or a row of them without the card being
-              rebuilt around it. Nothing here reaches for a map today and no
-              dependency was added for one.
+              på længere sigt." Given its own row, its own icon and the full
+              width of the card, it can become a link or a chip without the card
+              being rebuilt around it. Nothing here reaches for a map today and
+              no dependency was added for one.
 
               Stated rather than left blank: the venue is usually settled after
               the date, so an empty line reads as a page that failed to load. */}
@@ -151,7 +150,6 @@ export default function Moeder() {
           {e.description && (
             <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{e.description}</p>
           )}
-
         </div>
       </div>
 
@@ -170,48 +168,45 @@ export default function Moeder() {
   )
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5">
+      <SectionTitle>Planlagte møder</SectionTitle>
+
       {mayEdit &&
         (editor.creating ? (
           form(null)
         ) : (
-          <NewButton label="Nyt møde" onClick={() => editor.create(blank())} />
+          // "i kalenderen", because /anciennitet now carries two new-meeting
+          // buttons that write different tables: this one plans an evening,
+          // "Registrér møde" below records one that has happened.
+          <NewButton label="Nyt møde i kalenderen" onClick={() => editor.create(blank())} />
         ))}
 
-      <Section title="Planlagte møder">
-        {planned.length === 0 ? (
-          // Not a neutral empty state: the statutes require two in the calendar
-          // at all times, so nothing planned is a fact worth stating.
-          <p className="text-sm text-muted">
-            Ingen møder i kalenderen. Vedtægterne §9: der planlægges altid to møder forud.
-          </p>
-        ) : (
-          planned.map((e, i) =>
-            mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0, true),
-          )
-        )}
-      </Section>
+      {planned.length === 0 ? (
+        // Not a neutral empty state: the statutes require two in the calendar
+        // at all times, so nothing planned is a fact worth stating.
+        <p className="text-sm text-muted">
+          Ingen møder i kalenderen. Vedtægterne §9: der planlægges altid to møder forud.
+        </p>
+      ) : (
+        planned.map((e, i) =>
+          mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0, true),
+        )
+      )}
 
-      <Section title="Afholdte møder">
-        {held.length === 0 ? (
-          <p className="text-sm text-muted">Ingen afholdte møder i kalenderen.</p>
-        ) : (
-          held.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false, false)))
-        )}
-      </Section>
+      {held.length > 0 && (
+        <details data-reveal className="rounded-2xl border border-line bg-surface">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between p-4">
+            <SectionTitle onCard>Kalenderen bagud</SectionTitle>
+            <span className="text-[0.62rem] text-faint">{held.length}</span>
+          </summary>
+          {/* Inside the fold, the same cards. This is the only screen a meeting
+              with a mistyped — and therefore past — date can be reached on, so
+              an admin still gets Rediger and Slet on every one of them. */}
+          <div className="flex flex-col gap-2.5 border-t border-line p-4">
+            {held.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false, false)))}
+          </div>
+        </details>
+      )}
     </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-2.5">
-      {/* Sticky here more than anywhere: the two halves of this page look
-          identical card for card, and which half you are in — planned, or
-          already held — is the whole difference between "we are meeting" and
-          "we met". Scrolled past the boundary, the page had stopped saying. */}
-      <SectionTitle>{title}</SectionTitle>
-      {children}
-    </section>
   )
 }

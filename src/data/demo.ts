@@ -79,6 +79,13 @@ export const demoRecords: RecordRow[] = Array.from({ length: 28 }, (_, i) => {
     main_location: main,
     post_location: post,
     meeting_date: d.toISOString().slice(0, 10),
+    // On some, not all. The real table carries prose on 8 of 28, and a demo where
+    // every card offers a fold hides the thing worth checking — that a meeting
+    // nobody wrote about is still the card it always was.
+    description:
+      n % 3 === 1
+        ? `${LEADS[n % LEADS.length]} er Lead. Vi mødes i privaten og går videre til ${main}. Der er lagt op til faglige diskussioner og et godt måltid.`
+        : null,
   }
 })
 

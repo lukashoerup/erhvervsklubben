@@ -1,8 +1,19 @@
 import type { ReactNode } from 'react'
 import type { Meeting, RosterEntry } from '../data/derive'
 import { daDate } from '../lib/dates'
+import { daMinutes } from '../data/fines'
+import { describeRule } from '../data/rules'
 import { Icon } from './Icon'
+import { kr } from './FinanceChart'
 import { Eyebrow } from './SectionTitle'
+
+/** One fine as this card needs it — the row, not the club's totals. */
+export type MeetingFine = {
+  member_name: string
+  rule_id: string
+  minutes: number | null
+  amount_kr: number
+}
 
 /** Short month, because 29 of these stack down a phone. The year stays. */
 const SHORT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
@@ -45,11 +56,14 @@ export function MeetingCard({
   meeting,
   labels,
   me,
+  fines = [],
   actions,
 }: {
   meeting: Meeting
   labels: Record<string, string>
   me?: string | null
+  /** This meeting's fines, for the disclosure below. Empty is ordinary. */
+  fines?: MeetingFine[]
   /** The admin's Rediger and Slet, below the strip. A member is passed none
       and the card is exactly what it was. */
   actions?: ReactNode
@@ -148,6 +162,86 @@ export function MeetingCard({
         {meeting.present.map((n) => pip(n, true))}
         {meeting.absent.map((n) => pip(n, false))}
       </div>
+
+      {/* **The way into a meeting.** Lukas, 2026-07-30: "Man skal også gerne kunne
+          klikke sig ind på et møde på ancinitetssiden for et medlem og læse fulde
+          beskrivelse samt se hvilke bøder der er blevet udgivet til det møde."
+
+          A disclosure on the card rather than a route of its own. Twenty-eight
+          cards down one page and a phone in one hand: a drill-in costs the reader
+          his scroll position on the way back, and it would put the club's rhythm
+          — the thing /anciennitet *is* — one navigation away from the detail.
+          `<details>` is native, so it opens before the JavaScript settles and the
+          keyboard and screen-reader behaviour come for free. Same idiom as
+          "Sidst set" one card up the page.
+
+          The summary is the first two lines of the description, so the tap target
+          is the prose itself and the card gains a sentence rather than a control.
+          Where a meeting has no description the summary falls back to naming what
+          is inside, because a fine list is worth a way in on its own — and a card
+          with neither renders nothing at all, which is 20 of the 28 today: the
+          page a member already knows, unchanged. */}
+      {(meeting.description || fines.length > 0) && (
+        <details className="group mt-2.5 border-t border-line pt-2.5">
+          <summary className="flex min-h-11 cursor-pointer list-none items-start gap-2">
+            <span className="min-w-0 flex-1 text-xs leading-relaxed text-muted">
+              {meeting.description ? (
+                // Two lines closed, all of it open — one element, so the text
+                // does not reflow from a second copy of itself.
+                <span className="line-clamp-2 group-open:line-clamp-none">
+                  {meeting.description}
+                </span>
+              ) : (
+                <span className="text-faint">
+                  {fines.length === 1 ? '1 bøde på mødet' : `${fines.length} bøder på mødet`}
+                </span>
+              )}
+            </span>
+            {/* Words, not a chevron. The icon font in `public/fonts/` is a
+                subset of exactly nine glyphs addressed by codepoint, and
+                `expand_more` is not one of them — adding it to `Icon` without
+                re-subsetting the file renders a blank box, which the icon set
+                says in its own header. Two words cost nothing and are the one
+                affordance that cannot fall back to nothing. */}
+            <span className="shrink-0 pt-px text-[0.62rem] tracking-wide text-accent uppercase">
+              <span className="group-open:hidden">Mere</span>
+              <span className="hidden group-open:inline">Skjul</span>
+            </span>
+          </summary>
+
+          {fines.length > 0 && (
+            <div className="mt-3">
+              <Eyebrow>
+                {fines.length === 1 ? 'Bøde på mødet' : 'Bøder på mødet'} ·{' '}
+                {kr(fines.reduce((n, f) => n + f.amount_kr, 0))}
+              </Eyebrow>
+              {/* The offence in words, never the amount decoded back into one.
+                  50 + 5/min means 95 kr. is arithmetically nine minutes late, and
+                  T075 refused that inference for the whole history — a card is
+                  not the place to reintroduce it. `describeRule` reads the rule
+                  the row carries, and the minutes are printed only where the row
+                  actually holds them. */}
+              <ul className="mt-2">
+                {fines.map((f, i) => (
+                  <li
+                    key={`${f.member_name}-${f.rule_id}-${i}`}
+                    className="flex items-baseline justify-between gap-3 border-b border-line/50 py-1.5 text-xs last:border-b-0"
+                  >
+                    <span className="min-w-0">
+                      <span className="font-medium">{f.member_name}</span>
+                      <span className="text-muted"> · {describeRule(f.rule_id)}</span>
+                      {f.minutes ? (
+                        <span className="text-faint"> ({daMinutes(f.minutes)})</span>
+                      ) : null}
+                    </span>
+                    <span className="tabular shrink-0 font-semibold">{kr(f.amount_kr)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </details>
+      )}
 
       {actions && <div className="mt-3 flex flex-wrap items-start gap-2">{actions}</div>}
     </article>

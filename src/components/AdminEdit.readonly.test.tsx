@@ -20,10 +20,10 @@ import { client, reset } from '../test/writes'
 vi.mock('../lib/supabase', () => ({ READONLY: true, supabase: () => client }))
 
 const { default: Nyheder } = await import('../pages/Nyheder')
-const { default: Moeder } = await import('../pages/Moeder')
+const { Moedekalender } = await import('../components/Moedekalender')
 const { default: Anciennitet } = await import('../pages/Anciennitet')
 
-const PAGES = { nyheder: Nyheder, moeder: Moeder, anciennitet: Anciennitet }
+const PAGES = { nyheder: Nyheder, kalender: Moedekalender, anciennitet: Anciennitet }
 
 function renderAsAdmin(page: keyof typeof PAGES) {
   reset({
@@ -76,7 +76,7 @@ describe('a read-only preview', () => {
   })
 
   it('still shows the calendar, and offers no way to change it', async () => {
-    renderAsAdmin('moeder')
+    renderAsAdmin('kalender')
     expect(await screen.findByText('Møde #29')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Nyt møde' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()

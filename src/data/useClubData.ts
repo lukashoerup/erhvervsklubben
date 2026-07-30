@@ -2,14 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
 import type { Member } from './members'
+import type { FineRow } from './fines'
+import { HISTORIC_RULE_ID } from './rules'
 import {
   DEMO,
   demoAttendances,
   demoDelete,
   demoDeleteMeeting,
   demoEvents,
+  demoFines,
   demoMembers,
   demoNews,
+  demoPayments,
   demoRecords,
   demoSave,
   demoSaveMeeting,
@@ -42,6 +46,17 @@ const UNDEFINED_TABLE = 'PGRST205'
  * column is added, the first request succeeds and the dates simply appear.
  */
 export async function readRecords(): Promise<RecordRow[]> {
+  // A ladder, most complete first, one optional column dropped per rung:
+  // `description` arrived 2026-07-30 and `meeting_date` on 2026-07-29, so a
+  // database can be behind this build by either or both. Descending rather than
+  // probing per column, because two probes cost two round-trips on every load
+  // where one retry costs an extra one only on a database that is behind.
+  const full = await supabase()
+    .from('attendance_records')
+    .select(`${RECORD_COLUMNS}, meeting_date, description`)
+  if (!full.error) return (full.data ?? []) as RecordRow[]
+  if (full.error.code !== UNDEFINED_COLUMN) throw full.error
+
   const withDate = await supabase()
     .from('attendance_records')
     .select(`${RECORD_COLUMNS}, meeting_date`)
@@ -323,6 +338,80 @@ export function useDeleteRow(table: ContentTable) {
   })
 }
 
+// ------------------------------------------------------ the club's money
+//
+// Moved here from `pages/Oekonomi.tsx` on 2026-07-30, when /anciennitet started
+// showing each meeting's own fines. Two pages reading the same rows had to be one
+// query and not two copies of the retry ladder below — the key is `['finance']`,
+// which `AFFECTED` above already invalidates, so a saved meeting refreshes both
+// screens whichever one it was saved from.
+
+/**
+ * The fine rows, tolerating a database older than this code.
+ *
+ * Three columns arrived after the club's project did — `rule_id` and `minutes`
+ * with T054's capture, and `settled_at` on 2026-07-30 — and asking for a column
+ * that does not exist fails the *whole* read. The club's books disappearing
+ * behind "kunne ikke hente data" because one field is missing is the trade
+ * `readRecords` already refused for `meeting_date`, so a missing column costs
+ * that column and nothing else.
+ *
+ * What it costs is stated rather than hidden: without `settled_at` every fine
+ * reads as outstanding, which is wrong in the direction that under-claims what
+ * the club has collected. Over-claiming would be the dangerous way round.
+ */
+export async function readFines(): Promise<FineRow[]> {
+  const full = await supabase()
+    .from('fines')
+    .select('member_name, amount_kr, record_id, rule_id, minutes, settled_at')
+  if (!full.error) return (full.data ?? []) as FineRow[]
+  if (full.error.code !== UNDEFINED_COLUMN) throw full.error
+
+  const { data, error } = await supabase().from('fines').select('member_name, amount_kr, record_id')
+  if (error) throw error
+  return ((data ?? []) as Omit<FineRow, 'rule_id' | 'minutes' | 'settled_at'>[]).map((f) => ({
+    ...f,
+    rule_id: HISTORIC_RULE_ID,
+    minutes: null,
+    settled_at: null,
+  }))
+}
+
+/**
+ * Its own async function, and not an inline `supabase().from(...)` in the
+ * `Promise.all` below — the same trap `readMembers` documents above.
+ *
+ * `supabase()` throws *synchronously* when it has no configuration, and a
+ * synchronous throw while the argument array is being built abandons the sibling
+ * promise mid-flight: an unhandled rejection, reported from the wrong place, in a
+ * test file that never opened the page.
+ */
+async function readPayments() {
+  const { data, error } = await supabase().from('payments').select('month, amount_kr')
+  if (error) throw error
+  return (data ?? []) as { month: string; amount_kr: number }[]
+}
+
+/**
+ * Fines and payments together, because every reader of one wants the other and a
+ * demo build has to answer both from the same branch.
+ *
+ * Deliberately *not* short-circuited for a read-only build: it ships the club's
+ * real anon key and has read the real books since 2026-07-27. A preview of the
+ * accounts reporting zeros would be a lie told by the mode whose whole purpose is
+ * looking without touching.
+ */
+export function useFinance() {
+  return useQuery({
+    queryKey: ['finance'],
+    queryFn: async () => {
+      if (DEMO) return { fines: demoFines, payments: demoPayments }
+      const [fines, payments] = await Promise.all([readFines(), readPayments()])
+      return { fines, payments }
+    },
+  })
+}
+
 // ------------------------------------------------------ writing a meeting
 
 /** The `attendance_records` columns an admin fills in. */
@@ -334,6 +423,12 @@ export type MeetingRecord = {
   pre_location: string | null
   main_location: string
   post_location: string | null
+  /**
+   * The evening in prose, 2026-07-30. Optional in the type so a caller written
+   * before the column — or a test fixture — still satisfies it, and so an
+   * update never sends the key it does not mean to change.
+   */
+  description?: string | null
 }
 
 /** Who was ticked off: member name → was present. */

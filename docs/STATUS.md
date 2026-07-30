@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-30 (T078 — udestående fixed, fine insights, income mix). Single source of truth for "where are we". Update this at the
+_Updated 2026-07-30 (T080 — the meetings page folded into anciennitet; /oekonomi opened to every member). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -11,11 +11,22 @@ end of every working session._
 
 **Production now has** `fines`, `payments`, `attendance_records.meeting_date`
 (added 2026-07-27), **`members`** (T069) and **`member_last_seen`** (T074) from
-2026-07-29, and **`members.dues_from`** from 2026-07-30 (T076) — all additive, no
+2026-07-29, and from 2026-07-30 **`members.dues_from`** (T076), **`fines.settled_at`**
+(T078) and **`attendance_records.description`** (T080) — all additive, no
 existing row touched. **28** meetings and 235
 attendance rows intact — the junk duplicate of meeting #27 has since been
 removed, so record ids run 1–27 and 29. **17 of the 28 meetings now carry a
 date** (2026-07-29, T071) — see below.
+
+**There is one meetings page now, and it is `/anciennitet`** (2026-07-30, T080).
+Lukas: *"Ancinitetssiden er den rigtige. Den må der ikke ændres på"*, then *"Så
+skal mødesiden fjernes."* So the merge is additive by construction — everything
+that was on that page is still on it in the order it was, and three things joined
+it: the calendar on top (planned meetings for every member, the admin's editing,
+held entries folded), a **description on each meeting record**, and a disclosure on
+the card that opens onto the full text and **that evening's fines**. `/moeder` is
+gone and the tab bar is five columns. `events` survives because a meeting still
+ahead cannot have an attendance record — see `tasks/done/T080-meetings-merged.md`.
 
 **`/oekonomi` was wrong about udestående, and it is fixed** (2026-07-30, T078).
 Lukas found it by reading the page: *"Der står i toppen af økonomisiden at der er
@@ -449,7 +460,9 @@ behind the login; admins additionally edit news, events and attendance.
    page **`/moeder`**, which is also the first place the club's whole calendar —
    planned *and* held — has been readable. Held meetings stay on it
    deliberately: a date typed wrong lands in the past, and every other view of
-   `events` shows only the future.
+   `events` shows only the future. **`/moeder` was removed on 2026-07-30 (T080)**
+   and the calendar is now a section at the top of `/anciennitet` — everything in
+   this paragraph still holds, on that screen instead.
    **Attendance (T065).** On `/anciennitet`, the page the history is read on: an
    admin records a meeting and ticks off who came, or corrects one already
    recorded. Ten members, two columns, 48 px buttons, and a new meeting starts

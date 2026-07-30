@@ -28,13 +28,16 @@ Which DB an environment uses is set by two build-time env vars
 ## Frontend stack
 - **React 19 + Vite + TypeScript**, **React Router**. Routes are Danish, and are
   declared once with their access level in `src/routes/routes.ts`: `/` and
-  `/login` are public; `/hjem`, `/anciennitet`, `/moeder`, `/nyheder`, `/regler`
-  and `/oekonomi` need a login. `/` is the club's public landing page since
+  `/login` are public; `/hjem`, `/anciennitet`, `/nyheder`, `/regler` and
+  `/oekonomi` need a login. `/moeder` existed from 2026-07-27 to 2026-07-30, when
+  Lukas asked for the meetings page and the anciennitet page to become one; the
+  calendar it showed is a section at the top of `/anciennitet`
+  (`components/Moedekalender.tsx`) and the tab bar is five columns. `/` is the club's public landing page since
   2026-07-27; a signed-in member opening it is forwarded to `/hjem`. The
   intended levels are asserted independently in `routing.test.tsx`, so changing
   one takes two deliberate edits rather than one word.
 - **Admin writing lives inside member pages, not behind an admin route.**
-  `/nyheder`, `/moeder` and `/anciennitet` are member routes; the
+  `/nyheder` and `/anciennitet` are member routes; the
   create/edit/delete controls on them are gated in-page on `role === 'admin'`
   (and off entirely in a READONLY build), the same shape `/oekonomi` uses for
   the treasurer's tools. The form, the two-step delete and the open-row state

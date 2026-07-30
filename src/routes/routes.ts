@@ -49,14 +49,12 @@ export const ROUTES: RouteDef[] = [
   { path: '/', access: 'public' },
   { path: '/hjem', access: 'member', nav: { label: 'Hjem', icon: 'home' } },
   { path: '/anciennitet', access: 'member', nav: { label: 'Anciennitet', icon: 'bar_chart' } },
-  // Members, added 2026-07-27 with the admin editing (T063). The calendar was
-  // readable in two places and correctable in none — the front page names the
-  // next meeting and the public page shows two, so an admin who typed a date
-  // wrong had no screen to fix it on. Member rather than admin because `events`
-  // is anon-readable already: the club's own meeting list cannot sensibly be
-  // more private to a member than it is to a stranger. Only the buttons on it
-  // are the admin's.
-  { path: '/moeder', access: 'member', nav: { label: 'Møder', icon: 'calendar_month' } },
+  // `/moeder` was here from 2026-07-27 until 2026-07-30, when Lukas asked for the
+  // meetings page and the anciennitet page to become one: "Så skal mødesiden
+  // fjernes." The calendar it showed is now a section at the top of
+  // /anciennitet — see components/Moedekalender.tsx — so `events` keeps its
+  // screen, its admin editing and its two meetings ahead, and the tab bar is
+  // five columns instead of six.
   { path: '/nyheder', access: 'member', nav: { label: 'Nyheder', icon: 'article' } },
   { path: '/regler', access: 'member', nav: { label: 'Regler', icon: 'gavel' } },
   // Members, not admins. It is their money: §8 puts the accounts in front of

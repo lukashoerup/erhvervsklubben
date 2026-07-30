@@ -8,7 +8,6 @@ import Login from './pages/Login'
 import Landing from './pages/Landing'
 import Home from './pages/Home'
 import Anciennitet from './pages/Anciennitet'
-import Moeder from './pages/Moeder'
 import Nyheder from './pages/Nyheder'
 import Regler from './pages/Regler'
 import Oekonomi from './pages/Oekonomi'
@@ -47,7 +46,6 @@ export default function App() {
       <Route element={<Shell />}>
         <Route path="/hjem" element={<RequireAccess access="member"><Home /></RequireAccess>} />
         <Route path="/anciennitet" element={<RequireAccess access="member"><Anciennitet /></RequireAccess>} />
-        <Route path="/moeder" element={<RequireAccess access="member"><Moeder /></RequireAccess>} />
         <Route path="/nyheder" element={<RequireAccess access="member"><Nyheder /></RequireAccess>} />
         <Route path="/regler" element={<RequireAccess access="member"><Regler /></RequireAccess>} />
         <Route path="/oekonomi" element={<RequireAccess access="member"><Oekonomi /></RequireAccess>} />

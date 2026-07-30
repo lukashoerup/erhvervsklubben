@@ -15,7 +15,7 @@ import { client, reset, writes } from '../test/writes'
  */
 vi.mock('../lib/supabase', () => ({ READONLY: false, supabase: () => client }))
 
-const { default: Moeder } = await import('./Moeder')
+const { Moedekalender } = await import('./Moedekalender')
 
 const day = (offset: number) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10)
 
@@ -38,11 +38,17 @@ function renderPage(role: AuthState['role']) {
   return render(
     withQuery(
       <AuthContext.Provider value={value}>
-        <Moeder />
+        <Moedekalender />
       </AuthContext.Provider>,
     ),
   )
 }
+
+/** Relabelled 2026-07-30: /anciennitet now carries two new-meeting buttons that
+    write different tables — this one plans an evening, "Registrér møde" records
+    one that happened. Named once here so the distinction cannot rot in four
+    places. */
+const NEW_MEETING = 'Nyt møde i kalenderen'
 
 const cardFor = (title: string) => screen.getByText(title).closest('article')!
 
@@ -60,7 +66,7 @@ describe('the calendar a member sees', () => {
   it('offers a member nothing that writes', async () => {
     renderPage('user')
     await screen.findByText('Møde #29')
-    expect(screen.queryByRole('button', { name: 'Nyt møde' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: NEW_MEETING })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
   })
@@ -96,7 +102,7 @@ describe('writing a meeting', () => {
   it('creates one from what was typed', async () => {
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Nyt møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
 
     await user.type(screen.getByLabelText(/Titel/), 'Møde #31')
     fireEvent.change(screen.getByLabelText(/Dato/), { target: { value: '2026-12-03' } })
@@ -126,7 +132,7 @@ describe('writing a meeting', () => {
     // that is not Enter and nothing may be lost on the way to Gem.
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Nyt møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
 
     await user.type(screen.getByLabelText(/Titel/), 'Julefrokost')
     await user.tab()
@@ -140,7 +146,7 @@ describe('writing a meeting', () => {
   it('refuses to save a meeting with no title', async () => {
     const user = userEvent.setup()
     renderPage('admin')
-    await user.click(await screen.findByRole('button', { name: 'Nyt møde' }))
+    await user.click(await screen.findByRole('button', { name: NEW_MEETING }))
     expect(screen.getByRole('button', { name: 'Gem' })).toBeDisabled()
   })
 

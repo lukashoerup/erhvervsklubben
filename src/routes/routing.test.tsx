@@ -66,11 +66,6 @@ const INTENDED: Record<string, string> = {
   '/': 'public',
   '/hjem': 'member',
   '/anciennitet': 'member',
-  // Member, not admin — 2026-07-27, with the admin editing. `events` is
-  // anon-readable by decision, so the club's own calendar cannot be more
-  // private to a member than it is to a stranger on the landing page. Moving
-  // this to 'admin' would hide from the membership a list the public can read.
-  '/moeder': 'member',
   '/nyheder': 'member',
   '/regler': 'member',
   // Members, not admins — Lukas, 2026-07-27, correcting the call made a day
