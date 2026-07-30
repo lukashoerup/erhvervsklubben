@@ -604,6 +604,31 @@ without losing data and without taking the old site down until an approved cutov
   attended, so a meeting still ahead cannot have one — that is why `events` exists and
   why it was never merged away in the database.
 
+- **2026-07-30 — the calendar shows what is ahead and nothing else.** Lukas, on the
+  two rows that were not duplicates: *"Fjern de to kalender aftaler som kun er i
+  kalenderen. De er gamle og vi laver formentligt ikke sådan nogle igen. Så fjern dem
+  fra frontenden."*
+
+  **Frontend, not the database** — his word, and the right one. `2025-04-26
+  Erhvervsklub #20` carries the only prose the club has ever written about that
+  evening, and its record is one of the eleven that never got a date, so nothing could
+  pair them. Both rows stay in `events`, and a future pass can move #20's description
+  onto its record the day that record gets a date. A row nobody renders costs nothing;
+  a deleted row is gone.
+
+  This retires `heldDates` one commit after introducing it, and that is the point
+  rather than churn: it existed to hide *past* calendar rows that duplicate the
+  attendance cards, and nothing past is drawn now. Nothing to deduplicate, so the
+  filter is a date instead of a set of dates.
+
+  **The mistyped-date safety net moved rather than disappearing**, which is the part
+  worth keeping straight. It used to be "past rows stay visible". Now: a *new* meeting
+  given a past date is routed to `attendance_records` and lands among the history
+  cards, visible and editable — so the common typo is covered by the routing itself.
+  The one remaining path, editing a planned meeting's date into the past, makes the
+  card leave the list, so the form says so **before** Gem. A card that vanishes on
+  save with no explanation reads as data lost.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

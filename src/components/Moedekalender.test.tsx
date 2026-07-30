@@ -6,19 +6,18 @@ import { withQuery } from '../test/harness'
 import { client, reset, writes } from '../test/writes'
 
 /**
- * The meetings the attendance history has no evening for, on /anciennitet.
+ * The meetings still ahead, on /anciennitet.
  *
- * Two properties are load-bearing and the first is why this component was rewritten
- * on 2026-07-30. Lukas, looking at the merge: *"alle møder ligger flere gange …
- * denne funktionalitet med at have møder separat fra kortene på anciennitetssiden
- * giver ikke så meget mening. Det er jo alt sammen møder."* Ten of the club's twelve
- * `events` rows are the same evenings as the attendance cards below them, and both
- * were being drawn.
+ * The one property that carries the whole component: **nothing in the past is
+ * drawn.** Two decisions in a row put it there. First Lukas found the duplication —
+ * *"alle møder ligger flere gange … Det er jo alt sammen møder"* — because ten of the
+ * club's twelve `events` rows are the same evenings as the attendance cards below.
+ * Then he asked for the two that were not duplicates to go as well: *"Fjern de to
+ * kalender aftaler som kun er i kalenderen. De er gamle og vi laver formentligt ikke
+ * sådan nogle igen."*
  *
- * So: **a row the history covers is not drawn at all**, and **a row it does not is**
- * — because a meeting whose year was mistyped lands in the past, and this is the
- * only screen it is reachable on. Filtering on "is it in the future" alone would
- * lose it; filtering on nothing prints the club's history twice.
+ * So the filter is a date and not a set of dates, and `heldDates` is gone with the
+ * rows it was there to hide. Nothing past is drawn, so nothing can be drawn twice.
  */
 vi.mock('../lib/supabase', () => ({ READONLY: false, supabase: () => client }))
 
@@ -38,15 +37,14 @@ const day = (offset: number) => new Date(Date.now() + offset * 864e5).toISOStrin
 const EVENTS = [
   { id: 'e2', title: 'Erhvervsklub #30', date: day(70), time: '18.30', location: '', description: '' },
   { id: 'e1', title: 'Erhvervsklub #29', date: day(14), time: '18.30', location: 'Propaganda', description: 'Oskar lægger op.' },
-  // Behind, and the history *has* this evening — a duplicate of a card below.
+  // Behind, and a duplicate of a card in the history below.
   { id: 'dup', title: 'Erhvervsklub #28 JUBILÆUM', date: day(-46), time: '18.30', location: 'Tivolihallen', description: '' },
-  // Behind, and the history has nothing on this date: the club's own #20 case,
-  // and the shape a mistyped year takes.
+  // Behind, and *not* a duplicate — the club's own `Erhvervsklub #20`, whose record
+  // never got a date. Gone from the frontend too since 2026-07-30, at Lukas's word.
   { id: 'orphan', title: 'Generalforsamling 2026', date: day(-120), time: '17.00', location: 'Marv og Ben', description: '' },
 ]
 
-/** What the attendance records cover. `dup` is on this list; `orphan` is not. */
-const HELD = new Set([day(-46), day(-3)])
+
 
 function renderPage(role: AuthState['role']) {
   const value: AuthState = {
@@ -59,7 +57,7 @@ function renderPage(role: AuthState['role']) {
   return render(
     withQuery(
       <AuthContext.Provider value={value}>
-        <Moedekalender heldDates={HELD} />
+        <Moedekalender />
       </AuthContext.Provider>,
     ),
   )
@@ -79,21 +77,16 @@ describe('what a member sees', () => {
     expect(screen.getByText('Planlagte møder')).toBeInTheDocument()
   })
 
-  it('draws no card for an evening the history already has', async () => {
+  it('draws nothing at all for a date in the past', async () => {
     renderPage('user')
     await screen.findByText('Propaganda')
-    // The defect Lukas found. This row shares its date with an attendance record,
-    // so the card below is the meeting and this would be a second copy of it.
+    // Both past rows, and for two different reasons. The duplicate is the defect
+    // Lukas found — its evening is already a card in the history below. The other
+    // is not a duplicate and goes anyway, at his word: "De er gamle og vi laver
+    // formentligt ikke sådan nogle igen."
     expect(screen.queryByText('JUBILÆUM')).not.toBeInTheDocument()
-  })
-
-  it('keeps a past row the history has no evening for', async () => {
-    renderPage('user')
-    // Two real cases at once: the club's `Erhvervsklub #20`, whose record never
-    // got a date, and any meeting whose year was mistyped. Drop this and a wrong
-    // date becomes a meeting nobody can reach.
-    expect(await screen.findByText('Generalforsamling 2026')).toBeInTheDocument()
-    expect(screen.getByText('Kun i kalenderen')).toBeInTheDocument()
+    expect(screen.queryByText('Generalforsamling 2026')).not.toBeInTheDocument()
+    expect(screen.queryByText('Kun i kalenderen')).not.toBeInTheDocument()
   })
 
   it('offers a member nothing that writes, and nobody a second new-meeting button', async () => {
@@ -108,8 +101,11 @@ describe('what a member sees', () => {
     expect(screen.queryByRole('button', { name: /nyt møde/i })).not.toBeInTheDocument()
   })
 
-  it('renders nothing at all when every row is a duplicate', async () => {
-    reset({ events: [EVENTS[2]] })
+  it('renders nothing at all when the club has planned nothing', async () => {
+    // Not "ingen møder planlagt": §9 promises two ahead, and a bare heading over an
+    // empty space would announce the promise broken on a page that is not the
+    // club's compliance report. /hjem leads with the next meeting or its absence.
+    reset({ events: EVENTS.filter((e) => e.date < day(0)) })
     const { container } = renderPage('user')
     await waitFor(() => expect(container.textContent).toBe(''))
   })
@@ -124,12 +120,17 @@ describe('what an admin can correct', () => {
     expect(card.getByRole('button', { name: 'Slet' })).toBeInTheDocument()
   })
 
-  it('gives them on the past row too, which is where a mistyped date lands', async () => {
+  it('warns before a date change makes the card leave the list', async () => {
+    const user = userEvent.setup()
     renderPage('admin')
-    await screen.findByText('Generalforsamling 2026')
-    expect(
-      within(cardFor('Generalforsamling 2026')).getByRole('button', { name: 'Rediger' }),
-    ).toBeInTheDocument()
+    await screen.findByText('Propaganda')
+    await user.click(within(cardFor('Propaganda')).getByRole('button', { name: 'Rediger' }))
+
+    expect(screen.queryByText(/forsvinder fra listen/i)).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/Dato/), { target: { value: day(-1) } })
+    // A card that vanishes on Gem with no explanation reads as data lost. It is
+    // not lost — it is a held meeting now, and those are recorded in the history.
+    expect(screen.getByText(/forsvinder fra listen/i)).toBeInTheDocument()
   })
 
   it('corrects the date against the meeting’s own id', async () => {

@@ -94,16 +94,11 @@ export default function Anciennitet() {
     mayEdit &&
     (open === 'ny' ? editor(null) : <NewButton label="Nyt møde" onClick={() => setOpen('ny')} />)
 
-  // Every date the history covers, so the calendar can drop the rows that are the
-  // same evenings as the cards below. Ten of the club's twelve calendar rows are —
-  // which is why the page showed each of those meetings twice until Lukas said so.
-  const heldDates = new Set(data.meetings.map((m) => m.date).filter((d): d is string => !!d))
-
   if (data.meetings.length === 0) {
     return (
       <div className="flex flex-col gap-3">
         {newMeeting}
-        <Moedekalender heldDates={heldDates} />
+        <Moedekalender />
         <p className="text-sm text-muted">Ingen møder registreret endnu.</p>
       </div>
     )
@@ -122,12 +117,12 @@ export default function Anciennitet() {
           real screens. */}
       {role === 'admin' && <LastSeen roster={names} />}
 
-      {/* The meetings the history has no evening for — the ones still ahead, and
-          the two past rows no attendance record was ever dated to — in the same
-          stream as the cards below rather than in a box of their own. Lukas:
-          "Generelt så skal de ligge samme sted som de gamle møder … Det er jo alt
-          sammen møder." */}
-      <Moedekalender heldDates={heldDates} />
+      {/* The meetings still ahead, in the same stream as the ones behind rather
+          than in a box of their own. Lukas: "Generelt så skal de ligge samme sted
+          som de gamle møder … Det er jo alt sammen møder." Nothing past is drawn
+          here, so no meeting is on this page twice and nothing needs deduplicating
+          — see components/Moedekalender.tsx. */}
+      <Moedekalender />
 
       {data.meetings.map((m) =>
         mayEdit && open === m.id ? (

@@ -86,40 +86,33 @@ export function calendarHead(e: EventItem): { figure: string; heading: string } 
 }
 
 /**
- * The meetings the attendance history cannot hold, rendered into the same list as
- * the ones it can.
+ * The meetings that have not happened yet, on /anciennitet.
  *
- * **This stopped being a calendar on 2026-07-30.** It came across from `/moeder`
- * as a section of its own with its own create button and a fold holding every
- * held calendar entry — and Lukas, looking at the result: *"der ligger jo to
- * knapper der laver møder … alle møder ligger flere gange … denne funktionalitet
- * med at have møder separat fra kortene på anciennitetssiden giver ikke så meget
- * mening. Det er jo alt sammen møder."*
+ * **Only the ones ahead**, since Lukas asked for the two remaining past rows to go:
+ * *"Fjern de to kalender aftaler som kun er i kalenderen. De er gamle og vi laver
+ * formentligt ikke sådan nogle igen. Så fjern dem fra frontenden."* Those were
+ * `2025-04-26 Erhvervsklub #20` — whose attendance record is one of the eleven that
+ * never got a date, so nothing could pair them — and `2025-04-20 Udarbejdelse af
+ * vedtægtsudkast`, a working session with no attendance at all.
  *
- * He is right on both counts, and the second was the real defect: ten of the
- * twelve calendar rows are the same evenings as the attendance records below them,
- * so the club's own history was on the page twice.
+ * **From the frontend, not from the database.** His words, and the right call: #20's
+ * calendar row carries the only prose the club has ever written about that evening,
+ * and a row nobody renders costs nothing. Both are still in `events`, and a future
+ * pass can move #20's description onto its record the day that record gets a date.
  *
- * So this renders exactly the rows that are **not** in the history, and nothing
- * else:
+ * This also retires `heldDates`. It existed because this section used to draw every
+ * *past* calendar row, ten of which are the same evenings as the attendance cards
+ * below — the duplication Lukas found. Nothing past is drawn now, so there is
+ * nothing left to deduplicate: a meeting still ahead cannot have an attendance
+ * record, which is the whole reason `events` exists as its own table.
  *
- *   * **Meetings still ahead.** A future meeting cannot have an attendance record
- *     — that record is a record of who attended — which is why the two tables were
- *     never one. Without these the club's next meeting is unchangeable, here and
- *     on the front page.
- *   * **Past rows the history has no evening for.** `2025-04-26 Erhvervsklub #20`
- *     carries a real description and record #20 is one of the eleven that never
- *     got a date; `2025-04-20 Udarbejdelse af vedtægtsudkast` was a working
- *     session with no attendance at all. A meeting whose year was mistyped lands
- *     here too, which is the reason it must not be filtered on "is it in the
- *     future" alone: that was the fold's job, and this does it without printing
- *     ten duplicates to do it.
- *
- * Matching on the date, never on the number in the title — T071 found the club's
- * own numbering running a meeting ahead of the database's, so "#20" is not record
- * 20. The same rule the 2026-07-30 backfill was built on.
+ * A mistyped date is no longer this section's problem either. A *new* meeting given
+ * a past date is routed to `attendance_records` by `useSaveMeeting` and lands among
+ * the history cards, visible and editable. The one path left — editing a planned
+ * meeting to a past date — makes the card leave this list, so the form says so
+ * before it is saved rather than after.
  */
-export function Moedekalender({ heldDates }: { heldDates: Set<string> }) {
+export function Moedekalender() {
   const { data, isPending, error } = useEvents()
   const { role } = useAuth()
   const editor = useEditor('events')
@@ -134,20 +127,13 @@ export function Moedekalender({ heldDates }: { heldDates: Set<string> }) {
   // screen read as a page that is broken rather than as one that is loading.
   if (isPending || error || !data) return null
 
-  // Compared and sorted as text: `YYYY-MM-DD` orders correctly that way, so
-  // there is no Date here and therefore no zone to get wrong. The two halves
-  // run in opposite directions — soonest first ahead, most recent first behind
-  // — because both mean "nearest to now".
+  // Compared and sorted as text: `YYYY-MM-DD` orders correctly that way, so there
+  // is no Date here and therefore no zone to get wrong. Soonest first, because the
+  // one the club needs is the next one.
   const today = todayISO()
   const planned = data
     .filter((e) => e.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))
-  // Past rows the history has no evening for. `heldDates` is every date the
-  // attendance records carry, so a calendar row that pairs with one is a second
-  // copy of a meeting already on this page and is simply not drawn.
-  const orphans = data
-    .filter((e) => e.date < today && !heldDates.has(e.date))
-    .sort((a, b) => b.date.localeCompare(a.date))
 
   const form = (id: string | null) => (
     <EditForm
@@ -164,7 +150,19 @@ export function Moedekalender({ heldDates }: { heldDates: Set<string> }) {
       // two weeks ahead — so requiring them would stop the club writing down
       // the one thing it has agreed.
       canSave={Boolean(editor.draft.title?.trim())}
-    />
+    >
+      {/* Said before it happens, not discovered after. Since nothing past is drawn
+          here, a date moved behind today makes this card leave the list — and a
+          card that vanishes on Gem, with no explanation, reads as data lost. The
+          meeting is not lost: it is a held meeting now, and held meetings are
+          recorded in the history below with who came and what it cost. */}
+      {editor.draft.date && editor.draft.date < todayISO() ? (
+        <p className="mt-1 rounded-lg border border-accent-d bg-surface p-3 text-xs leading-relaxed text-muted">
+          Datoen er bagud, så mødet forsvinder fra listen over planlagte møder.
+          Afholdte møder registreres i historikken nedenfor — med deltagelse og bøder.
+        </p>
+      ) : null}
+    </EditForm>
   )
 
   const card = (e: EventItem, next: boolean) => {
@@ -228,25 +226,19 @@ export function Moedekalender({ heldDates }: { heldDates: Set<string> }) {
     )
   }
 
-  if (planned.length === 0 && orphans.length === 0) return null
+  // Nothing at all rather than "ingen møder planlagt". §9 promises two meetings
+  // ahead and a bare heading over an empty space would announce that the promise is
+  // broken — but this is not the club's compliance report, and /hjem already leads
+  // with the next meeting or the lack of one.
+  if (planned.length === 0) return null
 
   return (
     <>
-      {/* One label for both groups, because both are the same thing: a meeting
-          the club has written down that the attendance history has no evening
-          for. The label is the only furniture here — no section wrapper, no
-          create button — so these cards fall into the single stream of meetings
-          on /anciennitet rather than sitting in a box above it. */}
-      <SectionTitle>{planned.length > 0 ? 'Planlagte møder' : 'Kun i kalenderen'}</SectionTitle>
-
+      {/* The one piece of furniture here: no section wrapper and no create button,
+          so these fall into the single stream of meetings on /anciennitet rather
+          than sitting in a box above it. */}
+      <SectionTitle>Planlagte møder</SectionTitle>
       {planned.map((e, i) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, i === 0)))}
-
-      {orphans.length > 0 && (
-        <>
-          {planned.length > 0 && <SectionTitle>Kun i kalenderen</SectionTitle>}
-          {orphans.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, false)))}
-        </>
-      )}
     </>
   )
 }

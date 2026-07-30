@@ -31,17 +31,7 @@ const { default: Anciennitet } = await import('../pages/Anciennitet')
  */
 const NEW_MEETING = 'Nyt møde'
 
-/**
- * `Moedekalender` needs the dates the attendance history covers, so it can drop the
- * rows that are the same evenings as /anciennitet's own cards. Empty here: this
- * suite is about what a read-only build offers, and an empty set draws every row
- * rather than hiding one the assertions rely on.
- */
-const PAGES = {
-  nyheder: Nyheder,
-  kalender: () => <Moedekalender heldDates={new Set<string>()} />,
-  anciennitet: Anciennitet,
-}
+const PAGES = { nyheder: Nyheder, kalender: Moedekalender, anciennitet: Anciennitet }
 
 function renderAsAdmin(page: keyof typeof PAGES) {
   reset({
