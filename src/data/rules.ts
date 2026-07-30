@@ -89,6 +89,24 @@ export const ONE_FINE_PER_OFFENCE_PER_MEETING = true
 export const HISTORIC_RULE_ID = 'historisk'
 
 /**
+ * A fine nobody was charged — money a member put in the box himself.
+ *
+ * The club has exactly one so far: the treasurer's own 50 kr. at møde #26,
+ * transferred because a year in which the treasurer incurred no fine looked
+ * implausible (Lukas, 2026-07-29). It carried `historisk` until he named it,
+ * and that was wrong in a specific way — `historisk` means *nobody knows what
+ * this was*, and he knew precisely what it was. A voluntary contribution is not
+ * an unrecorded offence, and the club's books should not imply that somebody
+ * misbehaved where somebody was in fact being a good sport.
+ *
+ * Not a member of `FINE_RULES`, for the same reason as the historic id: it is
+ * not something a Lead can charge anyone under, so it must never appear in the
+ * capture UI as a chip to tap. It is written when a transfer is recorded, and
+ * read back off history.
+ */
+export const VOLUNTARY_RULE_ID = 'frivillig'
+
+/**
  * What to show for a fine's `rule_id`, including ids this build does not know.
  *
  * `fines.rule_id` is text precisely so the club can vote in a new rule without
@@ -105,6 +123,7 @@ export function describeRule(ruleId: string): string {
   const known = FINE_RULES.find((r) => r.id === ruleId)
   if (known) return known.offence
   if (ruleId === HISTORIC_RULE_ID) return 'Historisk bøde — forseelse ikke registreret'
+  if (ruleId === VOLUNTARY_RULE_ID) return 'Frivillige bøder/indbetalinger'
   return `Ukendt bøderegel (${ruleId})`
 }
 

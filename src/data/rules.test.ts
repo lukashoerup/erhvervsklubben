@@ -2,6 +2,7 @@ import {
   DUES_SCHEDULE,
   FINE_RULES,
   HISTORIC_RULE_ID,
+  VOLUNTARY_RULE_ID,
   describeRule,
   duesFor,
   duesForMonth,
@@ -283,5 +284,31 @@ describe('rule ids this build does not know', () => {
     for (const id of ['', 'historisk', 'udeblivelse', 'x', '../../etc']) {
       expect(describeRule(id).trim().length).toBeGreaterThan(0)
     }
+  })
+})
+
+/**
+ * The voluntary id, added when Lukas named what his own 50 kr. actually was.
+ *
+ * Worth its own test rather than folding into the historic one: the whole point
+ * of splitting them is that they mean opposite things — one is "nobody knows",
+ * the other is "somebody chose to" — and a single assertion covering both would
+ * pass just as well if they were collapsed back together.
+ */
+describe('frivillige indbetalinger', () => {
+  it('is named in the club’s own words, not as an unknown rule', () => {
+    expect(describeRule(VOLUNTARY_RULE_ID)).toBe('Frivillige bøder/indbetalinger')
+    expect(describeRule(VOLUNTARY_RULE_ID)).not.toMatch(/ukendt|historisk/i)
+  })
+
+  it('is not something a Lead can charge anyone under', () => {
+    // It must never reach the capture screen as a chip: nobody is fined for
+    // volunteering. Same guarantee the historic id has.
+    expect(FINE_RULES.map((r) => r.id)).not.toContain(VOLUNTARY_RULE_ID)
+  })
+
+  it('stays distinct from the historic id', () => {
+    expect(VOLUNTARY_RULE_ID).not.toBe(HISTORIC_RULE_ID)
+    expect(describeRule(HISTORIC_RULE_ID)).not.toBe(describeRule(VOLUNTARY_RULE_ID))
   })
 })
