@@ -362,6 +362,62 @@ without losing data and without taking the old site down until an approved cutov
   avoid. Two of the ten have no login at all; that is said in words, never as a
   date.
 
+- **2026-07-30 — `payments.month` is the month a payment *settles*, not the month
+  the money arrived. A catch-up transfer is allocated across the months it was
+  for.** (T076, on the club's first real bank statement.)
+
+  This is the club's accounting policy, so it is a decision and not an
+  implementation detail — and it is the one place in these books where the honest
+  answer and the flattering answer produce the same picture. Lukas asked that one
+  member who paid nothing for a year and then cleared it in a single 1.200 kr.
+  transfer should appear in the graphs as having paid consistently throughout.
+  Read as a request to make a chart look better, that would be falsification.
+  Read as accrual accounting, which is what it is, it is simply correct:
+
+  - **The bank total cannot move.** Allocation redistributes a payment across
+    months; it can neither create nor destroy a krone. `payments` sums to
+    14.880 kr. — the statement's closing balance less one transfer that settles
+    August — and `allocation.test.ts` re-proves it against all 87 real transfers
+    on every run.
+  - **What changes is the monthly view**, which stops recording a man as eleven
+    months delinquent and then wildly overpaid, and starts recording what
+    happened: he owed those months, and those months are paid.
+  - **The line between the two readings is evidence.** *Allocated to the months
+    it settles* is a claim about what a payment was for — carried here by the
+    bank's own transfer text (`Kasper jun-sep`, `Emil juni-september`) and by
+    arithmetic that closes to the krone against a per-member total. *Moved so a
+    graph looks nicer* is a claim about nothing. Had the 1.200 kr. left a
+    remainder, or come from a member with no arrears, none of this would apply,
+    and `allocateDues` throws rather than absorbing money it cannot place.
+
+  Two limits, both deliberate. **Fine receipts are not allocated** — the
+  1.780 kr. stays in the month it was collected, because the fine *charges* are
+  already dated to their own meetings in `fines`, and re-spreading the receipt
+  would state the same money twice in two tables. And **incurred is not
+  collected**: the club has incurred 2.510 kr. of fines and collected 1.780 kr.,
+  and a reconciliation's natural pull to make those two agree would write off
+  730 kr. of the club's own money. They stay two numbers, and the docs say which
+  is which. See `docs/finance-reconciliation.md` §16.4–16.5.
+
+- **2026-07-30 — `members.dues_from`, and it is deliberately not called
+  `joined_on`.** (T076.)
+
+  §14.5 had specified a nullable joining date as the fix for the club's
+  expected-income curve and declined to add it without evidence. The bank
+  statement supplied the evidence — and showed that what it evidences is
+  **liability to pay**, not membership. Christian Have has attended since møde #3
+  and was fined at møde #26 in February 2026, three months before his first
+  kontingent transfer; Oskar has attended 22 evenings and will never carry a
+  value at all. Naming the column `joined_on` would have written a false joining
+  date onto nine members that `attendances` contradicts, and §11 measures
+  anciennitet by attendance, so nothing was waiting for a joining date.
+
+  Nullable, additive, guarded on the club's own ten names, and **null means "not
+  known" rather than "never"**: a member without one is charged across the whole
+  window, exactly as before the column existed. A books page that silently
+  under-charges is worse than one that visibly over-charges, because nobody goes
+  looking for it.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

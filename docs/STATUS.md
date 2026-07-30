@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-30. Single source of truth for "where are we". Update this at the
+_Updated 2026-07-30 (T076 — books reconciled against the bank). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -10,13 +10,72 @@ end of every working session._
 `vercel.json` and `.env.production` — both committed, nothing in the dashboard.
 
 **Production now has** `fines`, `payments`, `attendance_records.meeting_date`
-(added 2026-07-27) and, since 2026-07-29, **`members`** (T069) and
-**`member_last_seen`** (T074) — all additive, no existing row touched. **28** meetings and 235
+(added 2026-07-27), **`members`** (T069) and **`member_last_seen`** (T074) from
+2026-07-29, and **`members.dues_from`** from 2026-07-30 (T076) — all additive, no
+existing row touched. **28** meetings and 235
 attendance rows intact — the junk duplicate of meeting #27 has since been
 removed, so record ids run 1–27 and 29. **17 of the 28 meetings now carry a
 date** (2026-07-29, T071) — see below.
 
-**The sheet's history is imported** (2026-07-29, T068): 13 `payments` rows
+**The books are reconciled against the real bank statement** (2026-07-30, T076).
+Read this before quoting any figure on this page: **`payments` is 14 rows summing
+to 14.880 kr.**, not the 13 rows / 13.280 kr. the sheet had. The club's actual
+account statement — all 90 transactions to 30.07.2026, closing 15.080,00 kr. —
+arrived and supersedes the spreadsheet for every month it covers.
+
+```
+13.100  kontingent settled, June 2025 – July 2026
++1.780  bøder collected, February 2026
+------
+14.880  reconciled       = the balance Lukas photographed on 27.07 ✓
+  +200  Rasmus, settling August 2026 — held out on purpose
+------
+15.080  bank, 30.07.2026 = the statement's own closing balance ✓
+```
+
+**It ties out to 200 kr.**, and that 200 kr. was already known: **Anders owes
+July 2026** because he has changed bank (Lukas, 2026-07-30). He is the only
+member with anything outstanding in fourteen months; every month from June 2025
+to June 2026 is settled in full by every member the club charged.
+
+**The one decision worth understanding before touching these numbers:
+`payments.month` is the month a payment *settles*, not the month the money
+arrived** — the column has always said so. So a catch-up transfer is allocated
+across the months it was for, which is why Mads, who paid nothing for a year and
+then cleared 1.200 kr. in one transfer on 01.05.2026, now reads as having paid
+every month. That is accrual accounting, not a cosmetic fix: **the bank total
+cannot move**, only the monthly view, and the allocation is asserted against all
+87 real transfers on every test run. The full argument, including where the line
+between "allocated" and "moved to look nice" sits, is in PROJECT.md and
+`docs/finance-reconciliation.md` §16.4.
+
+**Eight payers before May 2026, nine from May.** `members.dues_from` now holds the
+first month the club charges each member: 2025-06 for eight, 2026-05 for
+Christian Have, null for Oskar (§12 charges him nothing). This is the schema
+change §14.5 specified and refused to make without evidence, and it removes the
+last big distortion §13 found — `/oekonomi` was charging nine members across the
+whole history, 1.200 kr. more than the club ever charged. It is **`dues_from` and
+not `joined_on` on purpose**: the bank documents liability to pay, and Have has
+attended since møde #3 and was fined at møde #26 three months before his first
+transfer. Also: the remembered "ninth member joined June 2026" is refined by the
+bank to **May 2026**.
+
+**Fines were not touched, and incurred is still not collected.** The statement
+independently confirms the **1.780 kr. collected** (`Emil bødekasse` 235 on 09.02
++ `Bøder` 1.545 on 16.02 — exactly the sheet's `E10 = 700+1545+235`, now seen as
+money moving). The club has **incurred 2.510 kr.** The **730 kr.** between them is
+still fines a Lead noted and nobody billed, still money the club is owed, and
+still Lukas's decision. `fines` read back at 30 rows / 2.510 kr., unchanged.
+
+**Three long-standing questions closed by the bank:** the **400 kr.** of §5.3 was
+Rasmus (29.06) and Lukas (30.06) paying July in advance — explanation (b), which
+the doc had rated less likely; **nobody missed February 2026** (the club had seven
+payers then, and 7 × 100 = 700 exactly); and the unnamed **`Overførsel`** transfers
+are Mads, corroborated to the krone by his total being precisely what he was
+charged. Full workings, the per-member table and everything still open:
+`docs/finance-reconciliation.md` §16.
+
+**The sheet's history was imported** (2026-07-29, T068): 13 `payments` rows
 summing to **13.280 kr.** and, since T071, 18 `fines` rows summing to
 1.780 kr., reconciled against *Klubbens finanser* to the krone, in both
 directions of the grid. Insert-only and re-runnable; the statements are
@@ -251,7 +310,8 @@ check and is open in prod. `revoke … from anon` is now an explicit line, and
 Supabase's own advisor confirms the function is `authenticated`-only. Applied to
 production 2026-07-29; the club's data read back **unchanged** (28 meetings, 235
 attendances, 18 fines / 1.780 kr., 13 payments / 13.280 kr., 10 members) and
-`member_last_seen` at 0 rows.
+`member_last_seen` at 0 rows. (Both finance figures have since moved — 30 fines /
+2.510 kr. after T075, and 14 payments / 14.880 kr. after T076.)
 
 An admin sees it on `/anciennitet`, **folded shut and alphabetical**: in a club
 of ten a permanent ranking by absence is a different social object from a fact
@@ -380,7 +440,14 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 327 component/derivation tests (jsdom, fast, offline). Nine of
+- `npm test` — 348 component/derivation tests (jsdom, fast, offline). Eighteen of
+  them are T076's: the club's whole bank statement is pinned as a table and run
+  through `allocateDues`, so the reconciliation to 14.880 kr. and the single
+  200 kr. outstanding are re-proved on every run rather than remembered in a
+  document — along with a catch-up transfer spread across the months it settles,
+  a member who starts paying mid-history, and the June 2026 rate change paid in
+  two instalments. `allocateDues` **throws** rather than absorbing a transfer it
+  cannot place, and there is a test for that too. Nine of
   them are T075's: the club's 28 classified fines are pinned as a table, each
   row carrying its provenance (the Lead's note, or the treasurer's memory), and
   asserted against `fineAmount()`. So the 50 + 5n corroboration is re-proved on
@@ -445,19 +512,30 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    which are now dated, and every one of the six fine-bearing meetings is among
    them. `/oekonomi` no longer reports any of the 1.780 kr. as belonging to an
    undated meeting.
-   ~~**Ask Lukas when the ninth member joined**~~ ✅ **answered 2026-07-29**:
-   June 2026, so eight paid before that — and the ninth still owes a
-   **retroactive buy-in he has not paid**, which is a receivable the schema
-   cannot express. Fixing the expected-income line therefore needs a
-   `joined_on` column on `members`, i.e. a schema change, i.e. Lukas's approval
-   before anyone writes it. Scope in `docs/finance-reconciliation.md` §14.5.
-4. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
-5. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
+   ~~**Ask Lukas when the ninth member joined**~~ ✅ **answered 2026-07-29** and
+   then **measured 2026-07-30 (T076)**: his memory said June 2026, and the bank
+   says **May 2026** — Christian Have's first transfer is 04.05.2026 for 100 kr.,
+   May's rate. `members.dues_from` now carries it for all nine payers, so
+   `/oekonomi` charges eight members before May 2026 and nine after, and §13's
+   1.200 kr. distortion is gone.
+   ~~**The ninth member's retroactive buy-in**~~ — **there is no receivable.**
+   §14.5 recorded that he "must still buy in retroactively" and that nothing in
+   the schema could hold it. The statement says otherwise: Have's three transfers
+   total exactly what the club charged him from May 2026, and he owes nothing.
+   What §14.5 was reaching for was **Mads**, who did owe a year of arrears and
+   **paid them in full on 01.05.2026** — 1.200 kr., twelve months, no remainder.
+   Nobody owes a buy-in, so no receivable concept is needed.
+4. **Chase 200 kr. and decide about 730 kr.** — Anders's July 2026 kontingent
+   (he has changed bank; the club's only outstanding kontingent) and the 730 kr.
+   of fines a Lead noted and nobody billed. Neither is a code task; both are the
+   treasurer's.
+5. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
+6. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,
    grants) against the prod snapshot. Currently fidelity is verified by hand.
    ~~**T013 — wire CI**~~ ✅ **done 2026-07-26 as T022.** Add the parity check to
    the `rls` job once T011 exists.
-6. Fix the `supabase/seed.sql` header (it says `db:reset` runs seed-auth; it does
+7. Fix the `supabase/seed.sql` header (it says `db:reset` runs seed-auth; it does
    not — only `test:rls:reset` does) and remove the `record_id: 1` coupling in
    `scripts/seed-auth.mjs`.
 

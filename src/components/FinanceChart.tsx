@@ -219,11 +219,18 @@ export function FinanceChart({
           looking is that the expected line is nine times the rate rather than
           ten, so a member checking the curve against his own arithmetic lands
           somewhere else. The count stays; the names, the reason and the card do
-          not. */}
+          not.
+
+          Since 2026-07-30 it is charged per month rather than flat — the bank
+          statement dated the ninth payer to May 2026 — so the clause says the
+          count is today's. Printing one number as though it held for the whole
+          curve was true while the count was assumed and stopped being true the
+          moment it was measured. */}
       <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
-        Akkumuleret, {span}. Forventet er kontingent fra{' '}
-        <span className="tabular">{books.payers}</span> betalende medlemmer plus bøder;
-        afstanden mellem kurverne er det, klubben har opkrævet og ikke fået ind.
+        Akkumuleret, {span}. Forventet er kontingent fra de medlemmer, klubben
+        opkrævede i den enkelte måned (<span className="tabular">{books.payers}</span> i
+        dag), plus bøder; afstanden mellem kurverne er det, klubben har opkrævet
+        og ikke fået ind.
       </p>
 
       {/* The legend, and the numbers, in one row — so no value on this screen is

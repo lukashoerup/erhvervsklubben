@@ -58,6 +58,12 @@ export type RosterEntry = {
    * `rightsOf` in members.ts for why the absence of a record grants nothing.
    */
   status: MemberStatus | null
+  /**
+   * First month the club charges him kontingent (`YYYY-MM-DD`), or null where it
+   * is not known. Carried on the roster because the finance page asks the payer
+   * count per month, not once — see `payingMembersIn` in members.ts.
+   */
+  duesFrom: string | null
 }
 
 /**
@@ -118,6 +124,7 @@ export function buildRoster(
   }
 
   const status = new Map(members.map((m) => [m.name, m.status]))
+  const duesFrom = new Map(members.map((m) => [m.name, m.dues_from ?? null]))
   const names = [...seen.keys()]
   const labels = shortLabels(names)
 
@@ -127,6 +134,7 @@ export function buildRoster(
       ...seen.get(name)!,
       label: labels[name],
       status: status.get(name) ?? null,
+      duesFrom: duesFrom.get(name) ?? null,
     }))
     // Most attendances first; ties alphabetical so the order never jitters
     // between renders, which would make the bar chart look alive when it isn't.

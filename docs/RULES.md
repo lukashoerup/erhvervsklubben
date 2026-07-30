@@ -71,6 +71,15 @@ advance, collected monthly.
 > before, 9 × 200 kr. after. Taken as a per-member figure they imply a
 > nine-fold fee rise, and put the year's 11,500 kr. of membership income out
 > by roughly an order of magnitude.
+>
+> **Confirmed against the account, 2026-07-30.** All 87 kontingent transfers on
+> the club's bank statement are 100 kr. before June 2026 and 200 kr. from June
+> 2026, per member, and 11.500 kr. is exactly what the club charged from June
+> 2025 through June 2026 (8 × 100 × 11 + 9 × 100 + 9 × 200). Both the rate
+> schedule and the annual report's kontingent total are now bank-confirmed
+> rather than reasoned. Four members paid June's 200 kr. as two transfers of
+> 100 across the rate change, which is what a mid-rhythm rise looks like in a
+> statement and is not a part-payment.
 
 `vedtaegter.ts` carries §4 Stk. 3 verbatim and reads the figure back out of the
 sentence itself, and a test asserts it equals what `duesFor` charges — so the
@@ -90,6 +99,30 @@ the roster was every distinct `attendances.member_name`, and the ledger charged
 all of it. `public.members` now carries a status per member and `buildLedger` is
 handed the count of those who pay. **Membership status is the source of truth,
 not "has ever appeared in attendances."**
+
+### When the club started charging each member — `members.dues_from`
+
+**Kontingent began June 2025**, and the bank statement of 2026-07-30 is what
+says so: each of the club's first seven payers transferred 400 kr. between 30.08
+and 25.09.2025 — four months at the then-rate — and two of them wrote the months
+into the transfer text (`Kasper jun-sep`, `Emil juni-september`). The club's own
+meeting history goes back to 2022-10-29, so **the club is roughly three years
+older than the kontingent.**
+
+`members.dues_from` holds the first month each member is charged: **2025-06-01
+for eight of them, 2026-05-01 for Christian Have, null for Oskar** (§12 charges
+him nothing, so there is no month). Eight payers before May 2026, nine from May
+2026 — which corrects a figure the club had only from memory, "nine from June
+2026". The ledger asks the count per month rather than assuming today's roster
+held all along; before this it charged nine members across the whole history and
+the expected-income curve was 1.200 kr. too high.
+
+**It is not a joining date, and the two must not be conflated.** Christian Have
+has attended since møde #3 and was fined at møde #26 in February 2026 — three
+months before his first kontingent transfer. Oskar has attended 22 evenings and
+will never carry a value. What the bank documents is **liability to pay**, and
+§11 measures anciennitet by attendance alone, so nothing in the app needs a
+joining date. Full evidence: `docs/finance-reconciliation.md` §16.3.
 
 ### Founding father — the club's own exemption
 
