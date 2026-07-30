@@ -140,6 +140,28 @@ leads a block is serif; a figure in a tile with its label beneath it stays Sans
 small serif figure has nothing to lean on — which is why Anciennitet's ten
 roster counts (9.6 px) and every table cell are untouched.
 
+**And a figure inside a running sentence stays Sans, whatever its size** — the
+third case, added in T077 because the first two did not cover it and the ~14 px
+floor let it through. Lukas, 2026-07-30, on the budget line: its first glyph came
+from a different face than the rest, "314" as a serif 3 followed by a sans 14. It
+did. **Instrument Serif has one figure set and it is an old-style one**: the `3`
+drops below the baseline, the `1` is a bare stem with no flag and no foot serifs —
+"111" renders as "lll" — and the digits are proportional. Measured in Chromium at
+16.8 px, `3` `1` `4` advance **6.06, 4.03 and 6.44 px**, where Instrument Sans
+gives a flat 10.08. The face carries no `tnum`, so `.ek-figure`'s own
+`font-variant-numeric: tabular-nums` cannot switch out of any of it — the class has
+been claiming fixed-width digits it does not get from the serif.
+
+At 26–52 px leading a card those shapes *are* the register, and they are what
+Lukas approved in T072 ("Den nye skrifttype på tallene er pæn"). At 16.8 px inline
+in a 14 px sans sentence they are three digits at three widths on two baselines,
+three pixels bigger than the prose around them — and a reader does not see a
+display register, he sees the wrong font applied to part of a line. A figure there
+leads on **weight** instead, in the sentence's own face: §03's "tal i 700", and the
+idiom the chart's hover readout already used. `FinanceChart.test.tsx` asserts the
+shape of the rule rather than a size — no `.ek-figure` may have prose beside it in
+its own line box. Sibling *elements* are fine; that is the legend's own `dt`/`dd`.
+
 Each screen was given one face, without a new colour:
 
 | Screen | Its face |
@@ -181,11 +203,11 @@ admin — not read off the source. T066's notes carry the numbers.
 | IKONER 24 px linje, altid med tekst | ✅ since T066 |
 | Instrument Serif display / Sans UI | ✅ |
 | Ingen vandret scroll (§04) | ✅ at 420 px on every screen and state |
-| Kun opacity og transform (§01) | ✅ asserted in `src/theme.test.ts` |
+| Kun opacity og transform (§01) | ✅ asserted in `src/theme.test.ts` — **one** sanctioned exception since T077, the wordmark's letter-spacing |
 | Reveal ved scroll (§01) | ✅ all seven scrolling screens — and since T067 it runs on the phones the club actually holds |
 | IntersectionObserver, tærskel 0.18 (§05) | ✅ since T067 — `src/lib/reveal.ts` |
 | Nøgletal tæller op, 900 ms easeOutExpo (§01) | ✅ since T067 on Hjem and Anciennitet, and since T073 on Økonomi's three chart figures |
-| Kurver tegner sig ind (§01, "indhold træder frem") | ✅ since T073 — `/oekonomi`, 900 ms, the same curve |
+| Kurver tegner sig ind (§01, "indhold træder frem") | ✅ since T073, as **one** gesture since T077 — `/oekonomi`, 900 ms, the same curve |
 | Søjler vokser fra baseline, forskudt (§01) | ✅ since T067 |
 
 Contrast is at zero failing pairs across all eight screens in both themes, with
@@ -227,7 +249,7 @@ What the members' screens do now, all of it from §01:
 | Figures | count up in 900 ms, easeOutExpo, the export's own `1 − 2^(−10p)` |
 | Attendance strip | the ten pips arrive left to right, 26 ms apart, riding their card's own state |
 | Meeting card | the club's blue streg is drawn under the meeting's name as the card arrives — absolutely positioned, so 29 of them add no height |
-| Finance curves | draw themselves in over 900 ms; the band settles behind them at 620 ms and the forecast at 900 — see below |
+| Finance chart | one clipped edge travels up from the baseline over 900 ms and uncovers the whole plot at once — see below. T073 sequenced five marks here; T077 does not |
 | Date rail | the hairline beside a news item's or a meeting's date grows downwards, 120 ms behind its card |
 | Scroll indicator | the export's `#ek-progress`, as `scaleX` rather than its `width` |
 
@@ -247,7 +269,7 @@ reasoning still holds and **Klubkassen still does not move** — it is the figur
 member checks his own arithmetic against. T073 drew the line one card further
 in, at Lukas's word (2026-07-29: *"Og lidt mere motion på tallene"*): the three
 figures in the chart's legend row are the *readout of the curve directly below
-them*, they count over the same 900 ms the curve takes to draw, and the line and
+them*, they count over the same 900 ms the chart takes to sweep in, and the plot and
 the number it resolves to therefore finish in the same moment. A figure that
 belongs to a gesture is not the same object as a balance sitting on a card.
 
@@ -259,49 +281,65 @@ taken inside that frame. Unclamped, a millisecond of that turns easeOutExpo's
 as **"-24.643 kr."** for one frame. It is clamped at both ends now, and
 `reveal.test.ts` drives a frame backwards to prove it.
 
-## The curve, and why the band waits
+## The chart, swept in from the baseline
 
 Lukas, 2026-07-29: *"Det kunne også være fedt med noget motion på finansgrafen.
-Så linjerne sådan kommer frem, når man åbner siden."*
+Så linjerne sådan kommer frem, når man åbner siden."* And 2026-07-30, on what
+T073 built for it: *"Nu kommer den ind sådan i stykker (en linje ad gangen),
+hvilket får det til at se lidt ud som om at den blot loader langsomt. Ideelt så
+skulle den ligesom komme frem som om at den blev tegnet frem fra bunden."*
 
-The two measured curves draw themselves in over **900 ms** on the system's own
-`.16 1 .3 1` — the timing §01 gives the count-up and the bars rather than the
-700 ms it gives a card, because a drawn line is one quantity being read out and
-not an element arriving. The three figures above the plot count over the same
-900 ms, so the line and the number it resolves to land together.
+**He is right, and T073's fault was the sequencing rather than the gesture.** It
+drew each curve on its own `stroke-dashoffset`, then settled the band at 620 ms,
+the end dots at 780 and the dashed forecast at 900 — five marks arriving one
+after another. That is what a page loading in pieces looks like, whatever the
+easing on each piece. A design mistake, not a bug, and the reasoning below it
+(the band, the dots, the forecast, each in its right place in a queue) was sound
+argument for a queue that should not have existed.
 
-**Recharts' own animation is not used.** Every series on this chart has carried
-`isAnimationActive={false}` since it was built, and turning it back on would put
-a second easing curve and a second duration on the page beside the system's. The
-draw is `stroke-dashoffset` instead: `lib/reveal.ts` measures each path with
-`getTotalLength()`, writes it to the path as `--ek-len`, and four rules in
-`index.css` do the rest.
+One gesture now: a single edge travelling up from the baseline, uncovering both
+curves, the band, the end dots, the dashed forecast, the gridlines and both axes
+together. `.ek-sweep` is the rect of a `clipPath` over the plot, scaled from
+`scaleY(0)`, so **it is a transform** — and `stroke-dashoffset` has left the app
+along with the `--ek-len` machinery, the `getTotalLength()` measurement and the
+four staggered delays. `src/theme.test.ts` no longer sanctions the exception:
+a stale exception is a licence the next pass finds already granted.
 
-**stroke-dashoffset is the second sanctioned exception to "kun opacity og
-transform"**, beside the wordmark's letter-spacing in the logo intro, and for
-the same reason: a line drawing itself cannot be said with either. §01's rule is
-about what composites — height, top and margin reflow and these do not — and
-this is two paths inside one SVG layer on one screen, none of them in a list.
-`src/theme.test.ts` asserts the exception by name, so a third one cannot arrive
-quietly.
+**900 ms and `.16 1 .3 1`, unchanged.** §01 gives that pair to the count-up and
+the bars, and the three figures beside the plot count over the same 900 ms, so
+the chart and the numbers it resolves to finish in the same instant — measured in
+Chromium, the sweep reaching full at +900 ms from `in` and the figures landing at
++927. Lukas asked for that pairing in T073 and it is the one thing here kept
+exactly. It holds for a reason worth knowing: `show()` writes §01's 60 ms stagger
+onto the element it fires, and `data-draw` animates a *descendant*, so the plot
+takes no stagger — and neither does the count-up. Push the delay down onto the
+sweep and the gesture arrives up to 360 ms after the numbers it is the readout of.
 
-**The band settles after the curves rather than drawing with them.** It is not a
-third series: it is the distance between the two lines, which is the one number
-the card exists to report. Drawn alongside them it reads as a third thing
-arriving on its own account, and for 900 ms it would be showing the gap between
-two curves that are not finished — a shortfall that grows while you watch, which
-is not what the club's books did. So the lines are drawn first, the gap is
-filled in behind them at 620 ms, the end dots arrive at 780 ms with the lines
-that reach them, and the dashed forecast last at 900 ms, being the only mark on
-the chart that has not happened yet. All four of those are opacity.
+**Recharts' own animation is still not used.** Every series has carried
+`isAnimationActive={false}` since the chart was built; turning it back on would
+put a second easing curve and a second duration beside the system's. No series
+carries a motion hook of its own any more either — `.ek-curve`, `.ek-band` and
+`.ek-forecast` are gone, because one clip over the plot leaves nothing for a
+per-curve class to be the handle for.
 
-**The guarantee is a fallback rather than an ordering**, and it has to be:
-recharts inserts these paths some frames after React commits the card, so
-`arm()`'s "observe first, hide second" cannot cover them. Every rule that hides
-a curve names a default — `stroke-dasharray: none`, `stroke-dashoffset: 0` —
-which is an ordinary complete line. No script, no layout, an observer that
-threw, jsdom: the club's finances are drawn whole. `theme.test.ts` fails if a
-rule ever uses `--ek-len` without one.
+**The clip is what makes the band honest, which is what T073 needed the stagger
+for.** Its objection was real: two curves drawn by dash-offset are genuinely
+incomplete while they draw, so the gap between them is a shortfall that grows
+while you watch, and the card exists to report that gap. A clip never shows an
+unfinished shape. Every frame of the sweep is a horizontal slice of the finished
+chart; nothing on it is ever a value on its way somewhere. So the band arrives
+with everything else, and the reason it could not has been removed rather than
+overruled.
+
+**The guarantee is back to being an ordering**, which is the stronger form. T073
+could only offer a fallback: it measured paths recharts inserts some frames after
+React commits the card, too late for `arm()`'s observe-then-hide to reach. Nothing
+is measured now, so the only rule that clips anything is scoped to
+`[data-draw='armed']`, which `lib/reveal.ts` sets *after* `observe()` has returned
+on that element. Verified in Chromium: with `observe()` throwing, and with no
+`IntersectionObserver` at all, the plot is unclipped, all five paths are at full
+opacity and the three figures read the club's real totals. `prefers-reduced-motion`
+lands on the finished chart with nothing armed anywhere on the page.
 
 ## The cards, and what was left room for
 
@@ -335,16 +373,22 @@ its own icon and the full width of the card, so a link, a chip, a distance or a
 row of markers can arrive there without the card being rebuilt around it. **No
 map dependency was added and none is approved.**
 
-**Not verified on WebKit.** T073's motion was measured in Chromium only: the
-Playwright WebKit build is not installed in the cloud session's image and the
-download fails from it. What that leaves unproven is narrow and worth naming —
-`var()` substituted inside a `@keyframes` block, which is what carries
-`--ek-len` into the draw. Its failure mode is benign in the one direction that
-matters: an unresolvable `var()` makes `stroke-dashoffset` invalid, the
-animation's from-value falls back to the computed value, and the curve simply
-appears whole with no draw. Everything else in this pass — `getTotalLength`,
-custom properties on an element, dash animation on an SVG path — has been in iOS
-Safari for a decade.
+**Still not verified on WebKit, and for the same reason.** The Playwright WebKit
+build is not in the session's image and the download is refused by egress policy —
+`playwright.download.prss.microsoft.com` answers 403, "host not permitted". T073
+hit this; T077 hit it again.
+
+What that leaves unproven is now one property: **`transform-box: fill-box` on the
+sweep's rect**, which is what puts the pivot on the bottom of the plot rather than
+on the SVG canvas origin. Its failure mode is the one direction that is not
+benign — an ignored `transform-box` falls back to `view-box`, and a pivot at the
+origin sweeps the chart *down from the top* instead of up from the baseline. So the
+clip's host `<svg>` carries `viewBox="0 0 1 1"`, matching the clipPath's own
+objectBoundingBox units: `transform-origin: bottom` is 50% 100% of either box and
+both paths resolve to the same point. Wrong is then no longer available cheaply.
+Everything else in the gesture — a `clipPath` referenced by `url(#…)` from CSS,
+`clipPathUnits="objectBoundingBox"`, a transform animated on an SVG element — has
+been in iOS Safari for a decade. **It still wants Lukas's eye on a phone.**
 
 ## Not done yet
 
