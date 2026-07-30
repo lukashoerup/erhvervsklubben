@@ -1,8 +1,10 @@
 import {
   canBeFined,
+  chargedIn,
   MEMBER_RIGHTS,
   paysDues,
   payingMembers,
+  payingMembersIn,
   rightsOf,
   STATUS_LABEL,
   STATUS_NOTE,
@@ -85,5 +87,60 @@ describe('every status the club can hold', () => {
       expect(STATUS_NOTE[status]).toBeTruthy()
       expect(rightsOf(status)).toBe(MEMBER_RIGHTS[status])
     }
+  })
+})
+
+/**
+ * When the club started charging each member — the fact `/oekonomi` needed and
+ * the club had never written down (T076, from the bank statement).
+ */
+describe('the payer count, per month', () => {
+  // The club as the statement establishes it: eight payers from June 2025, the
+  // ninth from May 2026, and the founding father in neither count.
+  const club = [
+    { status: 'aktiv' as MemberStatus, duesFrom: '2025-06-01' },
+    { status: 'aktiv' as MemberStatus, duesFrom: '2025-06-01' },
+    { status: 'aktiv' as MemberStatus, duesFrom: '2025-06-01' },
+    { status: 'aktiv' as MemberStatus, duesFrom: '2025-06-01' },
+    { status: 'aktiv' as MemberStatus, duesFrom: '2025-06-01' },
+    { status: 'aktiv' as MemberStatus, duesFrom: '2025-06-01' },
+    { status: 'aktiv' as MemberStatus, duesFrom: '2025-06-01' },
+    { status: 'aktiv' as MemberStatus, duesFrom: '2025-06-01' },
+    { status: 'aktiv' as MemberStatus, duesFrom: '2026-05-01' },
+    { status: 'founding-father' as MemberStatus, duesFrom: null },
+  ]
+
+  test('rises when a member starts paying, and not before', () => {
+    expect(payingMembersIn(club, '2025-05')).toBe(0)
+    expect(payingMembersIn(club, '2025-06')).toBe(8)
+    expect(payingMembersIn(club, '2026-04')).toBe(8)
+    expect(payingMembersIn(club, '2026-05')).toBe(9)
+    expect(payingMembersIn(club, '2026-07')).toBe(9)
+    // The whole point of measuring it: charging today's nine across the whole
+    // history put 1.200 kr. of kontingent on the club that it never charged.
+    expect(payingMembers(club.map((m) => m.status))).toBe(9)
+  })
+
+  test('the founding father is charged in no month, dated or not', () => {
+    // Two independent reasons, and either alone must be enough. §12 exempts
+    // him, and he has no dues_from — so a future migration filling one in by
+    // accident still cannot bill him.
+    expect(chargedIn({ status: 'founding-father', duesFrom: null }, '2026-07')).toBe(false)
+    expect(chargedIn({ status: 'founding-father', duesFrom: '2025-06-01' }, '2026-07')).toBe(false)
+  })
+
+  test('a member with no dues_from is charged across the whole window', () => {
+    // Null means *not known*, and the safe reading of not-knowing is the
+    // behaviour this replaced. A database that has not run the migration must
+    // not report the club as owed nothing — under-charging silently is worse
+    // than over-charging visibly, because nobody goes looking for it.
+    expect(chargedIn({ status: 'aktiv', duesFrom: null }, '2020-01')).toBe(true)
+    expect(chargedIn({ status: 'aktiv' }, '2026-07')).toBe(true)
+    expect(payingMembersIn([{ status: 'aktiv' }, { status: 'inaktiv' }], '2019-03')).toBe(1)
+  })
+
+  test('charges the month a member starts and not the one before', () => {
+    expect(chargedIn({ status: 'aktiv', duesFrom: '2026-05-01' }, '2026-04')).toBe(false)
+    expect(chargedIn({ status: 'aktiv', duesFrom: '2026-05-01' }, '2026-05')).toBe(true)
   })
 })

@@ -34,6 +34,26 @@ export type MemberStatus = 'aktiv' | 'inaktiv' | 'founding-father'
 export type Member = {
   name: string
   status: MemberStatus
+  /**
+   * First month the club charges this member kontingent, as `YYYY-MM-DD` on the
+   * first of that month. Null where it is not known.
+   *
+   * **Not a joining date, and named for what it holds.** T076 established it
+   * from the bank statement, which evidences dues liability and nothing else —
+   * and the club's own history says the two are different: Christian Have has
+   * attended since møde #3 and was fined at møde #26 in February 2026, three
+   * months before his first kontingent transfer; the founding father has
+   * attended 22 evenings and will never have a value here at all. Calling the
+   * column `joined_on` would have put a joining date on nine members that the
+   * statement cannot support and that `attendances` contradicts.
+   *
+   * Null means *not known*, and `chargedIn` therefore charges such a member in
+   * every month of whatever window is being drawn — which is exactly what the
+   * app did before this column existed. The column refines the payer count
+   * where there is evidence; its absence must not silently drop a payer and
+   * report the club richer than it is.
+   */
+  dues_from?: string | null
 }
 
 /**
@@ -135,4 +155,33 @@ export function votesOnFunds(status: MemberStatus | null): boolean {
 /** How many of these members the club charges kontingent — the income base. */
 export function payingMembers(statuses: (MemberStatus | null)[]): number {
   return statuses.filter(paysDues).length
+}
+
+/** What `chargedIn` and `payingMembersIn` need of a member. */
+export type Charged = { status: MemberStatus | null; duesFrom?: string | null }
+
+/**
+ * Whether this member is charged kontingent in a given month (`YYYY-MM`).
+ *
+ * Two questions, and both have to be yes: does his status pay dues at all (§3,
+ * §12), and had the club started charging him by then. The second one is new —
+ * until 2026-07-30 the club had never recorded when a member's dues began, so
+ * `/oekonomi` charged today's members across the whole history and the
+ * expected-income curve sat 1.200 kr. too high (§13). The bank statement
+ * answered it: eight payers from June 2025, nine from May 2026.
+ *
+ * A member with no `duesFrom` is charged in every month, which is the behaviour
+ * this function replaces rather than a new guess. Erring the other way would
+ * make a database that has not run the migration report the club as owed
+ * nothing, and a books page that under-charges silently is worse than one that
+ * over-charges loudly.
+ */
+export function chargedIn(m: Charged, month: string): boolean {
+  if (!paysDues(m.status)) return false
+  return !m.duesFrom || m.duesFrom.slice(0, 7) <= month
+}
+
+/** How many of these members the club charges in a given month (`YYYY-MM`). */
+export function payingMembersIn(members: Charged[], month: string): number {
+  return members.filter((m) => chargedIn(m, month)).length
 }

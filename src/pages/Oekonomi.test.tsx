@@ -355,11 +355,17 @@ describe('who the club charges', () => {
     // curve is the one thing on this page a member cannot derive from knowing
     // his own club. The names and the reason live in data/members.ts, which is
     // what actually stops the money being charged.
+    //
+    // The count is now stated as **today's**, because since 2026-07-30 the blue
+    // curve is charged per month: the bank statement dated the ninth payer to
+    // May 2026, so one number can no longer stand for the whole history. It was
+    // honest while the count was assumed and became a small lie the moment it
+    // was measured.
     aClubWithBooks()
     renderPage('user')
     await screen.findByRole('img')
-    expect(screen.getByText(/betalende medlemmer/)).toHaveTextContent(
-      /kontingent fra\s*9\s*betalende medlemmer/,
+    expect(screen.getByText(/opkrævede i den enkelte måned/)).toHaveTextContent(
+      /kontingent fra de medlemmer, klubben\s*opkrævede i den enkelte måned\s*\(\s*9\s*i\s*dag\)/,
     )
     // Gone, and not reinstated in smaller type somewhere else on the page.
     expect(screen.queryByText(/Hvem betaler kontingent/)).not.toBeInTheDocument()

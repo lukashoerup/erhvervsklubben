@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { READONLY, supabase } from '../lib/supabase'
 import { balancesByMember, buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
 import { budgetFines, budgetHorizon, budgetLimits, projectBudget } from '../data/projection'
-import { canBeFined, paysDues } from '../data/members'
+import { canBeFined, paysDues, payingMembersIn } from '../data/members'
 import { Loading, Problem } from '../components/State'
 import { FineCapture, type DraftFine } from '../components/FineCapture'
 import { FinanceChart, kr } from '../components/FinanceChart'
@@ -246,21 +246,26 @@ export default function Oekonomi() {
     ...dated.map((f) => f.month),
     ...data.payments.map((p) => p.month.slice(0, 7)),
   ].sort()
-  // Who the club charges, from membership status. This was `roster.length`
-  // until 2026-07-29 — everyone who had ever attended a meeting, member or
-  // not, exempt or not — which is why the blue curve has always sat too high.
-  // A flat count across the whole history, not a per-month one: the club has
-  // never recorded when a member joined, and inventing a joining date to make
-  // the early months land would be a guess dressed as a figure.
+  // Who the club charges, from membership status — and since 2026-07-30, in
+  // which months. This was `roster.length` until 2026-07-29: everyone who had
+  // ever attended, member or not, exempt or not. It then became a flat count of
+  // today's payers across the whole history, which was still 1.200 kr. too high
+  // in the early months, because it charged nine members where the club charged
+  // eight (§13). The bank statement supplied the missing fact rather than a
+  // guess — eight payers from June 2025, nine once Christian Have's first
+  // transfer arrives in May 2026 — and `members.dues_from` holds it. A member
+  // with no `dues_from` is still charged across the whole window, so a database
+  // that has not run the migration behaves exactly as it did before.
   const roster = attendance.data?.roster ?? []
   const payers = roster.filter((r) => paysDues(r.status))
+  const chargedIn = (month: string) => payingMembersIn(roster, month)
   const ledger = months.length
     ? buildLedger({
         from: months[0],
         to: months[months.length - 1],
         fines: dated,
         payments: data.payments.map((p) => ({ ...p, month: p.month.slice(0, 7) })),
-        payingMembers: () => payers.length,
+        payingMembers: chargedIn,
       })
     : []
 
@@ -294,7 +299,7 @@ export default function Oekonomi() {
           months: budgetHorizon(ledger.length),
           openingBalance: ledger[ledger.length - 1].expectedBalance,
           budget,
-          payingMembers: () => payers.length,
+          payingMembers: chargedIn,
         })
       : []
 

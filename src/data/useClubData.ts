@@ -77,6 +77,16 @@ export async function readRecords(): Promise<RecordRow[]> {
  * reinstate it.
  */
 export async function readMembers(): Promise<Member[]> {
+  // `dues_from` arrived on 2026-07-30 (T076) and is asked for as a retry, the
+  // same shape as `meeting_date` above and for the same reason: a column this
+  // build wants and a database has not got must cost that column, never the
+  // roster. Losing it costs the per-month payer count and falls back to
+  // charging every payer across the window — see `chargedIn` in members.ts.
+  const withDues = await supabase().from('members').select('name, status, dues_from')
+  if (!withDues.error) return (withDues.data ?? []) as Member[]
+  if (withDues.error.code === UNDEFINED_TABLE) return []
+  if (withDues.error.code !== UNDEFINED_COLUMN) throw withDues.error
+
   const { data, error } = await supabase().from('members').select('name, status')
   if (error) {
     if (error.code === UNDEFINED_TABLE) return []

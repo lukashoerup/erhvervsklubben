@@ -5,7 +5,16 @@ actually written, what was refused, and where §8.2's "import nothing" verdict
 was overtaken.** Sections 0–10 are the investigation as it stood on 2026-07-27
 and are left unedited, because §11 is only readable against what it changed.
 
+**Start at §16 if you want the current books.** The club's actual bank statement
+arrived 2026-07-30 and supersedes the spreadsheet for every month it covers:
+`payments` now holds 14 rows summing to **14.880 kr.**, reconciled to the
+account, with **200 kr. outstanding** (Anders, July 2026, bank change). Sections
+written against the sheet's 13.280 kr. are correct about the sheet and are no
+longer current.
+
 Sources:
+- **Bank statement, all 90 transactions to 30.07.2026** —
+  `Erhvervsklubkonto4086341662_20260730.csv`, the club's real ledger. See §16.
 - Google Sheet **"Klubbens finanser"** `1vOyTgOqqme7ad6ttRdr0Pmfy4izjEMY5AVu0BduIwfE`,
   last modified **2026-06-09T15:43:55Z** (this date matters — see §5).
 - Google Slides **"Aarsberetning_Erhvervsklubben"** — two copies exist,
@@ -1284,3 +1293,351 @@ the 50 + 5n corroboration on every run: if `FINE_RULES` is ever amended without
 dating the change, these historical amounts stop reproducing and it goes red.
 That is deliberate — a rate change must never silently rewrite what a member was
 charged in 2025. `npm test` is at **327**.
+
+---
+
+## 16. The bank statement — T076, 2026-07-30
+
+The club's real ledger, for the first time. Every transaction on the
+Erhvervsklub account from the first payment to 30.07.2026: **90 lines, closing
+15.080,00 kr.** Everything in §0–§15 was read off a spreadsheet, a screenshot
+and the treasurer's memory; this section is read off the account.
+
+### 16.1 Lead first: it ties out, to 200 kr.
+
+**The club's books now reconcile to the bank exactly, and the only figure
+outstanding is 200 kr. that Lukas had already named.**
+
+```
+13.100  kontingent settled, June 2025 – July 2026
++1.780  bøder collected, February 2026
+------
+14.880  reconciled            = the balance Lukas photographed 27.07 ✓
+  +200  Rasmus, settling August 2026 — held out on purpose
+------
+15.080  bank, 30.07.2026      = the statement's own closing Saldo ✓
+```
+
+Against 13.300 kr. of kontingent charged across those fourteen months, **200 kr.
+is unpaid: Anders's July 2026.** He has changed bank (Lukas, 2026-07-30), so it
+is known rather than an error, and he is the **only member with anything
+outstanding in fourteen months.** Every month from June 2025 to June 2026 is
+settled in full, by every member the club charged.
+
+That is the whole of the dues reconciliation. Nothing else is missing, nothing is
+unexplained, and no figure was adjusted to make it close.
+
+### 16.2 Reading the file, and attributing 87 transfers
+
+The export is **Latin-1, semicolon-delimited, Danish decimals** and was served as
+though it were UTF-8, so `Beløb` arrives as `Bel?b` and `Tørring` as `T?rring`.
+Decoded rather than pattern-matched around: the damaged bytes are inside member
+names, and a reader that skips them cannot tell `Anders Tørring Hanse` from
+anything else.
+
+Two integrity checks before a krone of it was used. The `Saldo` column is the
+exact running total of `Beløb` down all 90 rows, and every row's `Status` is
+`Udført` — no pending transaction is being counted as money. The implied opening
+balance is **2,61 kr.** (see §16.6).
+
+Of the 90 lines, **87 are kontingent, 2 are bøder and 1 is the sweep.** Payer
+names sit in the transfer text and are wildly inconsistent — `Kontingent Kasper`,
+`Kasper kontingent`, `Kasper jun-sep`, `Emil bødekasse`, `Kontingent - Esben
+Clausen`, `Kontingent - Esben C.` — but **85 of the 87 name their payer.** The
+other two are inferences, and they are marked as such wherever they appear:
+
+**`Overførsel` × 3 = Mads** (1.200 on 01.05.2026, 200 on 02.06, 200 on 02.07).
+Lukas, 2026-07-30: Mads is the only member whose transfers carry no name. The
+arithmetic corroborates it independently and exactly — his three transfers total
+**1.600 kr., which is precisely what the club charged him** for June 2025 through
+July 2026, with nothing over and nothing short. A wrong attribution here would
+have to be wrong by a multiple of the club's own rate to look like this.
+
+**`Ekstra kontingent i juni (v...` 100 kr. on 03.06.2026 = Esben**, by
+elimination on a closed set. Every other member's June 2026 is complete to the
+krone from named transfers; Esben's June is 100 kr. short; the statement has
+exactly one unattributed 100 kr. in June. And **nobody is over-paid**, which
+rules out the alternative that a member paid twice. The text itself — *extra
+kontingent in June* — is what a rate-rise top-up would say.
+
+**Caveat, stated because it is the one dues krone in the statement whose payer is
+inferred:** no monthly total depends on it. June 2026 settles at 1.800 kr. either
+way. Only Esben's own column moves, and only by 100 kr.
+
+### 16.3 When each member's dues began — and why it is not `joined_on`
+
+§9 Q8 asked when the ninth member joined and §14.5 recorded Lukas's answer from
+memory: *nine from June 2026, eight before.* **The bank refines it by one
+month.** Christian Have's first transfer is **04.05.2026 for 100 kr.** — May's
+rate — and his three transfers total 500 kr., which is May at 100 plus June and
+July at 200, exactly. Nine payers from **May** 2026, not June.
+
+`members` now carries a nullable **`dues_from`**, additive and guarded, which is
+the schema change §14.5 specified and declined to make without evidence. This is
+that evidence.
+
+| Member | `dues_from` | What fixes it |
+|---|---|---|
+| Lukas, Rasmus, Kasper, Esben, Saaby, Emil, Anders | **2025-06-01** | Each one's first transfer is 400 kr. between 30.08 and 25.09.2025 = four months at 100 kr., and two of the seven wrote the months into the transfer text: `Kasper jun-sep`, `Emil juni-september` |
+| Mads | **2025-06-01** | His 1.200 kr. of 01.05.2026 is twelve months at 100 kr. — June 2025 through May 2026 — with no remainder. Liable from the start, paid late |
+| Have | **2026-05-01** | First transfer 04.05.2026, 100 kr.; 500 kr. total = May + June + July exactly |
+| Oskar | **null** | §12's founding father pays no kontingent. There is no month to charge him, so there is no date — absent from the list rather than present with a null |
+
+**The column is named for dues liability, not for joining, and that is a finding
+rather than fussiness.** The statement documents when the club started *charging*
+each man and nothing else, and this club's own history says the two dates belong
+to different questions:
+
+- **Have has attended since møde #3** and was fined 60 kr. at **møde #26 on
+  2026-02-21** — three months before his first kontingent transfer. Whatever
+  changed in May 2026, he did not arrive then. (Worth one question to Lukas: what
+  did change? §4 Stk. 2 has a prospective member attend as a guest first, and a
+  guest earns no anciennitet under §10 Stk. 3 — but he holds six attendances.)
+- **Oskar has attended 22 evenings** and will never carry a value here.
+- **The club's first meeting on file is 2022-10-29**, roughly three years before
+  the account opens. June 2025 is when kontingent started, not when seven men
+  joined.
+
+Writing `2025-06-01` into a column called `joined_on` would have put a false
+joining date on nine members, contradicted by `attendances`, to satisfy a name.
+Anciennitet is measured by attendance (§11), so nothing else was waiting for a
+joining date.
+
+**What it fixes.** `/oekonomi` charged today's nine payers across the whole
+history, which §13 measured as **1.200 kr. of kontingent the club never
+charged** — the largest remaining distortion in the books. `buildLedger` now asks
+`payingMembersIn(roster, month)` per month. A member with no `dues_from` is still
+charged across the whole window, so a database that has not run the migration
+behaves exactly as it did before: losing the column must cost precision, never
+turn the club's income to zero.
+
+### 16.4 The accrual decision, said out loud
+
+**`payments.month` records the month a payment settles, not the month the money
+arrived.** The column has said so since it was created — *"The month this
+settles, as the first of that month"* — and until this statement arrived, nothing
+the club kept could tell the two apart.
+
+So **a catch-up transfer is allocated across the months it was for**, oldest
+first. Mads's 1.200 kr. of 01.05.2026 settles June 2025 through May 2026 at
+100 kr. a month. In the monthly view and in the graphs, **Mads appears as having
+paid consistently throughout — because by any reading that matters, he has.**
+
+This has to be said plainly, because the honest version and the dishonest version
+produce the same picture:
+
+- **The bank total does not move.** Allocation redistributes a payment across
+  months; it cannot create or destroy a krone. The rows sum to 14.880 kr., which
+  is the statement's own closing balance less one held-out transfer, and the test
+  suite asserts it against the real statement on every run.
+- **What changes is the monthly view**, which stops recording a man as eleven
+  months delinquent and then wildly overpaid, and starts recording what happened:
+  he owed those months, and those months are now paid.
+- **The difference between the two readings is evidence.** *Allocated to the
+  months it settles* is a claim about what a payment was for, carried by the
+  bank's own transfer text (`jun-sep`, `juni-september`) and by arithmetic that
+  closes to the krone against a per-member total. *Moved to make a graph look
+  nicer* is a claim about nothing. If the 1.200 had been 1.150, or had left a
+  remainder, or had arrived from a member with no arrears, none of this would
+  apply and the section would say so instead.
+
+`src/data/allocation.ts` implements it and `allocation.test.ts` runs it against
+all 87 transfers, so the figures in this section are reproducible rather than
+asserted. It **throws** rather than absorbing money it cannot place — a transfer
+from a member the club charges nothing, or one that settles no month inside the
+horizon, is reported and not rounded away.
+
+**One deliberate limit: fine receipts are not allocated this way.** The 1.780 kr.
+stays in February 2026, the month it was collected, and is not spread back across
+the six evenings it paid for. Three reasons, and the first is decisive: the fine
+*charges* are already dated to their own meetings in `fines` (T071), so
+re-spreading the *receipt* would state the same money twice in two tables. The
+Bødekasseregulativ also makes collection a quarterly event rather than a monthly
+one, and the club's own sheet and annual report both book the 1.780 as a single
+February figure. **Flagged as a judgement rather than a fact** — if Lukas wants
+the fine receipts spread to the evenings they settle, it is one more allocation
+and nothing about the total changes.
+
+### 16.5 The fines: 1.780 collected, 2.510 incurred, and they stay apart
+
+The statement is the first **independent** confirmation of the collected figure.
+`Emil bødekasse` **235 kr.** on 09.02.2026 and `Bøder` **1.545 kr.** on
+16.02.2026 sum to **1.780 kr.**, and the decomposition the sheet's formula
+`E10 = 700+1545+235` implied (§3.3) is now visible as two actual transfers on two
+actual dates. §3.3's reasoning was correct three months before the evidence
+arrived, including which of the two lumps Emil's own 235 was.
+
+**The two quantities are not merged, and must never be:**
+
+| | kr. | What it is |
+|---|---:|---|
+| Collected | **1.780** | Money in the bank. The annual report's figure, now bank-confirmed |
+| Incurred | **2.510** | What the club charged, after T075 read the Leads' notes |
+| Difference | **730** | Fines a Lead noted and nobody ever billed — **money the club is owed** |
+
+A reconciliation's natural pull is to make the two agree, and here that would
+mean quietly writing off 730 kr. of the club's own money. Nothing in this task
+touched a fine row: `fines` was counted before and after at **30 rows / 2.510
+kr.** and is unchanged. The 730 kr. is still Lukas's decision (§15.1), not a bug.
+
+### 16.6 `Til Eget forbrug` −2,61 — not the club's money
+
+The only outgoing in the account's whole life, and the `Saldo` column settles what
+it was. The balance **before** it is 2,61 kr. and **after** it is 0,00 — on
+30.08.2025, the same day the club's first 400 kr. arrived. It is the account being
+**swept to zero of a residue that predates the club**, to the owner's own use,
+which is exactly what `Til Eget forbrug` says.
+
+**The club's books should not carry it.** It is not the club's money; `payments`
+is whole kroner and could not hold 2,61 faithfully in any case; and §8's picture
+of a club with no operating costs is **borne out rather than contradicted** — 89
+of the 90 lines are credits and the ninetieth is not an expense. The club's
+ledger opens at 0,00, which is precisely where the statement's own Saldo starts.
+
+### 16.7 The oddities, resolved rather than smoothed
+
+Every one of them turns out to be the same two mechanisms: **two members pay a
+month in advance** (§4 Stk. 3 has kontingent paid in advance), and **the rate rose
+from 100 to 200 kr. in June 2026** mid-rhythm.
+
+| Oddity | What it is |
+|---|---|
+| **Rasmus paid twice, 29. and 30.04.2026** | He has paid a month ahead since October 2025. 29.04 settles May; 30.04 is the first 100 of June, whose rate had doubled, and 28.05 supplies the second 100. No overpayment: his total is exactly the club's charge |
+| **`Ekstra kontingent i juni` 100 kr., 03.06** | Esben's top-up for the same rate rise (§16.2) |
+| **Kasper 100 on 02.06 and 100 more on 06.06** | The same rate rise again, in two transfers four days apart. His total is exact |
+| **Lukas 100 on 29.05 and 100 on 04.06** | And again. Four of the nine members paid June's 200 kr. in two pieces |
+| **The February 700** (§9 Q7: *did someone miss February?*) | **Nobody did.** Seven members were transferring at the time and 7 × 100 = 700 exactly. The sheet charged eight. The eighth was Mads, who settled his February with the 01.05.2026 catch-up — so February is now fully settled at 800 |
+| **April and May at 900** (§13) | The bank says **800 and 900**: eight payers in April, nine from May when Have starts. One of the sheet's two hundreds was simply May's |
+| **§5.3's 400 kr.** | **Answered, and the doc's preferred reading was wrong.** §5.3 called explanation (a) "the more likely" — two payments hidden below the screenshot's cut, dated 1 July. It is **(b)**, and the statement names them: **Rasmus 29.06 and Lukas 30.06, 200 kr. each, both settling July**, arriving after the sheet was saved on 2026-06-09 and before 1 July. Neither the sheet nor the screenshot could see them. Both closing figures are right about different things: **13.280 kr. is what the club had earned through June 2026** — exactly the annual report's total, now reproduced from the bank — and **13.680 kr. is what was in the account on 30 June.** The 400 kr. between them is July's dues, paid early |
+
+**The sheet's `Faktisk beholdning` was never a bank balance.** §11.1 verified it
+as the exact running total of `Indbetalinger`, which is true — but that makes it
+an accrual roll-up of 800 kr. a month, and **only its final cell coincided with a
+figure the bank ever showed**: 13.280 kr. was the balance on 06.06.2026, three
+days before the sheet was last saved. Every other cell in that column differs
+from the account. The column named *actual holdings* held nothing of the kind.
+
+### 16.8 Per member, June 2025 – July 2026
+
+Charged at 100 kr./month before June 2026 and 200 kr./month from June 2026
+(`DUES_SCHEDULE`), and only to members the club charges — Oskar pays nothing.
+
+| Member | `dues_from` | Transfers | Paid | Charged | Settled | **Outstanding** | Prepaid |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Anders | 2025-06 | 10 | 1.400 | 1.600 | 1.400 | **200** | 0 |
+| Emil | 2025-06 | 11 | 1.600 | 1.600 | 1.600 | 0 | 0 |
+| Esben | 2025-06 | 12 | 1.600 | 1.600 | 1.600 | 0 | 0 |
+| Have | 2026-05 | 3 | 500 | 500 | 500 | 0 | 0 |
+| Kasper | 2025-06 | 12 | 1.600 | 1.600 | 1.600 | 0 | 0 |
+| Lukas | 2025-06 | 12 | 1.600 | 1.600 | 1.600 | 0 | 0 |
+| Mads | 2025-06 | 3 | 1.600 | 1.600 | 1.600 | 0 | 0 |
+| Rasmus | 2025-06 | 13 | 1.800 | 1.600 | 1.600 | 0 | **200** |
+| Saaby | 2025-06 | 11 | 1.600 | 1.600 | 1.600 | 0 | 0 |
+| Oskar | — | 0 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | | **87** | **13.300** | **13.300** | **13.100** | **200** | **200** |
+
+Emil's 235 kr. of bøder is not in his row; it is not kontingent.
+
+### 16.9 What was written to `payments`, and what it replaced
+
+The sheet was a 2026-06-09 snapshot and is superseded for every month it covers.
+`amount_kr` becomes what settles in that month; `bank_balance_kr` becomes **the
+statement's own closing Saldo for that calendar month** — real bank data, which
+is what the column has always meant.
+
+| Month | was | now | was balance | now balance | Why |
+|---|---:|---:|---:|---:|---|
+| 2025-06 | 800 | 800 | 800 | **0** | Kontingent paid retroactively 30.08–25.09; the account was empty |
+| 2025-07 | 800 | 800 | 1.600 | **0** | Same |
+| 2025-08 | 800 | 800 | 2.400 | **400** | Real month-end balance |
+| 2025-09 | 800 | 800 | 3.200 | **3.000** | Real month-end balance |
+| 2025-10 | 800 | 800 | 4.000 | **3.700** | Real month-end balance |
+| 2025-11 | 800 | 800 | 4.800 | **4.400** | Real month-end balance |
+| 2025-12 | 800 | 800 | 5.600 | **5.100** | Real month-end balance |
+| 2026-01 | 800 | 800 | 6.400 | **5.800** | Real month-end balance |
+| 2026-02 | 2.480 | **2.580** | 8.880 | **8.280** | 800 of dues, not 700: Mads's February arrived with his catch-up. Fines unchanged at 1.780 |
+| 2026-03 | 800 | 800 | 9.680 | **8.980** | Real month-end balance |
+| 2026-04 | 900 | **800** | 10.580 | **9.780** | Eight payers, not nine — the ninth starts in May |
+| 2026-05 | 900 | 900 | 11.480 | **11.780** | Nine payers for the first time |
+| 2026-06 | 1.800 | 1.800 | 13.280 | **13.680** | The 400 kr. of §5.3: July paid early on 29.–30.06 |
+| 2026-07 | *(new)* | **1.600** | — | **15.080** | 1.600 of 1.800 charged; Anders short 200 |
+
+Net effect on the total: +100 (February) −100 (April) +1.600 (July) = **13.280 →
+14.880 kr.**
+
+**No 2026-08 row was written** for Rasmus's 200 kr. of 30.07. A month in progress
+does not belong in a ledger that reports what the club is owed, and the club's
+members transfer on different days — eight of them would read as delinquent for a
+month that has barely begun.
+
+`bank_balance_kr` and the running total of `amount_kr` now differ on purpose, and
+the gap is the timing float: negative in the retroactive months (earned before it
+arrived), positive at the end (paid before it was earned). The two can only agree
+by accident in a club where two members pay in advance and one paid a year in
+arrears.
+
+### 16.10 Read back from production after writing
+
+Applied to `urlabzyihqrsdeasvrfe` as
+`supabase/migrations/20260730160000_bank_reconciliation.sql`.
+
+| Check | Value |
+|---|---|
+| `payments` rows | **14** |
+| `sum(amount_kr)` | **14.880** — the reconciled balance, and Lukas's 27.07 photograph |
+| Final `bank_balance_kr` | 15.080 — the statement's closing Saldo, including August's 200 |
+| `members.dues_from` set | 9 of 10; Oskar null |
+| `fines` | 30 rows / **2.510 kr.** — unchanged |
+| `attendances` / `attendance_records` / `members` / `news` / `events` / `profiles` | 261 / 28 / 10 / 9 / 12 / 9 — all unchanged |
+| `members.status` | unchanged, all ten |
+| Second application | **total no-op** — 0 rows written, verified by re-running with a sentinel note |
+
+The `payments` updates are guarded on **the values they replace** — a row is
+rewritten only while it still holds the spreadsheet's amount *and* the
+spreadsheet's balance — so the file applies exactly once and a correction the
+treasurer later makes in the app is never quietly reasserted. Same reasoning as
+T068's `on conflict do nothing` and T075's `rule_id = 'historisk'`. The
+`members` and insert statements are additionally guarded on the club's own ten
+names, so on a fresh stack or in CI the whole file adds a nullable column and no
+rows.
+
+### 16.11 What did not tie out, and what is now open
+
+**Nothing in the dues failed to reconcile.** Every krone of the 87 transfers is
+allocated to a month the club charged, and every month the club charged is
+settled except one. That is worth stating explicitly because it is unusual, and
+because the honest finding here would have been the opposite.
+
+Carried forward, in order of how much they matter:
+
+1. **Anders owes 200 kr.** for July 2026. Known (bank change), and the only
+   outstanding kontingent in fourteen months. Whether to chase it is not a
+   database question.
+2. **730 kr. of fines noted and never billed** (§15.1). Unchanged by this
+   section, and still Lukas's decision.
+3. **`Ekstra kontingent i juni` is attributed to Esben by elimination**, not by
+   name. No monthly total depends on it; only Esben's own column would move, and
+   only by 100 kr. One question would close it.
+4. **Have attended for over two years before paying kontingent** — møde #3
+   onwards, six attendances, fined at møde #26 in February 2026, first transfer
+   May 2026. What changed in May? This is the one place the bank raises a
+   question the club has never been asked rather than answering one.
+5. **The fine receipts are booked where they were collected, not where they were
+   incurred** (§16.4). A judgement, flagged; reversible in one allocation.
+6. **The annual report's closing balance of 13.280 kr.** is right as an accrual
+   figure through June 2026 and 400 kr. below the account's 30 June balance.
+   Whether the report gets a footnote is the club's call, not a correction.
+
+**Closed by this section:** §9 **Q3** (the 400 kr. — explanation (b), and the two
+transfers named), **Q7** (nobody missed February; the club had seven payers),
+**Q8** (nine payers from **May** 2026, refining the remembered June), and **Q9**
+(the unnamed `Overførsel` is Mads, corroborated to the krone). §14.5's schema
+change is done, and its 1.200 kr. distortion is gone.
+
+**Also worth recording, found in passing and not this task's work:** `fines`
+holds **30** rows where §15.3 tabulates 29. The money is identical at 2.510 kr.
+Emil's 110 kr. at møde #25 — §15.6's one flagged row — is now stored as
+**60 kr. `for-sent` (2 min) + 50 kr. `skaal`**, which is exactly what the sheet's
+`{=60+50}` said it was. Somebody re-recorded that meeting in the app after T075,
+and in doing so answered §15.6. Nothing was changed here; the docs were simply
+one row behind the database.

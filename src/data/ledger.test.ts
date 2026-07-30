@@ -179,11 +179,18 @@ describe('who gets charged', () => {
   })
 })
 
-describe('the imported history (T068) after the members table (T069)', () => {
-  test('still reconciles to 13.280 kr. paid and 1.730 kr. of fines', () => {
-    // The two totals the whole import is judged by. They are facts about the
-    // rows, so no change to who is charged may move them — if this drifts, the
-    // members work has damaged the club's books rather than its arithmetic.
+describe('the imported history as the sheet left it (T068/T069)', () => {
+  test('reconciled to 13.280 kr. paid and 1.730 kr. of fines', () => {
+    // **Superseded on 2026-07-30 by the bank statement (T076), and kept because
+    // it is the only place these figures are now written down as arithmetic.**
+    // 13.280 kr. was the Google Sheet's `E29` and the annual report's total;
+    // `payments` now holds 14 rows summing to 14.880 kr., reconciled against the
+    // real ledger. 1.730 kr. was the fines as first imported; they are 2.510 kr.
+    // since T075 found 730 kr. that a Lead noted and nobody billed.
+    //
+    // Neither figure was wrong — both are exact about the source they came from,
+    // which is the whole lesson of this file's history. What they are not is
+    // current, and the live assertions are in allocation.test.ts.
     const payments = [
       800, 800, 800, 800, 800, 800, 800, 800, 2480, 800, 900, 900, 1800,
     ].map((amount_kr, i) => ({

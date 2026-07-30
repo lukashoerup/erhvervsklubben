@@ -65,6 +65,12 @@ export function buildLedger(opts: {
    * This was `roster.length` until 2026-07-29 — everyone who had ever turned
    * up — which made the expected-income line too high in every month the club
    * has ever had. Answer it from membership status; see data/members.ts.
+   *
+   * **It takes a month for a second reason, since 2026-07-30.** A flat count of
+   * today's payers is still wrong about the past: the club charged eight members
+   * before May 2026 and nine after, and charging nine throughout put 1.200 kr.
+   * of kontingent on the books that was never charged (§13). The bank statement
+   * dated it, `members.dues_from` holds it, and `payingMembersIn` answers it.
    */
   payingMembers: (month: string) => number
 }): LedgerMonth[] {
