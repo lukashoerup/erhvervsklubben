@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-29. Single source of truth for "where are we". Update this at the
+_Updated 2026-07-30. Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -17,11 +17,14 @@ removed, so record ids run 1–27 and 29. **17 of the 28 meetings now carry a
 date** (2026-07-29, T071) — see below.
 
 **The sheet's history is imported** (2026-07-29, T068): 13 `payments` rows
-summing to **13.280 kr.** and, since T071, **18** `fines` rows summing to
-**1.780 kr.**, reconciled against *Klubbens finanser* to the krone, in both
+summing to **13.280 kr.** and, since T071, 18 `fines` rows summing to
+1.780 kr., reconciled against *Klubbens finanser* to the krone, in both
 directions of the grid. Insert-only and re-runnable; the statements are
 committed as `supabase/migrations/20260729120000_finance_history_import.sql`
-and `..._20260729200000_meeting_dates_from_calendar.sql`.
+and `..._20260729200000_meeting_dates_from_calendar.sql`. **Since 2026-07-30
+(T075) the fines are 29 rows summing to 2.510 kr.** — see immediately below,
+because that number is not the annual report's and it must not be quoted as if
+it were.
 
 **The meetings have dates** (2026-07-29, T071), from Lukas's Outlook calendar:
 **17 written, 11 left null on purpose.** The trap anyone repeating this must
@@ -46,9 +49,53 @@ supplied the other half: exactly one meeting falls in February 2026, record 26
 on 2026-02-21. Fines now total **1.780 kr.** and match the annual report, and all
 of it sits inside the month-by-month ledger.
 
-One thing is still deliberately **not** in there: every fine's **offence**. The
-sheet stored amounts only and most amounts have several valid readings, so all
-18 carry `rule_id = 'historisk'` rather than a guessed rule.
+**The fines have their reasons now** (2026-07-30, T075) — and **the club's fine
+total moved off 1.780 kr.** Read that first, because two correct numbers now
+measure different things, exactly as 1.730 and 1.780 did:
+
+- **1.780 kr. is what the club collected**, is what the annual report reports,
+  and is still exactly right. Not one krone of it was touched.
+- **2.510 kr. is what the club incurred.** The 730 kr. difference is fines a
+  Lead noted and nobody ever entered in the sheet — **money the club is owed
+  and has never asked for.** Whether to bill it is Lukas's call, not a bug.
+
+The source was the notes Lukas kept on his phone, one block per Lead, plus a
+screenshot of the note for the general assembly. A line in them reading
+**"Bøder indkrævet"** divides the collected evenings from three that were never
+billed: møde #26 (180 kr.), #27 (80 kr.) and #28, the generalforsamling
+(470 kr.). That also answers the old question of whether fines stopped being
+recorded after Februar 26 — **they did not stop being recorded, they stopped
+reaching the treasurer's sheet.**
+
+**Two standards of evidence, and the rows say which.** The notes name the
+offence in words for eleven of them. For the rest Lukas answered from memory:
+*"De bøder som du har spærret for var alle pga. for sent fremmøde. Jeg kan godt
+huske det."* That is the member holding the club's records, not an inference
+from an amount — and **the regulation then tested it**: `for-sent` is
+50 kr. + 5 kr./minute, so a late arrival must be `50 + 5n` for a whole n, and
+**all fourteen divided cleanly** (60→2, 100→10, 155→21, 200→30 …). Fourteen of
+fourteen, nothing left over, no amount moved. The treasurer remembering *and*
+every amount independently being a whole number of minutes at the club's own
+rate is much stronger than either alone. Anything that had failed the division
+would have kept `historisk` and been reported.
+
+**28 of 29 fines now name a real offence** — 23 `for-sent`, 4 `skaal`, 1
+`drikkevare`. **One still carries `historisk`**: Lukas's own voluntary 50 kr. at
+møde #26, where the arithmetic decides nothing, because 50 kr. is late arrival
+at zero minutes *and* exactly what `skaal` and `drikkevare` cost.
+
+**Oskar was noted twice and charged nothing** — 75 kr. under his own lead,
+200 kr. under Emil's, in neither the sheet nor the database. That is the first
+independent evidence the founding father's exemption was **practised** and not
+just stated a year later: the Leads went on noting his offences like anyone
+else's and the treasurer never billed them. Not imported.
+
+One row is flagged rather than resolved: **Emil's 110 kr. at møde #25.** The
+sheet stores that cell as `{=60+50}`, i.e. two bundled offences, but two late
+arrivals at one meeting are not allowed. Recorded as Lukas answered it, worth
+one question if he remembers the evening. Full workings, the whole
+old-rule/new-rule table and what the GF note contained:
+`docs/finance-reconciliation.md` §15.
 
 **The club now has a member list** (2026-07-29, T069), and the finance page
 charges only the members who pay. Ten members in `members`, **nine of them
@@ -333,7 +380,13 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 318 component/derivation tests (jsdom, fast, offline). The finance
+- `npm test` — 327 component/derivation tests (jsdom, fast, offline). Nine of
+  them are T075's: the club's 28 classified fines are pinned as a table, each
+  row carrying its provenance (the Lead's note, or the treasurer's memory), and
+  asserted against `fineAmount()`. So the 50 + 5n corroboration is re-proved on
+  every run — if `FINE_RULES` is ever amended without dating the change, these
+  historical amounts stop reproducing and the suite goes red. A rate change must
+  never silently rewrite what a member was charged in 2025. The finance
   chart is asserted through its words, never its SVG: recharts renders in jsdom
   but with no layout, so every coordinate in it is zero. Same reason a tap
   target is asserted through its classes (`minTapHeightPx`): nothing in jsdom
