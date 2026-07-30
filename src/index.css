@@ -131,6 +131,33 @@
   --color-present: #4ec08b;
   --color-absent: #e58b83;
 
+  /* The income-mix stack, T078 — four steps of the club's own blue, no fifth hue.
+
+     It is a **sequential ramp on an ordered stack**, not four categorical
+     colours, and that is the honest reading of the data: kontingent and the fine
+     types are not four unrelated series, they are the parts of one figure — what
+     the club charged in a quarter. One hue says "these add up"; four hues would
+     say "these are four things being compared", which is what the chart above
+     already does with blue against green.
+
+     It also keeps T072's ruling intact. That pass stopped the accent meaning
+     four things at once, and four fresh hues on the third chart of one page
+     would reinstate the uniformity it removed.
+
+     The order is fixed in `MIX_KEYS` and never sorted by size, so a quarter with
+     no fines does not repaint the segments of the quarters that have them.
+
+     Measured, not chosen: dataviz's `validate_palette.js --ordinal --mode dark
+     --surface #16233f` — monotone lightness, every adjacent gap ≥ 0.06 ΔL, one
+     hue (1° spread), light end 3.53:1 against the card. Darkest-first on the
+     dark ground would put step one at ~1.2:1 and lose the largest segment on the
+     chart, so the ramp runs light → dark here and dark → light in the light
+     palette below. */
+  --color-mix-1: #c3d5f6;
+  --color-mix-2: #93b4f2;
+  --color-mix-3: #5b8def;
+  --color-mix-4: #3b72e8;
+
   --color-navy: #16233f;
 
   /* The filled-button blue, and constant across themes for the same reason
@@ -197,6 +224,16 @@
        the same green a step down, at 4.9:1 on the pip and 6.5:1 on a card. */
     --color-present: #1a6b43;
     --color-absent: #b4453c;
+    /* The same ramp, run the other way. On white the *darkest* step has to lead,
+       because the largest segment is the one that must not disappear — and a
+       #c3d5f6 block on #ffffff is 1.44:1, which the ordinal validator fails
+       outright. Validated as its own list against `--surface #ffffff`: monotone,
+       gaps ≥ 0.06 ΔL, one hue, light end 2.09:1. A dark palette flipped
+       automatically is not a dark palette; nor is a light one. */
+    --color-mix-1: #1b4fd0;
+    --color-mix-2: #3b72e8;
+    --color-mix-3: #5b8def;
+    --color-mix-4: #93b4f2;
   }
 }
 
@@ -647,9 +684,19 @@ body {
    React renders and what a browser with no JavaScript is left holding — selects
    neither of these, so the plot is never clipped by anything that is not on its
    way to being uncovered. */
+/* One idiom, three charts (T078). `/oekonomi` carries the finance curve, the
+   fine insights and the income mix, and Lukas asked for the motion on all of
+   them — "Husk motion feature." Three charts animating three different ways is
+   precisely the incoherence T077 was fixing, so this is the same 900 ms edge
+   applied three times and there is no second mechanism.
+
+   The id is a variable rather than a literal because a clipPath id has to be
+   unique in the document and three of them now exist. Defaulted to the finance
+   curve's own, so that card needs no change and a card that forgets to set it
+   still gets a real clip instead of a dangling reference. */
 [data-draw='armed'] .ek-plot,
 [data-draw='in'] .ek-plot {
-  clip-path: url(#ek-plot-sweep);
+  clip-path: var(--ek-sweep-clip, url(#ek-plot-sweep));
 }
 
 [data-draw='armed'] .ek-sweep {

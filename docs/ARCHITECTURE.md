@@ -51,7 +51,15 @@ Which DB an environment uses is set by two build-time env vars
   is a fact about the books, while the field was a second way to write one
   column.
 - **TanStack Query** for data fetching/caching; **supabase-js** as the client.
-- **Recharts** for the finance curves on `/oekonomi` (`src/components/FinanceChart.tsx`)
+- **Recharts** for all three charts on `/oekonomi` — the finance curves
+  (`src/components/FinanceChart.tsx`), the fine insights
+  (`src/components/FineInsights.tsx`) and the income mix
+  (`src/components/IncomeMix.tsx`), added T078. Their derivations are pure and live
+  in `src/data/fines.ts`, tested offline; the components are asserted through their
+  words, never their SVG, because recharts renders in jsdom with no layout. All
+  three share one reveal — `src/components/Sweep.tsx` plus the single
+  `[data-draw='in'] .ek-sweep` rule — and each passes its own clipPath id through
+  `--ek-sweep-clip`, since a clipPath id must be unique in the document
   and nowhere else — the anciennitet bars are plain divs, because ten bars did
   not need a charting library and two curves over a variable number of months
   do. It costs ~107 kB gzipped, so it is worth knowing it is one screen's

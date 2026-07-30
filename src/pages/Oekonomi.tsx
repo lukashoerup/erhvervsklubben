@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { READONLY, supabase } from '../lib/supabase'
-import { balancesByMember, buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
+import { buildLedger, quarterOf, quarterlyTotals } from '../data/ledger'
+import { fineTotals, incomeByQuarter, outstandingByMember, type FineRow } from '../data/fines'
+import { HISTORIC_RULE_ID } from '../data/rules'
+import { FineInsights } from '../components/FineInsights'
+import { IncomeMix } from '../components/IncomeMix'
 import { budgetFines, budgetHorizon, budgetLimits, projectBudget } from '../data/projection'
 import { canBeFined, paysDues, payingMembersIn } from '../data/members'
 import { Loading, Problem } from '../components/State'
@@ -39,25 +43,65 @@ import { Eyebrow, SectionTitle } from '../components/SectionTitle'
  * writes on its own (see lib/supabase), and the write-shaped UI below is not
  * rendered, so nothing is protected by also refusing to read.
  */
+/** Postgres `undefined_column`, as PostgREST passes the SQLSTATE through. */
+const UNDEFINED_COLUMN = '42703'
+
+/**
+ * The fine rows, tolerating a database older than this code.
+ *
+ * Three columns arrived after the club's project did — `rule_id` and `minutes`
+ * with T054's capture, and `settled_at` on 2026-07-30 — and asking for a column
+ * that does not exist fails the *whole* read. The club's books disappearing
+ * behind "kunne ikke hente data" because one field is missing is the trade
+ * `readRecords` already refused for `meeting_date`, so a missing column costs
+ * that column and nothing else.
+ *
+ * What it costs is stated rather than hidden: without `settled_at` every fine
+ * reads as outstanding, which is wrong in the direction that under-claims what
+ * the club has collected. Over-claiming would be the dangerous way round.
+ */
+async function readFines() {
+  const full = await supabase()
+    .from('fines')
+    .select('member_name, amount_kr, record_id, rule_id, minutes, settled_at')
+  if (!full.error) return (full.data ?? []) as FineRow[]
+  if (full.error.code !== UNDEFINED_COLUMN) throw full.error
+
+  const { data, error } = await supabase().from('fines').select('member_name, amount_kr, record_id')
+  if (error) throw error
+  return ((data ?? []) as Omit<FineRow, 'rule_id' | 'minutes' | 'settled_at'>[]).map((f) => ({
+    ...f,
+    rule_id: HISTORIC_RULE_ID,
+    minutes: null,
+    settled_at: null,
+  }))
+}
+
+/**
+ * Its own async function, and not an inline `supabase().from(...)` in the
+ * `Promise.all` below — the same trap `readMembers` documents in useClubData.ts.
+ *
+ * `supabase()` throws *synchronously* when it has no configuration, and a
+ * synchronous throw while the argument array is being built abandons the sibling
+ * promise mid-flight: an unhandled rejection, reported from the wrong place, in a
+ * test file that never opened this page. It was inline until T078 made the fines
+ * read a function and moved the throw to the second element, which is how it
+ * surfaced. Inside an async function the same throw is an ordinary rejection,
+ * which `Promise.all` is built to handle.
+ */
+async function readPayments() {
+  const { data, error } = await supabase().from('payments').select('month, amount_kr')
+  if (error) throw error
+  return (data ?? []) as { month: string; amount_kr: number }[]
+}
+
 function useFinance() {
   return useQuery({
     queryKey: ['finance'],
     queryFn: async () => {
       if (DEMO) return { fines: demoFines, payments: demoPayments }
-      const [fines, payments] = await Promise.all([
-        supabase().from('fines').select('member_name, amount_kr, record_id'),
-        supabase().from('payments').select('month, amount_kr'),
-      ])
-      if (fines.error) throw fines.error
-      if (payments.error) throw payments.error
-      return {
-        fines: (fines.data ?? []) as {
-          member_name: string
-          amount_kr: number
-          record_id: number
-        }[],
-        payments: (payments.data ?? []) as { month: string; amount_kr: number }[],
-      }
+      const [fines, payments] = await Promise.all([readFines(), readPayments()])
+      return { fines, payments }
     },
   })
 }
@@ -237,11 +281,22 @@ export default function Oekonomi() {
     .filter((f) => !f.month)
     .reduce((n, f) => n + f.amount_kr, 0)
 
-  const owed = balancesByMember(finesWithMonth)
-  const totalOwed = owed.reduce((n, o) => n + o.kr, 0)
+  // Pålagt, indbetalt and udestående are three different numbers, and the page
+  // used to print the first of them under the third's name — Lukas, 2026-07-30:
+  // "Der står i toppen af økonomisiden at der er udestående bøder på 2510 kr.
+  // Det passer ikke." See data/fines.ts.
+  const totals = fineTotals(data.fines)
+  const stillOwed = outstandingByMember(data.fines)
   const received = data.payments.reduce((n, p) => n + p.amount_kr, 0)
 
   const quarters = quarterlyTotals(dated)
+  // The income mix needs the fine's rule as well as its month, which the ledger
+  // shape above deliberately drops — it only ever cared about amounts per month.
+  const finesForMix = data.fines.map((f) => ({
+    month: monthOf.get(f.record_id) ?? '',
+    rule_id: f.rule_id,
+    amount_kr: f.amount_kr,
+  }))
   const months = [
     ...dated.map((f) => f.month),
     ...data.payments.map((p) => p.month.slice(0, 7)),
@@ -268,6 +323,13 @@ export default function Oekonomi() {
         payingMembers: chargedIn,
       })
     : []
+
+  // Built from the ledger's own dues rather than recomputed, so the bars and the
+  // blue curve above them cannot disagree about what the club charged.
+  const quarterMix = incomeByQuarter(
+    ledger.map((m) => ({ month: m.month, dues: m.dues })),
+    finesForMix,
+  )
 
   // The club's own budgeting of fines it has not been charged yet — the
   // `Forventede bøder` column *Klubbens finanser* had and this app dropped
@@ -317,9 +379,33 @@ export default function Oekonomi() {
               so it is the one set as display type — §04's scroll-scene does
               exactly this with "13.150 kr." at 34 px in Instrument Serif. */}
           <p className="ek-figure mt-2 text-[1.75rem] leading-none">{kr(received)}</p>
+          {/* Three figures where there used to be one, because there were always
+              three and the card named the wrong one. `Udestående` must be the
+              730 kr. the club has not been paid — never the 2.510 kr. it has
+              ever charged, of which 1.780 kr. has been in the bank since
+              February 2026.
+
+              Said as a sentence rather than as a second figure row: this card is
+              the one balance on the page (§ the Klubkassen note above), and
+              three tiles under it would read as four balances. */}
           <p className="mt-2 text-xs leading-relaxed text-muted">
-            Indbetalt i alt. Udestående bøder: <span className="tabular">{kr(totalOwed)}</span>
+            Indbetalt i alt. Bøder pålagt{' '}
+            <span className="tabular">{kr(totals.incurredKr)}</span>, heraf indbetalt{' '}
+            <span className="tabular">{kr(totals.collectedKr)}</span> — udestående{' '}
+            <span className="tabular font-semibold text-ink">{kr(totals.outstandingKr)}</span>.
           </p>
+          {/* The 730 kr. is not a rounding gap, it is three evenings nobody
+              billed (§15.1), and whether to collect it is Lukas's decision and
+              not the app's. So the card states the fact once and stops — no
+              badge, no red, no "husk at opkræve". A number that nags every time
+              he opens the page is a number he stops reading. */}
+          {totals.outstandingKr > 0 && (
+            <p className="mt-1.5 text-[0.68rem] leading-relaxed text-faint">
+              De{' '}
+              <span className="tabular">{kr(totals.outstandingKr)}</span> er bøder,
+              en Lead har noteret, og som aldrig er blevet opkrævet.
+            </p>
+          )}
         </section>
       )}
 
@@ -359,17 +445,39 @@ export default function Oekonomi() {
         budgetNotes={budgetNotes}
       />
 
+      {/* Both new cards sit outside every `isTreasurer` gate, and that is
+          Lukas's instruction rather than an oversight — 2026-07-30, twice in one
+          sentence: "Alle medlemmer skal kunne se det. Det samme med bøderne."
+          What stays the treasurer's is the bank balance and the list of who is
+          still behind; what the club is like is the club's. */}
+      <FineInsights fines={data.fines} />
+
       <RecordFines />
       <MissingDates />
 
+      {/* The treasurer's collection list, and it is now what its name says.
+          It used to be `balancesByMember` over every fine ever incurred under
+          the heading "Bøder pr. medlem", on a card next to the word udestående —
+          the same conflation as the balance card, one screen down: it invited
+          the treasurer to bill a member for fines the man paid in February.
+          What a collection list has to contain is what is still owed.
+
+          Who has been fined *at all* is not lost — it is the chart below, which
+          every member can see. This card is the subset that is unpaid, and it
+          stays the treasurer's because a standing list naming who is behind
+          turns a shared account into a public debt notice at the table. */}
       {isTreasurer && (
         <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
-          <SectionTitle onCard>Bøder pr. medlem · kun kassereren</SectionTitle>
-          {owed.length === 0 ? (
-            <p className="mt-3 text-xs text-muted">Ingen bøder registreret endnu.</p>
+          <SectionTitle onCard>Udestående bøder pr. medlem · kun kassereren</SectionTitle>
+          {stillOwed.length === 0 ? (
+            <p className="mt-3 text-xs text-muted">
+              {totals.incurred === 0
+                ? 'Ingen bøder registreret endnu.'
+                : 'Alle registrerede bøder er betalt.'}
+            </p>
           ) : (
             <ul className="mt-2">
-              {owed.map((o) => (
+              {stillOwed.map((o) => (
                 <li
                   key={o.member}
                   className="flex items-baseline justify-between border-b border-line py-2 text-xs last:border-0"
@@ -382,6 +490,10 @@ export default function Oekonomi() {
           )}
         </section>
       )}
+
+      {/* "længere nede", as asked (Lukas, 2026-07-30) — under the curve and the
+          fine insights, above the two ledger tables it is a summary of. */}
+      <IncomeMix quarters={quarterMix} undatedKr={undatedKr} />
 
       {quarters.length > 0 && (
         <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
