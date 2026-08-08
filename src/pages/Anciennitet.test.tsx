@@ -637,3 +637,74 @@ describe('the order of the meetings', () => {
     expect(cardFor('Lukas').className).not.toContain('border-accent')
   })
 })
+
+/**
+ * Turning tonight's plan into tonight's meeting.
+ *
+ * Lukas, on the day of one: *"Jeg kan i øvrigt ikke rette deltagere til dagens
+ * møde på anciennitetssiden."* He could — "Nyt møde" with today's date routes to
+ * `attendance_records` and offers the ten ticks — but nothing on the evening's own
+ * card said so, and a capability nobody can find is not one.
+ */
+describe('recording the evening from its own card', () => {
+  const TODAY = new Date().toISOString().slice(0, 10)
+  const TONIGHT = [
+    {
+      id: 'e29',
+      title: 'Erhvervsklub #29',
+      date: TODAY,
+      time: '11.00 – 18.00',
+      location: 'Frk. Barners',
+      description: 'Mads er Lead.',
+    },
+    {
+      id: 'e30',
+      title: 'Erhvervsklub #30',
+      date: '2099-09-11',
+      time: '17.00',
+      location: 'Lukas',
+      description: '',
+    },
+  ]
+
+  beforeEach(() =>
+    reset({ attendance_records: RECORDS, attendances: ATTENDANCES, events: TONIGHT }),
+  )
+
+  it('offers it on a meeting that has happened, and not on one weeks away', async () => {
+    renderPage('admin')
+    await screen.findByText('Frk. Barners')
+    expect(
+      within(cardFor('Frk. Barners')).getByRole('button', { name: 'Registrér deltagelse' }),
+    ).toBeInTheDocument()
+    // Nobody to tick off at an evening that has not happened.
+    expect(
+      within(cardFor('Lukas')).queryByRole('button', { name: 'Registrér deltagelse' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('is the admin’s, like every other write on this page', async () => {
+    renderPage('user')
+    await screen.findByText('Frk. Barners')
+    expect(screen.queryByRole('button', { name: 'Registrér deltagelse' })).not.toBeInTheDocument()
+  })
+
+  it('opens the form already carrying what the club announced', async () => {
+    const user = userEvent.setup()
+    renderPage('admin')
+    await screen.findByText('Frk. Barners')
+    await user.click(
+      within(cardFor('Frk. Barners')).getByRole('button', { name: 'Registrér deltagelse' }),
+    )
+
+    // Date, venue and what the lead wrote, so the evening is recorded as it was
+    // announced rather than retyped from memory the morning after.
+    expect((screen.getByLabelText(/Dato/) as HTMLInputElement).value).toBe(TODAY)
+    expect((screen.getByLabelText(/^Sted/) as HTMLInputElement).value).toBe('Frk. Barners')
+    expect((screen.getByLabelText(/Beskrivelse/) as HTMLTextAreaElement).value).toBe('Mads er Lead.')
+    // And the ten ticks, which is the whole point — today's date is not ahead, so
+    // this is a held meeting rather than another calendar row.
+    expect(screen.getByRole('button', { name: /^Anders/ })).toBeInTheDocument()
+    expect(screen.queryByText(/lægges i kalenderen/i)).not.toBeInTheDocument()
+  })
+})

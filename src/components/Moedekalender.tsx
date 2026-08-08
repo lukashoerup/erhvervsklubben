@@ -112,7 +112,7 @@ export function calendarHead(e: EventItem): { figure: string; heading: string } 
  * meeting to a past date — makes the card leave this list, so the form says so
  * before it is saved rather than after.
  */
-export function Moedekalender() {
+export function Moedekalender({ onRecord }: { onRecord?: (e: EventItem) => void }) {
   const { data, isPending, error } = useEvents()
   const { role } = useAuth()
   const editor = useEditor('events')
@@ -222,6 +222,21 @@ export function Moedekalender() {
 
         {mayEdit && (
           <div className="mt-3 flex flex-wrap items-start gap-2">
+            {/* **The way a plan becomes a meeting.** Lukas, 2026-08-08, on the day
+                of one: "Jeg kan i øvrigt ikke rette deltagere til dagens møde."
+                He could — "Nyt møde" with today's date does it — but nothing on the
+                evening's own card said so, which is the same as not being able to.
+                Only from today onward: an evening still weeks away has nobody to
+                tick off. */}
+            {onRecord && e.date <= today && (
+              <button
+                type="button"
+                onClick={() => onRecord(e)}
+                className="inline-flex min-h-12 items-center justify-center rounded-btn bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hi"
+              >
+                Registrér deltagelse
+              </button>
+            )}
             <EditButton onClick={() => editor.edit(e.id, draftOf(e))} />
             <DeleteConfirm
               // The title, not the derived heading: this asks about a row, and the

@@ -6,6 +6,7 @@ import { daDate } from '../lib/dates'
 import { AttendanceSummary, MeetingCard, type MeetingFine } from '../components/MeetingCard'
 import { DeleteConfirm, EditButton, NewButton } from '../components/AdminEdit'
 import { LastSeen } from '../components/LastSeen'
+import type { Draft } from '../components/AdminEdit'
 import { deltagelser, MeetingEditor } from '../components/MeetingEditor'
 import { Moedekalender } from '../components/Moedekalender'
 import { Loading, Problem } from '../components/State'
@@ -52,6 +53,12 @@ export default function Anciennitet() {
   const remove = useDeleteMeeting()
   /** The meeting being edited, or 'ny' for one that does not exist yet. */
   const [open, setOpen] = useState<number | 'ny' | null>(null)
+  /**
+   * The calendar entry a new meeting is being recorded from, if any. Its date, venue
+   * and description seed the form, so the evening is written down as it was
+   * announced rather than retyped from memory the morning after.
+   */
+  const [fromEvent, setFromEvent] = useState<Draft | undefined>(undefined)
 
   // Admin is Lukas and Claude, nobody else (PROJECT.md 2026-07-27) — and never
   // a read-only build. RLS refuses a member's write regardless; this is what
@@ -80,9 +87,34 @@ export default function Anciennitet() {
       meeting={id === null ? null : data.meetings.find((m) => m.id === id)!}
       roster={names}
       nextNumber={nextNumber}
-      onClose={() => setOpen(null)}
+      preset={id === null ? fromEvent : undefined}
+      onClose={() => {
+        setOpen(null)
+        setFromEvent(undefined)
+      }}
     />
   )
+
+  /**
+   * Open the meeting form seeded from a calendar entry.
+   *
+   * The calendar row is deliberately **left alone**. It disappears from the planned
+   * list by itself the day after its date, and deleting it here would throw away the
+   * club's own announcement of the evening at the exact moment the evening is being
+   * recorded — with nothing to put it back if the save then fails.
+   */
+  const recordFrom = (e: {
+    date: string
+    location: string
+    description: string
+  }) => {
+    setFromEvent({
+      meeting_date: e.date,
+      main_location: e.location,
+      description: e.description,
+    })
+    setOpen('ny')
+  }
 
   // **One button, for both kinds of meeting.** Lukas, 2026-07-30: "der ligger jo
   // to knapper der laver møder … Det er jo alt sammen møder." It was "Registrér
@@ -98,7 +130,7 @@ export default function Anciennitet() {
     return (
       <div className="flex flex-col gap-3">
         {newMeeting}
-        <Moedekalender />
+        <Moedekalender onRecord={mayEdit ? recordFrom : undefined} />
         <p className="text-sm text-muted">Ingen møder registreret endnu.</p>
       </div>
     )
@@ -122,7 +154,7 @@ export default function Anciennitet() {
           som de gamle møder … Det er jo alt sammen møder." Nothing past is drawn
           here, so no meeting is on this page twice and nothing needs deduplicating
           — see components/Moedekalender.tsx. */}
-      <Moedekalender />
+      <Moedekalender onRecord={mayEdit ? recordFrom : undefined} />
 
       {data.meetings.map((m) =>
         mayEdit && open === m.id ? (

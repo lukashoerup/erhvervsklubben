@@ -78,7 +78,7 @@ export function storedAttendance(meeting: Meeting | null): Attendance {
   }
 }
 
-const draftOf = (m: Meeting | null, nextNumber: number): Draft =>
+const draftOf = (m: Meeting | null, nextNumber: number, preset?: Draft): Draft =>
   blankDraft(
     FIELDS,
     m
@@ -96,7 +96,7 @@ const draftOf = (m: Meeting | null, nextNumber: number): Draft =>
           description: m.description ?? '',
           time: '',
         }
-      : { meeting_number: String(nextNumber) },
+      : { meeting_number: String(nextNumber), ...preset },
   )
 
 /**
@@ -118,6 +118,7 @@ export function MeetingEditor({
   meeting,
   roster,
   nextNumber,
+  preset,
   onClose,
 }: {
   /** Null creates one. */
@@ -125,11 +126,18 @@ export function MeetingEditor({
   /** Every member the club has, most anciennitet first. */
   roster: string[]
   nextNumber: number
+  /**
+   * Fields to start a *new* meeting from, when the club already wrote them down
+   * somewhere. Today that is the calendar: an evening planned weeks ago carries its
+   * date, its venue and what the lead said about it, and retyping all three the
+   * morning after is how they end up different from what was announced.
+   */
+  preset?: Draft
   onClose: () => void
 }) {
   const stored = storedAttendance(meeting)
   const save = useSaveMeeting()
-  const [draft, setDraft] = useState<Draft>(() => draftOf(meeting, nextNumber))
+  const [draft, setDraft] = useState<Draft>(() => draftOf(meeting, nextNumber, preset))
   const [newName, setNewName] = useState('')
   const [ticks, setTicks] = useState<Attendance>(() =>
     Object.fromEntries(
