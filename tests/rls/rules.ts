@@ -138,11 +138,10 @@ export const SAMPLE_ROW: Record<string, Record<string, unknown>> = {
 /**
  * Tables an admin is expected to be able to write.
  *
- * `user_member_mapping` is listed by hand rather than by bucket: it is the one table
- * in `MEMBER_READABLE_TABLES` an admin may change, and `member_last_seen` — its
- * neighbour there — is writable by nobody at all. A bucket-wide rule would have to be
- * wrong about one of them.
+ * `MEMBER_READABLE_TABLES` is deliberately absent, though an admin *can* write
+ * `user_member_mapping`. The generated test inserts `SAMPLE_ROW[t]`, and a mapping
+ * row needs a real `user_id` — a made-up uuid would fail on the foreign key and look
+ * like a passing denial, which is the exact trap `SAMPLE_ROW`'s own note describes
+ * for `member_last_seen`. Its two neighbours are writable by nobody at all.
  */
-export const ADMIN_WRITABLE = [
-  ...PUBLIC_TABLES, ...SHARED_TABLES, 'user_member_mapping',
-] as const
+export const ADMIN_WRITABLE = [...PUBLIC_TABLES, ...SHARED_TABLES] as const

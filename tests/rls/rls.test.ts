@@ -60,14 +60,22 @@ describe('a signed-out visitor', () => {
 
 // ---------------------------------------------------------------- a member
 describe('a signed-in member', () => {
-  test.each([...PUBLIC_TABLES, ...SHARED_TABLES, ...MEMBER_READABLE_TABLES])(
-    'reads all of %s',
-    async (t) => {
-      const { data, error } = await member1.from(t).select('*')
-      expect(error).toBeNull()
-      expect(data?.length).toBeGreaterThan(0)
-    },
-  )
+  test.each([...PUBLIC_TABLES, ...SHARED_TABLES])('reads all of %s', async (t) => {
+    const { data, error } = await member1.from(t).select('*')
+    expect(error).toBeNull()
+    expect(data?.length).toBeGreaterThan(0)
+  })
+
+  // `MEMBER_READABLE_TABLES` is asserted on the *policy* rather than on a row count.
+  // Its two tables are written by nobody the seed can act as — `member_last_seen`
+  // and `member_visits` only ever fill through their functions — so a fresh
+  // database has them empty, and "> 0 rows" would be testing seed data rather than
+  // access. That these reads really are unfiltered is asserted by name further
+  // down, where rows exist because the test just made them.
+  test.each(MEMBER_READABLE_TABLES)('is not refused %s', async (t) => {
+    const { error } = await member1.from(t).select('*')
+    expect(error).toBeNull()
+  })
 
   test.skipIf(ADMIN_ONLY_TABLES.length === 0)
     .each(ADMIN_ONLY_TABLES)('sees nothing in %s — admin only', async (t) => {
@@ -121,11 +129,11 @@ describe('personal data stays personal', () => {
     expect(data?.map((r) => r.id)).toEqual([SEED.member1.id])
   })
 
-  test('a member sees only their own account mapping', async () => {
-    const { data } = await member2.from('user_member_mapping').select('*')
-    // member2 is intentionally unmapped, so this is the empty case.
-    expect(data).toEqual([])
-  })
+  // `user_member_mapping` left this describe on 2026-08-08. It was own-row-only
+  // until Lukas published login activity, and the names had to open with the
+  // timestamps or the club would read nine dates it could not attach to anyone.
+  // What it became is asserted under "sidst set" below; what stays personal is
+  // `profiles`, which is the row above this one and the line that matters.
 
   test('a member cannot read another member\'s feedback', async () => {
     // The seeded evaluation belongs to the admin.
@@ -233,13 +241,20 @@ describe('sidst set', () => {
     expect(new Date(rows[0].last_seen_at as string).getFullYear()).toBeGreaterThan(2020)
   })
 
+  // Ordered before the denial tests that follow *and* independent of them: this
+  // used to call `member2.rpc('touch_last_seen')`, which left member2 a row and made
+  // "a member cannot write anyone else's timestamp" pass or fail on test order
+  // rather than on the policy. It seeds through the service client instead, which
+  // is not the path under test.
   test('every member reads the whole club\'s, and can name them', async () => {
     // Lukas published this on 2026-08-08 — his own wishlist, and a reversal of the
     // fold T074 built deliberately. Two tables, because a timestamp nobody can
     // attach to a name is a worse object than either the closed or the open
     // version: `user_member_mapping` opened with it.
     await member1.rpc('touch_last_seen')
-    await member2.rpc('touch_last_seen')
+    await service
+      .from('member_last_seen')
+      .upsert({ user_id: SEED.member2.id, last_seen_at: new Date().toISOString() })
 
     const seen = await member1.from('member_last_seen').select('user_id')
     expect(seen.error).toBeNull()
@@ -305,14 +320,15 @@ describe('sidst set', () => {
     expect((await anon.rpc('touch_last_seen')).error).not.toBeNull()
   })
 
-  test('a member sees only their own visit; the admin sees the club\'s', async () => {
+  test('every member sees the club\'s visits, not only his own', async () => {
+    // Reversed 2026-08-08, deliberately: Lukas published login activity off his own
+    // wishlist. Until then this test asserted the exact opposite and was right to.
+    // What did *not* change is the write side, which the tests around this one hold.
     await member2.rpc('touch_last_seen')
+    await member1.rpc('touch_last_seen')
 
     const theirs = await member1.from('member_last_seen').select('user_id')
-    expect(theirs.data?.map((r) => r.user_id)).toEqual([SEED.member1.id])
-
-    const all = await admin.from('member_last_seen').select('user_id')
-    expect(all.data?.map((r) => r.user_id)).toEqual(
+    expect(theirs.data?.map((r) => r.user_id)).toEqual(
       expect.arrayContaining([SEED.member1.id, SEED.member2.id]),
     )
   })
