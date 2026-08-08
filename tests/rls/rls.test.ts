@@ -374,3 +374,71 @@ describe('nobody can promote themselves', () => {
     }
   })
 })
+
+// ------------------------------------------------------------ news, drafts and the board
+//
+// Lukas, 2026-08-08: "alle kan skrive nyheder, men skal godkendes af bestyrelsen."
+// The generated tests above still assert that a member cannot create a *published*
+// item, which is half the rule. This is the other half, and it needs naming rather
+// than generating because the two cases differ by one column.
+describe('news drafts', () => {
+  const draft = (author_id: string) => ({
+    title: 'kladde', excerpt: 'kladde', author: 'probe',
+    date: '2026-08-08', status: 'kladde', author_id,
+  })
+
+  test('a member may write his own draft', async () => {
+    const { error } = await member1.from('news').insert(draft(SEED.member1.id))
+    expect(error).toBeNull()
+  })
+
+  test('a member cannot publish, on the way in or afterwards', async () => {
+    // The whole feature in two statements. Both are refused by `with check`, which
+    // is why the policy carries one on INSERT *and* UPDATE — with only the first, a
+    // member could insert a draft and immediately approve it.
+    const straight = await member1
+      .from('news')
+      .insert({ ...draft(SEED.member1.id), status: 'godkendt' })
+    expect(straight.error?.code).toBe(RLS_DENIED)
+
+    const mine = await member1.from('news').insert(draft(SEED.member1.id)).select().single()
+    expect(mine.error).toBeNull()
+    const promote = await member1
+      .from('news')
+      .update({ status: 'godkendt' })
+      .eq('id', (mine.data as { id: string }).id)
+    expect(promote.error?.code).toBe(RLS_DENIED)
+  })
+
+  test('a member cannot write a draft in someone else’s name', async () => {
+    const { error } = await member1.from('news').insert(draft(SEED.member2.id))
+    expect(error?.code).toBe(RLS_DENIED)
+  })
+
+  test('a draft is invisible to the public and to the other members', async () => {
+    // `news` is anon-readable by the club's 2026-07-23 decision, so this is the one
+    // that would be a leak if the policy were wrong: an unapproved item on the
+    // internet.
+    const mine = await member1.from('news').insert(draft(SEED.member1.id)).select().single()
+    const id = (mine.data as { id: string }).id
+
+    expect((await anon.from('news').select('id').eq('id', id)).data).toEqual([])
+    expect((await member2.from('news').select('id').eq('id', id)).data).toEqual([])
+    expect((await member1.from('news').select('id').eq('id', id)).data).toHaveLength(1)
+    expect((await admin.from('news').select('id').eq('id', id)).data).toHaveLength(1)
+  })
+
+  test('the board publishes it, and then it is everyone’s', async () => {
+    const mine = await member1.from('news').insert(draft(SEED.member1.id)).select().single()
+    const id = (mine.data as { id: string }).id
+
+    const { error } = await admin.from('news').update({ status: 'godkendt' }).eq('id', id)
+    expect(error).toBeNull()
+    expect((await anon.from('news').select('id').eq('id', id)).data).toHaveLength(1)
+
+    // And the writer can no longer touch it: it is the club's now, not his.
+    const late = await member1.from('news').update({ title: 'omskrevet' }).eq('id', id)
+    expect((await member1.from('news').select('title').eq('id', id)).data?.[0].title).toBe('kladde')
+    expect(late.error ?? null).toBeNull()
+  })
+})

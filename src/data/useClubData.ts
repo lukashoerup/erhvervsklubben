@@ -157,13 +157,44 @@ export function useAttendance() {
   })
 }
 
-export type NewsItem = { id: string; title: string; excerpt: string; author: string; date: string }
+export type NewsItem = {
+  id: string
+  title: string
+  excerpt: string
+  author: string
+  date: string
+  /**
+   * `kladde` until the board publishes it, `godkendt` after — 2026-08-08, from
+   * Lukas's *"alle kan skrive nyheder, men skal godkendes af bestyrelsen."*
+   *
+   * Optional in the type for a database that predates the column, where the read
+   * below drops it and every item is simply published, which is what it was.
+   */
+  status?: 'kladde' | 'godkendt'
+  /** Who wrote it, so a member can find his own draft. Null on the items that predate the column. */
+  author_id?: string | null
+}
 
 export function useNews() {
   return useQuery({
     queryKey: ['news'],
     queryFn: async () => {
       if (DEMO) return newestFirst(demoNews)
+      // The rows a reader may see are the policy's business, not this query's: a
+      // member gets the published items plus his own drafts, an admin gets
+      // everything, and a signed-out visitor gets only what is published. Asking
+      // for all of them and letting RLS filter is the same shape every other read
+      // in this file uses — and the one that cannot leak by forgetting a filter.
+      const withStatus = await supabase()
+        .from('news')
+        .select('id, title, excerpt, author, date, status, author_id')
+        .order('date', { ascending: false })
+      if (!withStatus.error) return (withStatus.data ?? []) as NewsItem[]
+      if (withStatus.error.code !== UNDEFINED_COLUMN) throw withStatus.error
+
+      // A database from before 2026-08-08. Costs the drafts and nothing else: every
+      // item comes back without a status and reads as published, which is what it
+      // was before the column existed.
       const { data, error } = await supabase()
         .from('news')
         .select('id, title, excerpt, author, date')

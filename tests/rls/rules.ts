@@ -9,7 +9,20 @@
 // The rule in one sentence: signed-in people read the club's shared data,
 // only admins change it, and personal rows are visible only to their owner.
 
-/** Readable by anyone at all, including signed-out visitors. Admin-only writes. */
+/**
+ * Readable by anyone at all, including signed-out visitors.
+ *
+ * `news` stopped being admin-only-writes on 2026-08-08 — *"alle kan skrive nyheder,
+ * men skal godkendes af bestyrelsen"* — and stays here because the *reads* are still
+ * what defines this bucket: an anon visitor sees the club's published items. What
+ * changed is narrower than the bucket: he now sees the published ones only, and a
+ * signed-in member may insert a draft of his own.
+ *
+ * The generated denials below still hold and still mean the right thing, because
+ * `SAMPLE_ROW.news` is a **published** row: a member creating one is denied, which is
+ * exactly the rule. That a member may create a *draft* is asserted by name in
+ * rls.test.ts, where the two cases can be told apart.
+ */
 export const PUBLIC_TABLES = ['news', 'events'] as const
 
 /**
@@ -96,7 +109,14 @@ export const ALL_TABLES = [
 /** Minimal valid rows, so a denial test fails on the policy and not on a
  *  NOT NULL constraint — a constraint error would look like a passing test. */
 export const SAMPLE_ROW: Record<string, Record<string, unknown>> = {
-  news: { title: 'probe', excerpt: 'probe', author: 'probe', date: '2025-01-01' },
+  // `status` explicit rather than left to the default, so the denial tests keep
+  // saying what they mean: this is a *published* item, which nobody but an admin may
+  // create. Drop it and the row would still default to 'godkendt' — the value is
+  // here to be read, not to change the outcome.
+  news: {
+    title: 'probe', excerpt: 'probe', author: 'probe', date: '2025-01-01',
+    status: 'godkendt',
+  },
   events: { title: 'probe', date: '2025-01-01', time: '18:00', location: 'probe', description: 'probe' },
   attendance_records: { meeting_number: 9999, lead: 'probe', main_location: 'probe' },
   attendances: { record_id: 1, member_name: 'probe', attended: true },

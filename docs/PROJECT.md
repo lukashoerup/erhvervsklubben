@@ -738,6 +738,42 @@ without losing data and without taking the old site down until an approved cutov
   between meetings or only around them. Empty weeks are kept, because dropping them
   would draw over exactly the quiet stretches the chart exists to show.
 
+- **2026-08-08 — anyone may write a news item; only the board publishes it.** Lukas's
+  wishlist: *"alle kan skrive nyheder, men skal godkendes af bestyrelsen."*
+
+  **"Bestyrelsen" is the three admins, and that is a choice made here rather than one
+  he stated.** The app has two roles and no board. A third role would be a bigger
+  change than the feature and would need a decision nobody has made; the admins are
+  already the men who write the club's news, so approval landing with them changes who
+  may *write* rather than who may *publish*. If the club wants the formand in that set
+  — Saaby is not an admin — it is one row in `profiles`, not a schema change. **The
+  mechanism does not care who is in the set**, which is what makes that safe to
+  revisit.
+
+  **The property everything hangs on: there is no statement a member can send that
+  publishes anything.** Not a convention in the app — `with check` on INSERT *and* on
+  UPDATE. The second is the one that is easy to omit: with only the first, a member
+  could insert a draft and immediately approve it, and the feature would be decorative.
+  Both cases have a named RLS test.
+
+  `news` is **anon-readable** by the club's 2026-07-23 decision, so a draft in this
+  table is a draft on the internet unless the policy says otherwise. The anon SELECT
+  is now `status = 'godkendt'`, and a test asserts a draft is invisible to the public,
+  invisible to the other members, and visible to its author and the board.
+
+  It stays in `PUBLIC_TABLES`: that bucket is defined by its *reads*, which still hold.
+  The generated member-denial tests also still hold and still mean the right thing,
+  because `SAMPLE_ROW.news` is a **published** row — a member creating one is denied,
+  which is the rule. That he may create a draft is asserted by name, where the two
+  cases can be told apart by the one column that differs.
+
+  Four columns: `status`, `author_id`, `approved_by`, `approved_at`. The default is
+  `godkendt`, which is what keeps the club's nine existing items published and what
+  makes an admin's insert behave as it did yesterday; a member's is forced to `kladde`
+  by policy rather than by the default. The migration refuses to finish if any
+  existing item ended up a draft — an item silently unpublished is the failure nobody
+  would notice until a member asked where the news went.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

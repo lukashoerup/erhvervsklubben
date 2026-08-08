@@ -1,11 +1,12 @@
 import { useAuth } from '../auth/AuthContext'
-import { useNews, type NewsItem } from '../data/useClubData'
+import { useNews, useSaveRow, type NewsItem } from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
 import { todayISO } from '../lib/dates'
 import { DateRail } from '../components/DateRail'
 import { Loading, Problem } from '../components/State'
 import {
   blankDraft,
+  FILLED,
   DeleteConfirm,
   EditButton,
   EditForm,
@@ -40,20 +41,46 @@ const draftOf = (n: NewsItem): Draft => ({
   date: n.date,
 })
 
-/** A new item is dated today until the writer says otherwise. */
-const blank = () => blankDraft(FIELDS, { date: todayISO() })
+/**
+ * A new item is dated today until the writer says otherwise, and it starts as a
+ * draft owned by whoever is typing.
+ *
+ * `status` and `author_id` are seeded into the draft rather than rendered as fields:
+ * they are not the writer's to choose. They ride along to `useSaveRow` because
+ * `blankDraft` keeps whatever the seed carries, and the database refuses the row
+ * outright if they are wrong — a member's INSERT policy requires exactly
+ * `author_id = auth.uid() and status = 'kladde'`, so this is the client agreeing
+ * with the rule rather than enforcing it.
+ *
+ * An admin gets the same draft and the same two values. That is deliberate: the
+ * board writing an item and then approving it is two acts, and collapsing them for
+ * the three men who can do both would mean the queue never shows what they wrote.
+ */
+const blank = (userId: string) =>
+  blankDraft(FIELDS, { date: todayISO(), status: 'kladde', author_id: userId })
 
 /** The one page Lukas said already worked — same shape, now writable by an admin. */
 export default function Nyheder() {
   const { data, isPending, error } = useNews()
-  const { role } = useAuth()
+  const { role, userId } = useAuth()
   const editor = useEditor('news')
+  const approve = useSaveRow('news')
 
-  // Admin is Lukas and Claude, nobody else (PROJECT.md 2026-07-27) — and never
-  // a read-only build, whose whole promise is that it cannot change the club's
-  // records. RLS refuses a member's write regardless; this is what stops the
-  // app offering a button that would only fail.
-  const mayEdit = role === 'admin' && !READONLY
+  // **Anyone signed in may write; only the board publishes.** Lukas, 2026-08-08:
+  // "alle kan skrive nyheder, men skal godkendes af bestyrelsen." The board is the
+  // three admins — the app has two roles and no board, and inventing a third would
+  // be a bigger change than the feature; if the club wants the formand in that set
+  // it is one row in `profiles`. See the migration.
+  //
+  // Never in a read-only build, whose whole promise is that it cannot change the
+  // club's records. RLS refuses regardless; this is what stops the app offering a
+  // button that would only fail.
+  const mayWrite = Boolean(userId) && !READONLY
+  const isBoard = role === 'admin' && !READONLY
+
+  /** His own, still a draft — the only rows a member may change. Mirrors the policy. */
+  const mayEditItem = (n: NewsItem) =>
+    isBoard || (mayWrite && n.status === 'kladde' && n.author_id === userId)
 
   if (isPending) return <Loading what="nyheder" />
   if (error) return <Problem />
@@ -79,20 +106,29 @@ export default function Nyheder() {
 
   return (
     <div className="flex flex-col gap-3">
-      {mayEdit &&
+      {mayWrite &&
         (editor.creating ? (
           form(null)
         ) : (
-          <NewButton label="Ny nyhed" onClick={() => editor.create(blank())} />
+          <NewButton label="Ny nyhed" onClick={() => editor.create(blank(userId!))} />
         ))}
 
       {data.length === 0 && <p className="text-sm text-muted">Ingen nyheder endnu.</p>}
 
       {data.map((n) =>
-        mayEdit && editor.editing(n.id) ? (
+        mayEditItem(n) && editor.editing(n.id) ? (
           form(n.id)
         ) : (
-          <article key={n.id} data-reveal className="rounded-2xl border border-line bg-surface p-4">
+          <article
+            key={n.id}
+            data-reveal
+            /* A draft is marked by border weight, the way the design system marks
+               every live row — never by a fill or a badge colour. It is the same
+               1.5 px the next meeting gets on /anciennitet. */
+            className={`rounded-2xl border bg-surface p-4 ${
+              n.status === 'kladde' ? 'border-[1.5px] border-accent' : 'border-line'
+            }`}
+          >
             {/* The date left the top of the card and became its face. It was a
                 10 px uppercase line above the headline — correct, and invisible
                 at a thumb-scroll, which is what made eight of these read as one
@@ -125,15 +161,48 @@ export default function Nyheder() {
               </div>
             </div>
 
-            {mayEdit && (
+            {n.status === 'kladde' && (
+              /* Said on the card rather than left to the border, because the border
+                 is a mark and this is a fact: the item is written and nobody outside
+                 this page can see it yet. Whose draft it is matters to the reader —
+                 the board sees everyone's here, a member only his own. */
+              <p className="mt-3 text-[0.68rem] leading-relaxed text-accent">
+                Kladde — afventer godkendelse. Den er ikke synlig for klubben endnu.
+              </p>
+            )}
+
+            {(mayEditItem(n) || (isBoard && n.status === 'kladde')) && (
               <div className="mt-3 flex flex-wrap items-start gap-2">
-                <EditButton onClick={() => editor.edit(n.id, draftOf(n))} />
-                <DeleteConfirm
-                  what={n.title}
-                  onDelete={() => editor.remove(n.id)}
-                  pending={editor.removing(n.id)}
-                  failed={editor.removeFailed(n.id)}
-                />
+                {isBoard && n.status === 'kladde' && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      approve.mutate({
+                        id: n.id,
+                        values: {
+                          status: 'godkendt',
+                          approved_by: userId!,
+                          approved_at: new Date().toISOString(),
+                        },
+                      })
+                    }
+                    disabled={approve.isPending}
+                    className={FILLED}
+                  >
+                    {approve.isPending ? 'Godkender…' : 'Godkend'}
+                  </button>
+                )}
+                {mayEditItem(n) && (
+                  <>
+                    <EditButton onClick={() => editor.edit(n.id, draftOf(n))} />
+                    <DeleteConfirm
+                      what={n.title}
+                      onDelete={() => editor.remove(n.id)}
+                      pending={editor.removing(n.id)}
+                      failed={editor.removeFailed(n.id)}
+                    />
+                  </>
+                )}
               </div>
             )}
           </article>

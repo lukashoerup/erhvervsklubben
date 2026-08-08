@@ -57,12 +57,17 @@ const cardFor = (title: string) => screen.getByText(title).closest('article')!
 beforeEach(() => reset({ news: NEWS }))
 
 describe('who is offered the controls', () => {
-  it('shows an ordinary member the news and nothing that writes', async () => {
+  // Reversed 2026-08-08: "alle kan skrive nyheder, men skal godkendes af
+  // bestyrelsen." A member may now write — what he may not do is publish, and that
+  // is asserted below rather than here.
+  it('lets an ordinary member write, but touch nothing already published', async () => {
     renderPage('user')
     expect(await screen.findByText('Sommerfest 2026')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Ny nyhed' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ny nyhed' })).toBeInTheDocument()
+    // The published items are the club's, not his: no edit, no delete, no approve.
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Godkend' })).not.toBeInTheDocument()
   })
 
   it('shows the admin all three', async () => {
@@ -265,5 +270,108 @@ describe('deleting a news item', () => {
 
     await waitFor(() => expect(writes).toHaveLength(1))
     expect(writes[0]).toMatchObject({ table: 'news', verb: 'delete', id: 'n2' })
+  })
+})
+
+/**
+ * Drafts and approval, 2026-08-08: *"alle kan skrive nyheder, men skal godkendes af
+ * bestyrelsen."*
+ *
+ * The screen's job is to be honest about a rule the database enforces on its own. A
+ * member's INSERT policy requires `author_id = auth.uid() and status = 'kladde'`, so
+ * the assertions worth having are that the page **sends** those two — get either
+ * wrong and every member's first news item is rejected by the server with nothing on
+ * screen to explain it.
+ */
+describe('writing a news item and getting it approved', () => {
+  const WITH_DRAFT = [
+    ...NEWS,
+    {
+      id: 'd1',
+      title: 'Forslag til vinsmagning',
+      excerpt: 'Kunne vi lave en aften hos Emil?',
+      author: 'Emil',
+      date: '2026-08-08',
+      status: 'kladde',
+      author_id: 'u1',
+    },
+  ]
+
+  it('sends the two values the database insists on', async () => {
+    const user = userEvent.setup()
+    renderPage('user')
+    await user.click(await screen.findByRole('button', { name: 'Ny nyhed' }))
+    await user.type(screen.getByLabelText(/Overskrift/), 'Forslag til vinsmagning')
+    await user.type(screen.getByLabelText(/Skrevet af/), 'Emil')
+    await user.click(screen.getByRole('button', { name: 'Gem' }))
+
+    await waitFor(() => expect(writes).toHaveLength(1))
+    // Not the writer's to choose, so they are seeded rather than rendered as
+    // fields — and the row is refused outright if either is wrong.
+    expect(writes[0]).toMatchObject({
+      table: 'news',
+      verb: 'insert',
+      values: { status: 'kladde', author_id: 'u1', title: 'Forslag til vinsmagning' },
+    })
+  })
+
+  it('tells the writer his item is not out yet', async () => {
+    reset({ news: WITH_DRAFT })
+    renderPage('user')
+    // The border marks it and this says it: a member who wrote something and sees
+    // it on the page will otherwise assume the club has read it.
+    expect(await screen.findByText(/afventer godkendelse/i)).toBeInTheDocument()
+  })
+
+  it('offers the board an approve button, and the member none', async () => {
+    reset({ news: WITH_DRAFT })
+    renderPage('user')
+    await screen.findByText('Forslag til vinsmagning')
+    expect(screen.queryByRole('button', { name: 'Godkend' })).not.toBeInTheDocument()
+
+    reset({ news: WITH_DRAFT })
+    renderPage('admin')
+    expect(await screen.findByRole('button', { name: 'Godkend' })).toBeInTheDocument()
+  })
+
+  it('publishes on approval, and records who did it', async () => {
+    const user = userEvent.setup()
+    reset({ news: WITH_DRAFT })
+    renderPage('admin')
+    await user.click(await screen.findByRole('button', { name: 'Godkend' }))
+
+    await waitFor(() => expect(writes).toHaveLength(1))
+    expect(writes[0]).toMatchObject({
+      table: 'news',
+      verb: 'update',
+      id: 'd1',
+      values: { status: 'godkendt', approved_by: 'u1' },
+    })
+    // "Godkendes af bestyrelsen" is a club rule, so who approved is worth keeping.
+    expect((writes[0].values as Record<string, string>).approved_at).toBeTruthy()
+  })
+
+  it('lets a member fix his own draft and not anyone else’s', async () => {
+    reset({
+      news: [
+        ...WITH_DRAFT,
+        {
+          id: 'd2',
+          title: 'Andens kladde',
+          excerpt: '…',
+          author: 'Mads',
+          date: '2026-08-08',
+          status: 'kladde',
+          author_id: 'u-somebody-else',
+        },
+      ],
+    })
+    renderPage('user')
+    await screen.findByText('Forslag til vinsmagning')
+    // One Rediger, on his own. The other draft would not reach him through RLS at
+    // all; the page must not offer a control for it even if a row arrives.
+    expect(screen.getAllByRole('button', { name: 'Rediger' })).toHaveLength(1)
+    const mine = screen.getByText('Forslag til vinsmagning').closest('article')!
+    expect(within(mine).getByRole('button', { name: 'Rediger' })).toBeInTheDocument()
   })
 })

@@ -15,7 +15,9 @@ andre features vi skal have lagt ind senere."* Later, not now — this file exis
 
 ## What each one actually costs, so the next session can size them
 
-**1. Anyone may write news, the board approves.** The largest of the four, and the
+**1. Anyone may write news, the board approves — ✅ done 2026-08-08.** *"Start med nyheder tilføjelse og godkendelse."* The board is the three admins; the question below was answered by choosing the smallest reversible option and writing down that it was a choice. See PROJECT.md, 2026-08-08, and `20260808093000_news_drafts.sql`.
+
+The original sizing, kept because it was right about where the work was: the largest of the four, and the
 only one that changes the club's access model rather than adding to it. `news` is
 admin-write today (`Admins write news`), and this needs a third state between draft
 and published — a `status` column, an RLS policy letting a member insert his own
