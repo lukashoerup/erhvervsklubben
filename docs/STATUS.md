@@ -5,6 +5,24 @@ end of every working session._
 
 ## Start here if you are picking this up in a new session
 
+**Two checks before trusting anything below** (added 2026-08-08, after the repo and
+production drifted apart for nine hours):
+
+1. **`supabase_migrations.schema_migrations` vs `supabase/migrations/`.** A migration
+   applied to production and never committed makes this file a description of a
+   database that no longer exists. It has happened once — `august_2026_statement`,
+   2026-08-08 — and was recovered from production rather than rewritten.
+2. **`git fetch` before touching anything.** A session can resume days after it
+   paused. This one did: the entries dated 2026-07-30 below and the ones dated
+   2026-08-08 are the same conversation, nine days apart.
+
+**Counting attendance: `attendances` has a row per member per meeting, present *or*
+absent.** So `count(*)` per member is ~28 for everyone and means nothing. The number
+the club calls fremmøde is `count(*) filter (where attended)`. As of 2026-08-08:
+**261 rows, 190 attendances.** Getting this wrong once told Lukas his database was
+broken when it was correct.
+
+
 **It is live and writable.** <https://erhvervsklubben.vercel.app>, deployed from
 `main` by Vercel's GitHub integration on every push. Build config is in
 `vercel.json` and `.env.production` — both committed, nothing in the dashboard.
