@@ -746,3 +746,26 @@ describe('recording the evening from its own card', () => {
     expect(screen.queryByText(/lægges i kalenderen/i)).not.toBeInTheDocument()
   })
 })
+
+/**
+ * "Sidst set" became the club's on 2026-08-08 — Lukas's own wishlist item,
+ * *"Offentliggøre login aktivitet"*, reversing the admin-only fold T074 built.
+ *
+ * Asserted for the *member*, because that is the case that used to fail, and
+ * asserted as still folded: publishing it changed who may open the fold, not
+ * whether there is one. A club of ten reading a permanent list of who has not been
+ * around is exactly why the fold exists, and it exists more now than before.
+ */
+describe('who may read “sidst set”', () => {
+  it('shows it to an ordinary member, still folded shut', async () => {
+    renderPage('user')
+    // Its own query, which settles after the attendance one — waiting on the
+    // history alone samples the page before this fold exists.
+    const fold = (await screen.findByText('Sidst set')).closest('details')!
+    expect(fold).toBeInTheDocument()
+    expect(fold.open).toBe(false)
+    // The label said "Kun kasserer" until today, and a stale one is worse than a
+    // gate: it tells nine members not to read what they can see.
+    expect(fold).not.toHaveTextContent(/kun kasserer/i)
+  })
+})

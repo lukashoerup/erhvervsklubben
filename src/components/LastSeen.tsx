@@ -3,18 +3,27 @@ import { daWhen } from '../lib/dates'
 import { Eyebrow } from './SectionTitle'
 
 /**
- * "Sidst set" — when each member last opened the site. Admin only (T074).
+ * "Sidst set" — when each member last opened the site.
+ *
+ * **The club's since 2026-08-08**, not the treasurer's. Lukas published it off his
+ * own wishlist — *"Offentliggøre login aktivitet"* — which reverses the decision
+ * below rather than refining it. The reasoning in the next paragraph has not become
+ * wrong; he has decided the club can carry it, the same way he opened the finances
+ * on 2026-07-30. Two RLS policies moved with it, because the names live in
+ * `user_member_mapping` and timestamps nobody can attach to a person are worse than
+ * either the closed or the open version.
  *
  * Lukas asked how often the members visit, and nothing in the app could tell
  * him. This is the answer, and the whole of it: one line per member, one date,
  * no count of visits and nothing at all about which pages anyone opened.
  *
- * **Folded shut, and that is the design.** This is the first thing the app
- * records about a member's *behaviour* rather than about the club, and in a
- * club of ten where everyone knows everyone, a permanent list of who has not
- * been around is a different social object from a fact you can go and look up.
- * Closed, `/anciennitet` is exactly the page it was; open, it answers the
- * question. `<details>` rather than a state flag: it is a native disclosure, it
+ * **Folded shut, and that is still the design** — more so now that everyone can
+ * open it. This is the only thing the app records about a member's *behaviour*
+ * rather than about the club, and in a club of ten where everyone knows everyone, a
+ * permanent list of who has not been around is a different social object from a fact
+ * you can go and look up. Closed, `/anciennitet` is exactly the page it was; open,
+ * it answers the question. Publishing it changed who may open the fold, not whether
+ * there is one. `<details>` rather than a state flag: it is a native disclosure, it
  * works before the JavaScript settles, and a phone gets the keyboard and screen
  * reader behaviour for nothing.
  *
@@ -45,7 +54,7 @@ export function LastSeen({ roster }: { roster: string[] }) {
           to keep in step with §03 for no gain. */}
       <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between p-4">
         <Eyebrow>Sidst set</Eyebrow>
-        <span className="text-[0.62rem] text-faint">Kun kasserer</span>
+        <span className="text-[0.62rem] text-faint">Hele klubben</span>
       </summary>
 
       <ul className="border-t border-line px-4 py-1">

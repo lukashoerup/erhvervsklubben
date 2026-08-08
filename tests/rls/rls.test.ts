@@ -11,7 +11,8 @@
 import { beforeAll, describe, expect, test } from 'vitest'
 import { anonClient, serviceClient, signedInClient, SEED, RLS_DENIED } from './clients'
 import {
-  PUBLIC_TABLES, SHARED_TABLES, PERSONAL_TABLES, ADMIN_ONLY_TABLES, ALL_TABLES,
+  PUBLIC_TABLES, SHARED_TABLES, PERSONAL_TABLES, MEMBER_READABLE_TABLES,
+  ADMIN_ONLY_TABLES, ALL_TABLES,
   ADMIN_WRITABLE, SAMPLE_ROW,
 } from './rules'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -38,12 +39,18 @@ describe('a signed-out visitor', () => {
     expect(data?.length).toBeGreaterThan(0)
   })
 
-  test.each([...SHARED_TABLES, ...PERSONAL_TABLES])('sees nothing in %s', async (t) => {
-    const { data, error } = await anon.from(t).select('*')
-    // RLS filters rows rather than erroring — zero rows IS the denial.
-    expect(error).toBeNull()
-    expect(data).toEqual([])
-  })
+  // `MEMBER_READABLE_TABLES` joined this list on 2026-08-08 and belongs in it: the
+  // policies opened that day are `to authenticated`, so publishing login activity
+  // published it to the *club*, not to the internet. Anon still sees nothing.
+  test.each([...SHARED_TABLES, ...PERSONAL_TABLES, ...MEMBER_READABLE_TABLES])(
+    'sees nothing in %s',
+    async (t) => {
+      const { data, error } = await anon.from(t).select('*')
+      // RLS filters rows rather than erroring — zero rows IS the denial.
+      expect(error).toBeNull()
+      expect(data).toEqual([])
+    },
+  )
 
   test.each(Object.keys(SAMPLE_ROW))('cannot write to %s', async (t) => {
     const { error } = await anon.from(t).insert(SAMPLE_ROW[t])
@@ -53,11 +60,14 @@ describe('a signed-out visitor', () => {
 
 // ---------------------------------------------------------------- a member
 describe('a signed-in member', () => {
-  test.each([...PUBLIC_TABLES, ...SHARED_TABLES])('reads all of %s', async (t) => {
-    const { data, error } = await member1.from(t).select('*')
-    expect(error).toBeNull()
-    expect(data?.length).toBeGreaterThan(0)
-  })
+  test.each([...PUBLIC_TABLES, ...SHARED_TABLES, ...MEMBER_READABLE_TABLES])(
+    'reads all of %s',
+    async (t) => {
+      const { data, error } = await member1.from(t).select('*')
+      expect(error).toBeNull()
+      expect(data?.length).toBeGreaterThan(0)
+    },
+  )
 
   test.skipIf(ADMIN_ONLY_TABLES.length === 0)
     .each(ADMIN_ONLY_TABLES)('sees nothing in %s — admin only', async (t) => {
@@ -223,6 +233,39 @@ describe('sidst set', () => {
     expect(new Date(rows[0].last_seen_at as string).getFullYear()).toBeGreaterThan(2020)
   })
 
+  test('every member reads the whole club\'s, and can name them', async () => {
+    // Lukas published this on 2026-08-08 — his own wishlist, and a reversal of the
+    // fold T074 built deliberately. Two tables, because a timestamp nobody can
+    // attach to a name is a worse object than either the closed or the open
+    // version: `user_member_mapping` opened with it.
+    await member1.rpc('touch_last_seen')
+    await member2.rpc('touch_last_seen')
+
+    const seen = await member1.from('member_last_seen').select('user_id')
+    expect(seen.error).toBeNull()
+    expect(seen.data?.map((r) => r.user_id)).toContain(SEED.member2.id)
+
+    const names = await member1.from('user_member_mapping').select('user_id, member_name')
+    expect(names.error).toBeNull()
+    expect((names.data ?? []).length).toBeGreaterThan(1)
+  })
+
+  test('publishing the read did not open a write', async () => {
+    // The whole feature was "let the club see it". A member who can also *write* it
+    // can forge when he was last here, and the list stops being worth reading.
+    // Asserted on the outcome rather than on the policy list: an UPDATE no policy
+    // permits changes no rows, so the timestamp is unmoved either way.
+    await member1.rpc('touch_last_seen')
+    const before = (await stored(SEED.member1.id))[0].last_seen_at
+
+    await member1
+      .from('member_last_seen')
+      .update({ last_seen_at: '1999-01-01T00:00:00Z' })
+      .eq('user_id', SEED.member1.id)
+
+    expect((await stored(SEED.member1.id))[0].last_seen_at).toBe(before)
+  })
+
   test('a member cannot write anyone else\'s timestamp', async () => {
     const { error } = await member1.from('member_last_seen').insert({ user_id: SEED.member2.id })
     expect(error?.code).toBe(RLS_DENIED)
@@ -313,7 +356,8 @@ describe('nobody can promote themselves', () => {
     expect(
       unclassified,
       `unclassified table(s): ${unclassified.join(', ')}. Add each to ` +
-        'tests/rls/rules.ts — PUBLIC_TABLES, SHARED_TABLES or PERSONAL_TABLES — ' +
+        'tests/rls/rules.ts — PUBLIC_TABLES, SHARED_TABLES, PERSONAL_TABLES, ' +
+        'MEMBER_READABLE_TABLES or ADMIN_ONLY_TABLES — ' +
         'so who can read it is a decision rather than an accident.',
     ).toEqual([])
   })

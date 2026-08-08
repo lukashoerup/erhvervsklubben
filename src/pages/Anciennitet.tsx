@@ -164,13 +164,12 @@ export default function Anciennitet() {
       {newMeeting}
       <AttendanceSummary roster={data.roster} />
 
-      {/* "Sidst set", folded shut, for the admin only (T074). On this page
-          because it is the only screen that already lists the club by name, and
-          the one an admin is on when he is thinking about the membership rather
-          than about a meeting. Read-only builds keep it: it reads, it never
-          writes, and a preview of the club's real data should show the club's
-          real screens. */}
-      {role === 'admin' && <LastSeen roster={names} />}
+      {/* "Sidst set", folded shut, and **the club's since 2026-08-08** — Lukas's own
+          wishlist item, *"Offentliggøre login aktivitet"*, which reverses the
+          admin-only fold T074 built deliberately. Still folded: open, it answers a
+          question; shut, this page is what it always was. On this page because it is
+          the only screen that already lists the club by name. */}
+      <LastSeen roster={names} />
 
       {/* The meetings still ahead, in the same stream as the ones behind rather
           than in a box of their own. Lukas: "Generelt så skal de ligge samme sted

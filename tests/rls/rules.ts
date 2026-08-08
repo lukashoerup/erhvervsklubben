@@ -41,9 +41,30 @@ export const SHARED_TABLES = ['attendance_records', 'attendances', 'members'] as
  * table that holds `role` — is the trap this design exists to avoid. See the
  * migration, and the named tests at the bottom of rls.test.ts.
  */
-export const PERSONAL_TABLES = [
-  'profiles', 'user_member_mapping', 'event_evaluations', 'member_last_seen',
-] as const
+export const PERSONAL_TABLES = ['profiles', 'event_evaluations'] as const
+
+/**
+ * Read by every signed-in member, written by **nobody** through the API.
+ *
+ * A fifth shape, added 2026-08-08 rather than squeezed into one of the four above,
+ * because neither fits and the misfit is the interesting part.
+ *
+ * `member_last_seen` and `user_member_mapping` left `PERSONAL_TABLES` when Lukas
+ * published login activity — his own wishlist item, and a reversal of T074's
+ * deliberate fold. They are not `SHARED_TABLES`, because that bucket asserts an
+ * admin *can* write, and `member_last_seen` has no write policy for anyone: its rows
+ * appear only through `touch_last_seen()`, a security definer function that takes no
+ * arguments. Filing it under SHARED would have quietly asserted the opposite of the
+ * property that makes it safe.
+ *
+ * `user_member_mapping` is here for the reads and keeps its own admin-write policy,
+ * which `ADMIN_WRITABLE` below states separately. It came along because the screen
+ * shows *names*: opening only the timestamps leaves every member looking at nine
+ * dates he cannot attach to anyone.
+ *
+ * `profiles` stays personal, and that is the line that matters — it holds `role`.
+ */
+export const MEMBER_READABLE_TABLES = ['user_member_mapping', 'member_last_seen'] as const
 
 /**
  * Admin-only, read included. Ordinary members cannot see these at all.
@@ -60,7 +81,8 @@ export const PERSONAL_TABLES = [
 export const ADMIN_ONLY_TABLES = ['fines', 'payments'] as const
 
 export const ALL_TABLES = [
-  ...PUBLIC_TABLES, ...SHARED_TABLES, ...PERSONAL_TABLES, ...ADMIN_ONLY_TABLES,
+  ...PUBLIC_TABLES, ...SHARED_TABLES, ...PERSONAL_TABLES,
+  ...MEMBER_READABLE_TABLES, ...ADMIN_ONLY_TABLES,
 ]
 
 /** Minimal valid rows, so a denial test fails on the policy and not on a
@@ -85,5 +107,14 @@ export const SAMPLE_ROW: Record<string, Record<string, unknown>> = {
   // with the seed users instead; see 'sidst set' in rls.test.ts.
 }
 
-/** Tables an admin is expected to be able to write. */
-export const ADMIN_WRITABLE = [...PUBLIC_TABLES, ...SHARED_TABLES] as const
+/**
+ * Tables an admin is expected to be able to write.
+ *
+ * `user_member_mapping` is listed by hand rather than by bucket: it is the one table
+ * in `MEMBER_READABLE_TABLES` an admin may change, and `member_last_seen` — its
+ * neighbour there — is writable by nobody at all. A bucket-wide rule would have to be
+ * wrong about one of them.
+ */
+export const ADMIN_WRITABLE = [
+  ...PUBLIC_TABLES, ...SHARED_TABLES, 'user_member_mapping',
+] as const

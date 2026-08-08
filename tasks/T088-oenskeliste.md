@@ -36,13 +36,19 @@ the most immediately useful: §9 has the lead calling a meeting two weeks ahead,
 he currently counts replies by hand. Also the one that would make `/hjem`'s "næste
 møde" card say something about *you*.
 
-**4. Publish login activity.** The data exists — `member_last_seen`, added in T074 —
-and is deliberately admin-only today. T074's own note is the thing to read before
-building this: *"in a club of ten where everyone knows everyone, a permanent list of
-who has not been around is a different social object from a fact you can go and look
-up."* Publishing it is a reversal of that, and it is Lukas's to make, the same way
-he opened the finances on 2026-07-30. Cheap to build, so the decision is the whole
-of the work.
+**4. Publish login activity — ✅ done 2026-08-08.** *"Kan vi tage det næste punkt på
+listen?"* The fold on `/anciennitet` is every member's now, and it is still a fold:
+publishing it changed who may open it, not whether there is one.
+
+It was not as cheap as this file guessed, and the reason is worth keeping. It took
+**two** tables, not one — the screen shows names, and those live in
+`user_member_mapping`, own-row-only until then, so opening only the timestamps would
+have left every member looking at nine dates he could not attach to anyone. And it
+needed a **fifth RLS bucket**: `member_last_seen` is read by everyone and written by
+nobody, which neither `SHARED_TABLES` (asserts an admin can write) nor
+`PERSONAL_TABLES` (asserts nobody else can read) describes. Filing it under SHARED
+would have quietly asserted the opposite of the property that makes it safe.
+`profiles` stays own-row-only, which is the line that matters — it holds `role`.
 
 ## Deferred with a reason: the lead may edit his own evening's attendance
 
