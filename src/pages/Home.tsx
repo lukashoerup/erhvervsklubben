@@ -4,6 +4,7 @@ import { Icon } from '../components/Icon'
 import { daDate } from '../lib/dates'
 import { useAttendance, useMyMemberName, useNews, useUpcoming } from '../data/useClubData'
 import { Eyebrow } from '../components/SectionTitle'
+import { SkiftAdgangskode } from '../components/SkiftAdgangskode'
 
 /**
  * The front page, rebuilt around what members actually open the app for.
@@ -92,6 +93,13 @@ export default function Home() {
           <p className="mt-1.5 text-xs leading-relaxed text-muted">{latest.excerpt}</p>
         </Link>
       )}
+
+      {/* Last on the page, and folded. Lukas, 2026-08-08: "Der er en del som gerne
+          vil have ændret deres password." /hjem because it is the one screen that is
+          about the member rather than about the club — everything else here is his
+          own attendance — and last because changing a password is an errand, not a
+          reason to open the app. */}
+      <SkiftAdgangskode />
 
       {role === 'admin' && (
         <Link

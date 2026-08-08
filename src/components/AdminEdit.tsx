@@ -18,9 +18,15 @@ export type Draft = Record<string, string>
    on the accent measures 3.2:1 on the dark ground and fails AA. */
 const INPUT =
   'mt-1 block min-h-12 w-full rounded-btn border border-line bg-raised px-3 py-2 text-sm text-ink'
-const FILLED =
+/**
+ * The app's two button styles, exported so a screen outside this file cannot invent
+ * a third. `bg-brand`, not `bg-accent`: brand is theme-constant and 5.1:1 against
+ * white, which is the whole reason the token exists — the accent moves with the
+ * palette and white on it is not guaranteed to stay readable.
+ */
+export const FILLED =
   'inline-flex min-h-12 items-center justify-center rounded-btn bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-hi disabled:opacity-50'
-const QUIET =
+export const QUIET =
   'inline-flex min-h-12 items-center justify-center rounded-btn border border-line px-4 text-sm text-muted hover:border-accent'
 /* Outlined, not filled. --color-absent is a light coral on the dark ground and
    a brick red on the light one; white sits legibly on neither, and a button

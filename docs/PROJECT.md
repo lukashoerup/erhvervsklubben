@@ -671,6 +671,40 @@ without losing data and without taking the old site down until an approved cutov
   — the balance, the collection list, both charts. Hiding the capture form must never
   be read as walking that back, and a test asserts both halves together.
 
+- **2026-08-08 — a member can change his own password, and is not asked for the old
+  one.** Lukas: *"Der er en del som gerne vil have ændret deres password."* There was
+  no way to at all — he created every login, so a member who wanted a different
+  password had to ask him to change it in the database.
+
+  Folded shut at the bottom of `/hjem`, the same `<details>` idiom as "Sidst set":
+  /hjem is the one screen that is about the member rather than the club, and a
+  password change is an errand rather than a reason to open the app.
+
+  **Not asking for the current password is the decision here**, and it is the
+  opposite of what the obvious design does. It would lock out precisely the people
+  this is for: the club's sessions outlive the sign-in that made them by months —
+  T074 found Saaby still on an October session in February — so a member who has not
+  typed his password since Lukas handed it to him cannot produce it. The session is
+  the proof of identity, which is the standard every other write in the app already
+  runs on. The cost is stated rather than hidden: someone holding an unlocked phone
+  could change its owner's password. In a club of ten with no money moving through
+  these accounts, that is smaller than nine men stuck on a password somebody else
+  chose.
+
+  **Hidden in READONLY and DEMO builds, and that needed saying out loud.** The
+  read-only Proxy in `lib/supabase` wraps `from` and `rpc` — where the club's *data*
+  is — and `auth.updateUser` sails straight past it. A preview build carries the real
+  project, so without this gate the one build that exists to be harmless could have
+  changed a real member's real password. Two tests hold it.
+
+  Minimum eight characters, against Supabase's own floor of six, because one member
+  is on `1234` and getting off those is the point. Typed twice: a typo in a single
+  field is a member locked out until Lukas fixes it by hand, which is the errand
+  being retired.
+
+  One thing this is *not*: a forgotten-password flow. That needs e-mail delivery
+  configured on the Supabase project and is a separate decision.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
