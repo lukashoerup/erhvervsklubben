@@ -90,7 +90,11 @@ export default function Home() {
             {daDate(latest.date, { day: 'numeric', month: 'long' })}
           </p>
           <h3 className="mt-1.5 text-[0.95rem] leading-snug font-semibold">{latest.title}</h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-muted">{latest.excerpt}</p>
+          {/* Clamped for the same reason as the landing page's: this is the newest
+              item as a teaser, and the whole card is a link to the item itself. */}
+          <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-muted">
+            {latest.excerpt}
+          </p>
         </Link>
       )}
 

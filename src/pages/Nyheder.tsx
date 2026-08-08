@@ -143,7 +143,15 @@ export default function Nyheder() {
               <DateRail iso={n.date} />
               <div className="min-w-0 flex-1">
                 <h3 className="text-[0.95rem] leading-snug font-semibold">{n.title}</h3>
-                <p className="mt-1.5 text-[0.8rem] leading-relaxed text-muted">{n.excerpt}</p>
+                {/* `whitespace-pre-line`, added 2026-08-08 with the general assembly
+                    minutes. Every news item the club has ever written is in
+                    paragraphs — the GF item alone has six — and this element rendered
+                    them as one unbroken block, because HTML collapses newlines. The
+                    club has been writing structure into this column since 2025 and
+                    the app has been throwing it away ever since. */}
+                <p className="mt-1.5 whitespace-pre-line text-[0.8rem] leading-relaxed text-muted">
+                  {n.excerpt}
+                </p>
                 {/* The byline, in the newspaper's own shape: an em dash and a
                     name, under the text rather than over it. Set faint and
                     small because it is an attribution and not a headline — the

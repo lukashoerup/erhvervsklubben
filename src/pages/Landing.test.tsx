@@ -82,6 +82,25 @@ describe('what the public page reads', () => {
     expect(new Set(asked)).toEqual(new Set(['news', 'events']))
   })
 
+  it('clamps a long item instead of letting it become the front page', async () => {
+    // The club's general assembly referat is ~1200 characters of minutes, and the
+    // landing page is what a stranger decides about the club from. A teaser is a
+    // teaser: the full item lives behind the login on /nyheder.
+    rows = {
+      news: [
+        {
+          id: 'n1',
+          title: 'Referat: generalforsamling 2026',
+          excerpt: 'Dirigent: Mathias.\n\n' + 'Meget lang tekst. '.repeat(60),
+          date: '2026-06-26',
+        },
+      ],
+    }
+    renderLanding()
+    await screen.findByText('Referat: generalforsamling 2026')
+    expect(screen.getByText(/Dirigent: Mathias/)).toHaveClass('line-clamp-3')
+  })
+
   it('prints no figure about the club’s money', async () => {
     rows = {
       news: [

@@ -338,7 +338,12 @@ function Nyt({ stories }: { stories: { id: string; title: string; excerpt: strin
                 {daDate(s.date)}
               </p>
               <h3 className="mt-1.5 text-[16px] leading-snug font-semibold">{s.title}</h3>
-              <p className="mt-1 text-[13px] leading-[1.6] text-muted">{s.excerpt}</p>
+              {/* Clamped, and deliberately *not* `whitespace-pre-line` like the full
+                  item on /nyheder. This is a teaser: collapsing the newlines is what
+                  makes the opening read as continuous prose, and the clamp is what
+                  stops a 1500-character general assembly referat from becoming the
+                  club's public front page. */}
+              <p className="mt-1 line-clamp-3 text-[13px] leading-[1.6] text-muted">{s.excerpt}</p>
             </article>
           ))
         )}

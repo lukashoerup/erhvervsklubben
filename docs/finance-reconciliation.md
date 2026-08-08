@@ -384,7 +384,7 @@ Sheet2 mixes first names and surnames. The database uses first names only:
 | Sheet2 | DB `member_name` | Basis |
 |---|---|---|
 | Kasper, Emil, Mads, Saaby, Esben | same | direct |
-| **Holst** | **Rasmus** | annual report slide 1: "Rasmus Holst, Næstformand" — high confidence, unconfirmed |
+| **Holst** | **Rasmus** | **confirmed 2026-08-08** — the 2026 general assembly referat re-elects "Holst" as næstformand, and the club's own news names Rasmus Holst in that post. See `docs/generalforsamling-2026.md`. |
 | **Tørring** | **unknown** | one of Anders / Lukas / Oskar / Have |
 
 On Tørring: his only fine is 80 kr. at meeting 21, and 80 is reachable only as

@@ -21,7 +21,10 @@ const NEWS = [
   {
     id: 'n1',
     title: 'Sommerfest 2026',
-    excerpt: 'Vi holder den hos Saaby igen i år.',
+    // Two paragraphs, because that is how the club actually writes. Every item it
+    // has published since 2025 has them, and until 2026-08-08 this page rendered
+    // them as one block — HTML collapses newlines unless told not to.
+    excerpt: 'Vi holder den hos Saaby igen i år.\n\nTilmelding senest den 1. august.',
     author: 'Mathias Saaby',
     date: '2026-06-09',
   },
@@ -55,6 +58,20 @@ function renderPage(role: AuthState['role']) {
 const cardFor = (title: string) => screen.getByText(title).closest('article')!
 
 beforeEach(() => reset({ news: NEWS }))
+
+describe('how an item reads', () => {
+  it('keeps the paragraphs the club wrote', async () => {
+    // Found on 2026-08-08, reading the club's own general assembly referat: the
+    // news column has carried structure since 2025 and all three places that
+    // render one were throwing it away. Six paragraphs of minutes as a single
+    // block is not a styling nitpick — it is unreadable.
+    renderPage('user')
+    await screen.findByText(/Sommerfest/)
+    const body = screen.getByText(/Tilmelding senest/)
+    expect(body).toHaveClass('whitespace-pre-line')
+    expect(body.textContent).toContain('\n\n')
+  })
+})
 
 describe('who is offered the controls', () => {
   // Reversed 2026-08-08: "alle kan skrive nyheder, men skal godkendes af

@@ -805,10 +805,31 @@ without losing data and without taking the old site down until an approved cutov
   any more — Anders was already an admin — so the two readings now agree about him,
   and nothing had to change to make that true.
 
-  Rasmus is recorded as næstformand in `docs/finance-reconciliation.md`, from the
-  annual report and never confirmed. **Unverified, and now more likely stale than it
-  was**: an assembly that changed the formand may have changed the rest of the board.
-  Worth asking Lukas rather than assuming either way.
+  Rasmus is næstformand — **confirmed the same evening**, when Lukas sent the
+  assembly's own referat: *"Holst genvælges som næstformand efter en tæt sejr over
+  Kasper."* It was recorded here as unverified an hour earlier, from an annual-report
+  slide; the source document settles it, and `finance-reconciliation.md` has dropped
+  its hedge. Lukas continues as kasserer.
+
+- **2026-08-08 — the general assembly referat is a source document now.** Lukas sent
+  the club's own one-page referat and asked for it as a news item and in the context
+  files. Both: published to the members, and transcribed verbatim at
+  `docs/generalforsamling-2026.md`, which is where the club's internal structure is
+  written down for the first time.
+
+  **It raises one thing the app cannot do.** The assembly voted through *"bøde for
+  inaktivitet"*, and `src/data/rules.ts` holds five rules with no sixth — so a fine
+  the club has formally adopted cannot be entered on `/oekonomi` at all. Two answers
+  are missing and neither is guessable: what it costs, and what "inaktivitet" means
+  precisely enough to charge a man under it (not attending is already `udeblivelse`).
+  Putting a number nobody voted for on the club's own screen would be worse than the
+  gap. Blocked on Lukas; one entry in `FINE_RULES` once he answers.
+
+  Reading the club's own writing also fixed a defect nobody had reported: every news
+  item since 2025 is written in paragraphs, and all three places that render one
+  collapsed the newlines into a single block. `/nyheder` keeps them now; the two
+  teaser cards clamp instead, so a 1200-character referat cannot become the club's
+  public front page.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
