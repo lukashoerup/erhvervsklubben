@@ -88,6 +88,35 @@ export const MEMBER_READABLE_TABLES = [
 ] as const
 
 /**
+ * Read by every signed-in member, and **written by every signed-in member** — his
+ * own rows only.
+ *
+ * A sixth shape, added 2026-08-08 with `news_comments`, and the first time this app
+ * has had one. Every bucket above is some arrangement of *members read, admins
+ * write*: even the news drafts of the same morning let a member write only rows
+ * nobody else can see until the board publishes them. A comment is the club's the
+ * moment it is saved.
+ *
+ * It cannot go in any of the five without asserting something false, which is the
+ * whole reason to add a bucket rather than pick the nearest:
+ *
+ *   PUBLIC          would assert an anon visitor reads it. He must not — `news` is
+ *                   on the open web and the conversation under it is not.
+ *   SHARED          asserts an admin writes and a member does not. Backwards here.
+ *   PERSONAL        asserts a member sees only his own. He sees the whole thread.
+ *   MEMBER_READABLE asserts nobody writes through the API. Members do, constantly.
+ *   ADMIN_ONLY      no.
+ *
+ * Absent from `SAMPLE_ROW` for the same reason `member_last_seen` is: a row needs a
+ * real `news_id` and a real `author_id`, and a made-up uuid would make the generated
+ * denial land on a foreign key instead of on the policy — a failing constraint
+ * wearing a passing test's clothes. Everything interesting about this table is
+ * written out by hand in rls.test.ts, where a member's *allowed* write and his
+ * denied one can be told apart.
+ */
+export const MEMBER_WRITABLE_TABLES = ['news_comments'] as const
+
+/**
  * Admin-only, read included. Ordinary members cannot see these at all.
  *
  * Note this breaks the otherwise tidy "members read everything" rule, which is
@@ -103,7 +132,7 @@ export const ADMIN_ONLY_TABLES = ['fines', 'payments'] as const
 
 export const ALL_TABLES = [
   ...PUBLIC_TABLES, ...SHARED_TABLES, ...PERSONAL_TABLES,
-  ...MEMBER_READABLE_TABLES, ...ADMIN_ONLY_TABLES,
+  ...MEMBER_READABLE_TABLES, ...MEMBER_WRITABLE_TABLES, ...ADMIN_ONLY_TABLES,
 ]
 
 /** Minimal valid rows, so a denial test fails on the policy and not on a

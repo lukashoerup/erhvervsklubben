@@ -242,6 +242,54 @@ export function demoDelete(table: 'news' | 'events', id: string) {
 }
 
 /**
+ * Comments, in the demo's own array.
+ *
+ * Two of them, on the newest item, and one is the demo visitor's own — so the demo
+ * shows both states a thread has: somebody else's comment, which he can only read,
+ * and his own, which he may withdraw. A thread where every row looks the same
+ * demonstrates half the feature.
+ *
+ * `demo-user` is the id `DemoAuthProvider` signs in as, and `useMemberNames` answers
+ * "Lukas" for it — the same name `useMyMemberName` gives the demo elsewhere.
+ */
+export const demoComments: {
+  id: string
+  news_id: string
+  author_id: string
+  body: string
+  created_at: string
+}[] = [
+  {
+    id: 'c1',
+    news_id: '1',
+    author_id: 'demo-2',
+    body: 'Jeg har sat den i kalenderen. Kommer der en tilmeldingsliste?',
+    created_at: '2026-06-10T18:20:00Z',
+  },
+  {
+    id: 'c2',
+    news_id: '1',
+    author_id: 'demo-user',
+    body: 'Ja — den kommer på siden i næste uge.',
+    created_at: '2026-06-10T19:05:00Z',
+  },
+]
+
+/** Insert only. A comment cannot be edited — see the migration and the component. */
+export function demoSaveComment(values: { news_id: string; author_id: string; body: string }) {
+  demoComments.push({
+    id: `demo-c${++written}`,
+    ...values,
+    created_at: new Date().toISOString(),
+  })
+}
+
+export function demoDeleteComment(id: string) {
+  const at = demoComments.findIndex((c) => c.id === id)
+  if (at >= 0) demoComments.splice(at, 1)
+}
+
+/**
  * A meeting and its attendance, in the demo's two arrays.
  *
  * The same rule as the real save, deliberately: only a changed tick is written,

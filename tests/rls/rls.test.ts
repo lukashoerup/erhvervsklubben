@@ -12,7 +12,7 @@ import { beforeAll, describe, expect, test } from 'vitest'
 import { anonClient, serviceClient, signedInClient, SEED, RLS_DENIED } from './clients'
 import {
   PUBLIC_TABLES, SHARED_TABLES, PERSONAL_TABLES, MEMBER_READABLE_TABLES,
-  ADMIN_ONLY_TABLES, ALL_TABLES,
+  MEMBER_WRITABLE_TABLES, ADMIN_ONLY_TABLES, ALL_TABLES,
   ADMIN_WRITABLE, SAMPLE_ROW,
 } from './rules'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -42,7 +42,14 @@ describe('a signed-out visitor', () => {
   // `MEMBER_READABLE_TABLES` joined this list on 2026-08-08 and belongs in it: the
   // policies opened that day are `to authenticated`, so publishing login activity
   // published it to the *club*, not to the internet. Anon still sees nothing.
-  test.each([...SHARED_TABLES, ...PERSONAL_TABLES, ...MEMBER_READABLE_TABLES])(
+  //
+  // `MEMBER_WRITABLE_TABLES` matters here more than most. `news_comments` hangs off
+  // `news`, which *is* anon-readable — the landing page shows the club's notices to
+  // the internet — so the one mistake this table could make is inheriting that.
+  test.each([
+    ...SHARED_TABLES, ...PERSONAL_TABLES, ...MEMBER_READABLE_TABLES,
+    ...MEMBER_WRITABLE_TABLES,
+  ])(
     'sees nothing in %s',
     async (t) => {
       const { data, error } = await anon.from(t).select('*')
@@ -66,16 +73,18 @@ describe('a signed-in member', () => {
     expect(data?.length).toBeGreaterThan(0)
   })
 
-  // `MEMBER_READABLE_TABLES` is asserted on the *policy* rather than on a row count.
-  // Its two tables are written by nobody the seed can act as — `member_last_seen`
-  // and `member_visits` only ever fill through their functions — so a fresh
-  // database has them empty, and "> 0 rows" would be testing seed data rather than
-  // access. That these reads really are unfiltered is asserted by name further
-  // down, where rows exist because the test just made them.
-  test.each(MEMBER_READABLE_TABLES)('is not refused %s', async (t) => {
-    const { error } = await member1.from(t).select('*')
-    expect(error).toBeNull()
-  })
+  // Asserted on the policy rather than on a row count, for both buckets and for the
+  // same reason: a fresh seed has no rows in either. `member_last_seen` and
+  // `member_visits` only fill through their functions, and nobody has commented on
+  // a freshly seeded database. That these reads really are unfiltered is asserted by
+  // name further down, where rows exist because the test just made them.
+  test.each([...MEMBER_READABLE_TABLES, ...MEMBER_WRITABLE_TABLES])(
+    'is not refused %s',
+    async (t) => {
+      const { error } = await member1.from(t).select('*')
+      expect(error).toBeNull()
+    },
+  )
 
   test.skipIf(ADMIN_ONLY_TABLES.length === 0)
     .each(ADMIN_ONLY_TABLES)('sees nothing in %s — admin only', async (t) => {
@@ -380,7 +389,7 @@ describe('nobody can promote themselves', () => {
       unclassified,
       `unclassified table(s): ${unclassified.join(', ')}. Add each to ` +
         'tests/rls/rules.ts — PUBLIC_TABLES, SHARED_TABLES, PERSONAL_TABLES, ' +
-        'MEMBER_READABLE_TABLES or ADMIN_ONLY_TABLES — ' +
+        'MEMBER_READABLE_TABLES, MEMBER_WRITABLE_TABLES or ADMIN_ONLY_TABLES — ' +
         'so who can read it is a decision rather than an accident.',
     ).toEqual([])
   })
@@ -463,5 +472,140 @@ describe('news drafts', () => {
     const late = await member1.from('news').update({ title: 'omskrevet' }).eq('id', id)
     expect((await member1.from('news').select('title').eq('id', id)).data?.[0].title).toBe('kladde')
     expect(late.error ?? null).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------- comments on the news
+//
+// The first table a member writes for the other members to read (2026-08-08).
+// Everything before it was some arrangement of "members read, admins write" — even
+// the drafts above, where what a member writes is invisible until the board acts. A
+// comment is the club's the moment it is saved, so the questions are new and each
+// one is asserted rather than assumed.
+describe('comments on the news', () => {
+  /** A published item to hang a thread on, made by the service client. */
+  const published = async () => {
+    const { data } = await service
+      .from('news')
+      .insert({
+        title: 'udgivet', excerpt: 'udgivet', author: 'probe',
+        date: '2026-08-08', status: 'godkendt',
+      })
+      .select('id')
+      .single()
+    return (data as { id: string }).id
+  }
+
+  test('a member comments in his own name, and the club reads it', async () => {
+    const news_id = await published()
+    const { error } = await member1
+      .from('news_comments')
+      .insert({ news_id, author_id: SEED.member1.id, body: 'godt skrevet' })
+    expect(error).toBeNull()
+
+    // The point of the feature: another member sees it. Every other member-written
+    // row in this app is invisible to the rest of the club.
+    const theirs = await member2.from('news_comments').select('body').eq('news_id', news_id)
+    expect(theirs.data?.map((r) => r.body)).toEqual(['godt skrevet'])
+  })
+
+  test('the club\'s conversation is not on the open web', async () => {
+    // **The one that would be a leak.** `news` is anon-readable by the club's own
+    // 2026-07-23 decision, so a comment thread that inherited its item's visibility
+    // would publish nine men talking to each other, under a page the internet
+    // already reads.
+    const news_id = await published()
+    await member1
+      .from('news_comments')
+      .insert({ news_id, author_id: SEED.member1.id, body: 'kun for klubben' })
+
+    expect((await anon.from('news').select('id').eq('id', news_id)).data).toHaveLength(1)
+    expect((await anon.from('news_comments').select('*').eq('news_id', news_id)).data).toEqual([])
+  })
+
+  test('a member cannot comment in someone else\'s name', async () => {
+    const news_id = await published()
+    const { error } = await member1
+      .from('news_comments')
+      .insert({ news_id, author_id: SEED.member2.id, body: 'ikke mine ord' })
+    expect(error?.code).toBe(RLS_DENIED)
+  })
+
+  test('a draft has no thread, so an editorial note cannot surface on approval', async () => {
+    const { data } = await service
+      .from('news')
+      .insert({
+        title: 'kladde', excerpt: 'kladde', author: 'probe',
+        date: '2026-08-08', status: 'kladde', author_id: SEED.member1.id,
+      })
+      .select('id')
+      .single()
+    const news_id = (data as { id: string }).id
+
+    // Refused even for the author of the draft, and that is the point: a comment
+    // written while an item is unpublished would become the whole club's the moment
+    // the board approved it, with nothing having warned anyone.
+    const { error } = await member1
+      .from('news_comments')
+      .insert({ news_id, author_id: SEED.member1.id, body: 'note til bestyrelsen' })
+    expect(error?.code).toBe(RLS_DENIED)
+  })
+
+  test('a comment is written once — nobody edits one, his own included', async () => {
+    // Lukas, 2026-08-08: *"Admins må slette kommentarer. Men man behøver ikke at
+    // kunne rette i egne kommentarer."* So the UPDATE policy was removed rather
+    // than narrowed, and this is the assertion that it stays removed: an edit is
+    // not merely refused to the wrong person, there is no way in for anyone.
+    //
+    // Deleting is the only moderation, and that is the reason it is enough: an
+    // absence is visible to the whole club, and an edit would leave a member's
+    // name on words he did not write with no history to show it.
+    const news_id = await published()
+    const mine = await member1
+      .from('news_comments')
+      .insert({ news_id, author_id: SEED.member1.id, body: 'mine ord' })
+      .select('id')
+      .single()
+    const id = (mine.data as { id: string }).id
+
+    // A blocked UPDATE matches zero rows and reports success, so this is asserted
+    // on the row rather than on an error code — for all three actors.
+    for (const who of [member1, member2, admin]) {
+      await who.from('news_comments').update({ body: 'omskrevet' }).eq('id', id)
+    }
+    const after = await service.from('news_comments').select('body').eq('id', id).single()
+    expect(after.data!.body).toBe('mine ord')
+  })
+
+  test('the author withdraws his own, and the board removes any', async () => {
+    const news_id = await published()
+    const write = async (as: typeof member1, author_id: string, body: string) => {
+      const { data } = await as
+        .from('news_comments')
+        .insert({ news_id, author_id, body })
+        .select('id')
+        .single()
+      return (data as { id: string }).id
+    }
+
+    const his = await write(member1, SEED.member1.id, 'min egen')
+    await member2.from('news_comments').delete().eq('id', his)
+    expect((await service.from('news_comments').select('id').eq('id', his)).data).toHaveLength(1)
+
+    expect((await member1.from('news_comments').delete().eq('id', his)).error).toBeNull()
+    expect((await service.from('news_comments').select('id').eq('id', his)).data).toEqual([])
+
+    const other = await write(member2, SEED.member2.id, 'en anden mands')
+    expect((await admin.from('news_comments').delete().eq('id', other)).error).toBeNull()
+    expect((await service.from('news_comments').select('id').eq('id', other)).data).toEqual([])
+  })
+
+  test('the database refuses an empty comment, not only the form', async () => {
+    const news_id = await published()
+    const { error } = await member1
+      .from('news_comments')
+      .insert({ news_id, author_id: SEED.member1.id, body: '     ' })
+    // A check constraint, not a policy: 23514, not 42501.
+    expect(error?.code).toBe('23514')
   })
 })

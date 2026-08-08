@@ -3,6 +3,7 @@ import { useNews, useSaveRow, type NewsItem } from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
 import { todayISO } from '../lib/dates'
 import { DateRail } from '../components/DateRail'
+import { Kommentarer } from '../components/Kommentarer'
 import { Loading, Problem } from '../components/State'
 import {
   blankDraft,
@@ -169,6 +170,19 @@ export default function Nyheder() {
               <p className="mt-3 text-[0.68rem] leading-relaxed text-accent">
                 Kladde — afventer godkendelse. Den er ikke synlig for klubben endnu.
               </p>
+            )}
+
+            {/* The thread, on published items only — the database refuses a comment
+                on a draft, so offering a box there would be a form that can only
+                fail. Under the card's own controls in reading order: the item, then
+                what the club said about it, then what you may do to it. */}
+            {n.status === 'godkendt' && (
+              <Kommentarer
+                newsId={n.id}
+                userId={userId}
+                isAdmin={isBoard}
+                mayWrite={mayWrite}
+              />
             )}
 
             {(mayEditItem(n) || (isBoard && n.status === 'kladde')) && (
