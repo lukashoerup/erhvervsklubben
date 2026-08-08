@@ -478,3 +478,45 @@ describe('the sentence under the balance', () => {
     expect(kasse).not.toHaveTextContent(/310 kr\.\./)
   })
 })
+
+/**
+ * Who may write on this page, which until 2026-08-08 the screen and the database
+ * disagreed about.
+ *
+ * Lukas asked whether only admins can record fines. The database had always said
+ * yes — `Admins write fines` covers every write on the table — but "Registrér
+ * bøder" rendered for all nine logins, so six members could fill the form in and
+ * have RLS refuse it on Gem. Every other write in this app is hidden from whoever
+ * may not use it, and nothing here caught that this one was not.
+ *
+ * The gate is not the security. The policy is, and it never moved. This is the app
+ * telling the truth about who may do what, and the test exists because a defect
+ * that only shows as a failed save is one nobody reports.
+ */
+describe('who may write on the finance page', () => {
+  it('offers an ordinary member no way to record a fine', async () => {
+    aClubWithBooks()
+    renderPage('user')
+    await screen.findByRole('img', { name: CURVE })
+    expect(screen.queryByText(/Registrér bøder/i)).not.toBeInTheDocument()
+    // And nothing else that writes, either — the whole page is a read for him.
+    expect(screen.queryByRole('button', { name: /gem|registrér/i })).not.toBeInTheDocument()
+  })
+
+  it('still gives the treasurer the capture form', async () => {
+    aClubWithBooks()
+    renderPage('admin')
+    await screen.findByRole('img', { name: CURVE })
+    expect(screen.getByText(/Registrér bøder/i)).toBeInTheDocument()
+  })
+
+  it('lets him read everything else all the same', async () => {
+    aClubWithBooks()
+    renderPage('user')
+    await screen.findByRole('img', { name: CURVE })
+    // Hiding the *write* must not walk back 2026-07-30, when Lukas opened every
+    // figure on this page to the whole club: "Det er fint med transparens."
+    expect(screen.getByText(/Klubkassen/)).toBeInTheDocument()
+    expect(screen.getByText(/Udestående bøder pr\. medlem/)).toBeInTheDocument()
+  })
+})

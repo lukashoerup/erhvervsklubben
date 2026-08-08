@@ -647,6 +647,30 @@ without losing data and without taking the old site down until an approved cutov
   marking the furthest-off meeting instead is exactly the kind of thing a reader would
   not think to question.
 
+- **2026-08-08 — recording a fine stays with the admins, and the screen finally says
+  so.** Lukas asked: *"Er det kun admins som kan registrere bøder?"* In the database,
+  always — `Admins write fines` covers every write on the table and has since
+  2026-07-26. On the screen, no: "Registrér bøder" rendered for all nine logins, so
+  six members could fill the form in and have RLS refuse it on Gem.
+
+  **The gate added here is not security.** The policy is, and it did not move. This
+  is the app telling the truth about who may do what, which is the one rule every
+  other write in it already follows — `/nyheder`, `/anciennitet` and the calendar all
+  hide their controls from whoever may not use them. A swept check of every
+  write-capable file found this was the only one missing it.
+
+  He was offered the other direction and declined it, which is worth recording
+  because the argument for it is real: the club's own practice is that **the
+  evening's Lead notes the fines**, and only three of the ten members are admins
+  (Lukas, Anders, Rasmus). The 730 kr. of fines a Lead noted and nobody billed is
+  what that friction looks like. His call, 2026-08-08: keep it with the admins, and
+  keep the admins at three.
+
+  Note the asymmetry that survives, deliberately: **reading is open to everyone and
+  writing is not.** Since 2026-07-30 every figure on `/oekonomi` is the whole club's
+  — the balance, the collection list, both charts. Hiding the capture form must never
+  be read as walking that back, and a test asserts both halves together.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

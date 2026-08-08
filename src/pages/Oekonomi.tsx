@@ -81,9 +81,25 @@ function useRecordFines() {
 function RecordFines() {
   const attendance = useAttendance()
   const record = useRecordFines()
+  const { role } = useAuth()
   const [meetingId, setMeetingId] = useState<number | null>(null)
   const [draft, setDraft] = useState<DraftFine[]>([])
 
+  // **Admins only, and this was missing.** Lukas asked on 2026-08-08 whether only
+  // admins can record fines. In the database, yes: the `Admins write fines` policy
+  // covers every write and the club has three admins. On the screen it was open to
+  // all nine — six members were being offered a form that RLS would refuse the
+  // moment they pressed Gem.
+  //
+  // That is the one rule this app keeps everywhere else, on /nyheder, on
+  // /anciennitet and on the calendar: never offer a button that could only fail.
+  // The gate is not security — the policy is, and it never moved — it is the app
+  // telling the truth about who may do what.
+  //
+  // He was offered the other direction, since the club's own practice is that the
+  // evening's Lead notes the fines and only three of ten can act on that, and chose
+  // to keep it with the admins (2026-08-08).
+  if (role !== 'admin') return null
   if (READONLY) return null
   if (!attendance.data || attendance.data.meetings.length === 0) return null
   const meetings = attendance.data.meetings
