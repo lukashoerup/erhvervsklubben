@@ -5,14 +5,34 @@ import { Sweep } from './Sweep'
 import { Eyebrow } from './SectionTitle'
 
 /**
- * Visit dates to a bar per ISO week, oldest first, with the empty weeks kept.
+ * Visit dates to a bar per ISO week, oldest first, on a **fixed twelve-week axis**.
  *
- * Dropping a week with no visits would draw a chart that skips over exactly the
- * quiet stretches it exists to show. Capped at the last 12 weeks, because a bar
- * narrower than about 8 px on a 420 px phone stops being readable and the club will
- * have years of this eventually.
+ * Lukas, 2026-08-08, on the first version: *"Den nye graf viser bare en stor klods …
+ * der må være lidt mere, så det ikke bare er en stor klods."* He was looking at the
+ * truth: every visit the club has is from the week recording started, so the chart
+ * drew one bar, at full height, across the full width. One bar is a rectangle.
+ *
+ * So the axis is twelve slots wide whatever the data does, and — this is the part
+ * that took a second try — it runs **forward from the first recorded week**, not
+ * backward from this one. Backwards would fill the chart with eleven empty weeks
+ * before recording began, which reads as *nobody opened the site for three months*.
+ * That is false and unfair to the club. Forward shows the weeks that have not
+ * happened yet, which is what he asked to be able to see.
+ *
+ * Once there is more than twelve weeks of history the window becomes an ordinary
+ * trailing one — the last twelve — because by then the future needs no explaining
+ * and a bar narrower than about 8 px on a 420 px phone stops being readable.
+ *
+ * `future` is carried per week rather than derived by the caller: a week with no
+ * visits and a week that has not arrived look identical in a bar chart, and only one
+ * of them is a fact about the club.
  */
-export function byWeek(dates: string[]): { week: string; n: number }[] {
+const WEEKS = 12
+
+export function byWeek(
+  dates: string[],
+  today = new Date().toISOString().slice(0, 10),
+): { week: string; n: number; future: boolean }[] {
   if (dates.length === 0) return []
   const key = (d: Date) => d.toISOString().slice(0, 10)
   // Monday of the week a date falls in. `getUTCDay()` is 0 on Sunday, so Sunday
@@ -29,13 +49,25 @@ export function byWeek(dates: string[]): { week: string; n: number }[] {
     counts.set(k, (counts.get(k) ?? 0) + 1)
   }
   const sorted = [...dates].sort()
-  const out: { week: string; n: number }[] = []
-  for (let w = monday(sorted[0]); key(w) <= key(monday(sorted[sorted.length - 1])); ) {
-    out.push({ week: key(w), n: counts.get(key(w)) ?? 0 })
+  const first = monday(sorted[0])
+  const last = monday(sorted[sorted.length - 1])
+  const thisWeek = key(monday(today))
+
+  // Twelve slots from the first recorded week, or the last twelve once the history
+  // is longer than that. `end` is whichever is further out, so a chart that has
+  // outgrown the window never loses its newest bar to the padding.
+  const twelve = new Date(first)
+  twelve.setUTCDate(twelve.getUTCDate() + (WEEKS - 1) * 7)
+  const end = key(twelve) > key(last) ? twelve : last
+
+  const out: { week: string; n: number; future: boolean }[] = []
+  for (let w = new Date(first); key(w) <= key(end); ) {
+    const k = key(w)
+    out.push({ week: k, n: counts.get(k) ?? 0, future: k > thisWeek })
     w = new Date(w)
     w.setUTCDate(w.getUTCDate() + 7)
   }
-  return out.slice(-12)
+  return out.slice(-WEEKS)
 }
 
 /**
@@ -92,6 +124,7 @@ export function LastSeen({ roster }: { roster: string[] }) {
   // between meetings or only around them.
   const weeks = byWeek(Object.values(data.visits).flat())
   const most = Math.max(1, ...weeks.map((w) => w.n))
+  const ahead = weeks.filter((w) => w.future).length
 
   return (
     <details data-reveal className="rounded-2xl border border-line bg-surface">
@@ -163,10 +196,17 @@ export function LastSeen({ roster }: { roster: string[] }) {
               {weeks.map((w) => (
                 <li key={w.week} className="flex flex-1 flex-col items-center gap-1">
                   <span className="flex h-16 w-full items-end">
-                    <span
-                      className="w-full rounded-t-[3px] bg-accent-d"
-                      style={{ height: `${Math.max(4, (w.n / most) * 100)}%` }}
-                    />
+                    {/* A week nobody visited is a stub on the baseline; a week that
+                        has not arrived is nothing at all. They are different facts
+                        and a bar chart draws them the same unless told otherwise. */}
+                    {w.future ? (
+                      <span className="h-px w-full rounded-full bg-line" />
+                    ) : (
+                      <span
+                        className="w-full rounded-t-[3px] bg-accent-d"
+                        style={{ height: `${Math.max(4, (w.n / most) * 100)}%` }}
+                      />
+                    )}
                   </span>
                 </li>
               ))}
@@ -176,10 +216,16 @@ export function LastSeen({ roster }: { roster: string[] }) {
               written out. Ten bars two pixels apart cannot carry labels on a 420 px
               phone, and a chart nobody can read the numbers off is decoration. */}
           <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
-            {weeks.length === 1 ? 'Den seneste uge' : `De seneste ${weeks.length} uger`}, ældst
-            til venstre. I alt{' '}
-            <span className="tabular">{weeks.reduce((n, w) => n + w.n, 0)}</span> besøgsdage,
-            flest <span className="tabular">{most}</span> på en uge.
+            Én søjle pr. uge, ældst til venstre. I alt{' '}
+            <span className="tabular">{weeks.reduce((n, w) => n + w.n, 0)}</span> besøgsdage
+            {ahead > 0 && (
+              <>
+                {' '}
+                — og <span className="tabular">{ahead}</span>{' '}
+                {ahead === 1 ? 'uge' : 'uger'} der endnu ikke er kommet
+              </>
+            )}
+            .
           </p>
         </div>
       )}
