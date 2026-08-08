@@ -759,9 +759,13 @@ without losing data and without taking the old site down until an approved cutov
   change than the feature and would need a decision nobody has made; the admins are
   already the men who write the club's news, so approval landing with them changes who
   may *write* rather than who may *publish*. If the club wants the formand in that set
-  — Saaby is not an admin — it is one row in `profiles`, not a schema change. **The
-  mechanism does not care who is in the set**, which is what makes that safe to
-  revisit.
+  it is one row in `profiles`, not a schema change. **The mechanism does not care who
+  is in the set**, which is what makes that safe to revisit.
+
+  *(Written when Saaby was formand and outside the admin set. Lukas, later the same
+  day: "Der er nu formand. Det er Anders nu. Efter GF." Anders is already an admin, so
+  the gap this paragraph was hedging against has closed on its own — see the entry
+  below.)*
 
   **The property everything hangs on: there is no statement a member can send that
   publishes anything.** Not a convention in the app — `with check` on INSERT *and* on
@@ -786,6 +790,25 @@ without losing data and without taking the old site down until an approved cutov
   by policy rather than by the default. The migration refuses to finish if any
   existing item ended up a draft — an item silently unpublished is the failure nobody
   would notice until a member asked where the news went.
+
+- **2026-08-08 — Anders is formand.** Lukas: *"Husk at der er nu formand. Det er
+  Anders nu. Efter GF."* Saaby held it until the general assembly; several notes in
+  this repo were written while that was true and said so as a reason. Corrected where
+  it was load-bearing rather than everywhere — a migration is a record of what was
+  decided when, and rewriting one to match today would be a lie of a different kind.
+
+  **It closes a question this repo had open**, which is why it earns an entry rather
+  than a footnote. Two decisions this week hedged on the same gap: news approval sits
+  with the three admins, and "kun formandskabet skal kunne ændre mødedeltagerne" could
+  not be built because *"formandskabet"* might mean the chairmanship rather than the
+  admin set. Both hedges existed because the formand was outside that set. He is not
+  any more — Anders was already an admin — so the two readings now agree about him,
+  and nothing had to change to make that true.
+
+  Rasmus is recorded as næstformand in `docs/finance-reconciliation.md`, from the
+  annual report and never confirmed. **Unverified, and now more likely stale than it
+  was**: an assembly that changed the formand may have changed the rest of the board.
+  Worth asking Lukas rather than assuming either way.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod

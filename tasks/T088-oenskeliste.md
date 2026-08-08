@@ -88,10 +88,17 @@ reason is worth having written down before anyone estimates it again:
   club actually measures itself by (§11) and the basis of every chart on `/hjem`.
 
 None of that makes it wrong — it makes it a security change with a fiddly key, not a
-switch. It also needs a decision that has not been made: is "formandskabet" the three
-admins (Lukas, Anders, Rasmus), or the club's actual chairmanship? **Saaby is
-formand and is not an admin today.** That question should be settled before any of
-this is built.
+switch.
+
+**The second blocker has resolved itself.** This file used to say the open question
+was whether "formandskabet" meant the three admins or the club's actual chairmanship,
+*because Saaby was formand and was not an admin*. Lukas, 2026-08-08: *"Der er nu
+formand. Det er Anders nu. Efter GF."* Anders is already one of the three, so the two
+readings no longer disagree about him, and the app's admin set now contains the
+club's formand without anybody having to change a row.
+
+What is left is the fiddly key above, and it is enough on its own to keep this
+deferred: the lead is free text with no join to `members`.
 
 ## Also open, from the same conversation
 
