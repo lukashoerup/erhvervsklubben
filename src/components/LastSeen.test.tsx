@@ -22,6 +22,15 @@ const rows: Record<string, unknown[]> = {
     { user_id: 'u-1', last_seen_at: new Date().toISOString() },
     { user_id: 'u-9', last_seen_at: new Date().toISOString() },
   ],
+  // Fixed dates rather than relative ones. The axis runs twelve weeks forward from
+  // the first visit, so it is the same twelve weeks whenever this suite is run —
+  // only which of them are still in the future moves with the clock.
+  member_visits: [
+    { user_id: 'u-1', visited_on: '2026-08-03' },
+    { user_id: 'u-1', visited_on: '2026-08-04' },
+    // The account the club cannot name. It must not be in the club's total either.
+    { user_id: 'u-9', visited_on: '2026-08-05' },
+  ],
 }
 
 function builder(table: string) {
@@ -37,7 +46,7 @@ vi.mock('../lib/supabase', () => ({
   supabase: () => ({ from: (t: string) => builder(t) }),
 }))
 
-const { LastSeen, byWeek } = await import('./LastSeen')
+const { LastSeen, byWeek, onAxis } = await import('./LastSeen')
 
 /** The club as the roster hands it over: two of them have never had a login. */
 const ROSTER = ['Lukas', 'Saaby', 'Kasper', 'Have']
@@ -77,6 +86,25 @@ describe('sidst set', () => {
     await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
     expect(container.querySelector('details')?.open).toBe(false)
     expect(minTapHeightPx(container.querySelector('summary')!)).toBeGreaterThanOrEqual(48)
+  })
+
+  it('gives a strip to every member who has a login, and to nobody else', async () => {
+    // Twelve empty cells against a man who was never given an account reads as
+    // "he stays away". He has not — he cannot come, and the row says so in words.
+    const { container } = show()
+    await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
+
+    const strips = container.querySelectorAll('span.ek-plot')
+    expect(strips).toHaveLength(2) // Lukas and Saaby; Kasper and Have have no login.
+    for (const s of strips) expect(s.children).toHaveLength(12)
+  })
+
+  it("counts only the club in the club's total", async () => {
+    // The fixture's third visit belongs to an account the member list cannot name.
+    // Counting it would make the chart taller than the strips it is the sum of.
+    show()
+    await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
+    expect(screen.getByText(/besøgsdage/)).toHaveTextContent('I alt 2 besøgsdage')
   })
 
   it('says on the screen what is recorded, so a member can be told', async () => {
@@ -146,6 +174,16 @@ describe('visits by week', () => {
     expect(weeks.slice(0, 3).every((w) => w.future)).toBe(false)
   })
 
+  it('never calls a week with visits in it a future week', () => {
+    // A future week draws as nothing, in the chart and in every strip — so getting
+    // this wrong does not misplace a visit, it deletes one. And the two dates being
+    // compared come from different clocks: `visited_on` is the database's Danish
+    // date, `today` is the browser's UTC day. Late on a Sunday night in Copenhagen
+    // they disagree by one, which is exactly this case.
+    const weeks = byWeek(['2026-08-03', '2026-08-10'], '2026-08-09')
+    expect(weeks[1]).toEqual({ week: '2026-08-10', n: 1, future: false })
+  })
+
   it('shows at most twelve weeks, keeping the newest', () => {
     const dates = Array.from({ length: 30 }, (_, i) => {
       const d = new Date(Date.UTC(2026, 0, 5))
@@ -159,6 +197,36 @@ describe('visits by week', () => {
     expect(weeks).toHaveLength(12)
     expect(weeks[weeks.length - 1].week).toBe(dates[dates.length - 1])
     expect(weeks.some((w) => w.future)).toBe(false)
+  })
+
+  /**
+   * Each member's own weeks, laid on the club's axis — Lukas, 2026-08-08:
+   * *"hvor mange gange hvert medlem har besøgt og hvornår. Hvis det kan fyldes ind
+   * i grafen."*
+   */
+  it('gives every member the same twelve columns, however few he has', () => {
+    const axis = byWeek(['2026-08-03', '2026-08-05'], '2026-08-08')
+    // A short row would still draw — misaligned with the chart above and with
+    // every other member, which is the failure that looks fine in isolation.
+    expect(onAxis(axis, [])).toEqual(Array.from({ length: 12 }, () => 0))
+    expect(onAxis(axis, ['2026-08-05'])).toHaveLength(12)
+  })
+
+  it("puts a member's day in the same column as the club's", () => {
+    const axis = byWeek(['2026-08-03', '2026-08-12'], '2026-08-19')
+    expect(onAxis(axis, ['2026-08-12'])).toEqual([0, 1, ...Array.from({ length: 10 }, () => 0)])
+  })
+
+  it('sums to the club chart, week by week', () => {
+    // The property the whole figure rests on: the bar above is the strips below
+    // added up. If it ever stops being true, the chart is quietly claiming visits
+    // that belong to nobody on the list.
+    const lukas = ['2026-08-03', '2026-08-04', '2026-08-19']
+    const saaby = ['2026-08-04', '2026-08-20']
+    const axis = byWeek([...lukas, ...saaby], '2026-08-24')
+    const a = onAxis(axis, lukas)
+    const b = onAxis(axis, saaby)
+    expect(axis.map((w) => w.n)).toEqual(a.map((n, i) => n + b[i]))
   })
 
   it('draws nothing at all before there is anything to draw', () => {

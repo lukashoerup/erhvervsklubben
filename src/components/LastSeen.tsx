@@ -29,29 +29,33 @@ import { Eyebrow } from './SectionTitle'
  */
 const WEEKS = 12
 
-export function byWeek(
-  dates: string[],
-  today = new Date().toISOString().slice(0, 10),
-): { week: string; n: number; future: boolean }[] {
+export type Week = { week: string; n: number; future: boolean }
+
+/**
+ * Monday of the week a date falls in, as an ISO date.
+ *
+ * `getUTCDay()` is 0 on Sunday, so Sunday rolls back six days rather than one —
+ * the off-by-one that would put a Sunday visit in the following week.
+ */
+function monday(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7))
+  return d.toISOString().slice(0, 10)
+}
+
+export function byWeek(dates: string[], today = new Date().toISOString().slice(0, 10)): Week[] {
   if (dates.length === 0) return []
   const key = (d: Date) => d.toISOString().slice(0, 10)
-  // Monday of the week a date falls in. `getUTCDay()` is 0 on Sunday, so Sunday
-  // rolls back six days rather than one — the off-by-one that would put a Sunday
-  // visit in the following week.
-  const monday = (iso: string) => {
-    const d = new Date(`${iso}T00:00:00Z`)
-    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7))
-    return d
-  }
+  const step = (iso: string) => new Date(`${iso}T00:00:00Z`)
   const counts = new Map<string, number>()
   for (const iso of dates) {
-    const k = key(monday(iso))
+    const k = monday(iso)
     counts.set(k, (counts.get(k) ?? 0) + 1)
   }
   const sorted = [...dates].sort()
-  const first = monday(sorted[0])
-  const last = monday(sorted[sorted.length - 1])
-  const thisWeek = key(monday(today))
+  const first = step(monday(sorted[0]))
+  const last = step(monday(sorted[sorted.length - 1]))
+  const thisWeek = monday(today)
 
   // Twelve slots from the first recorded week, or the last twelve once the history
   // is longer than that. `end` is whichever is further out, so a chart that has
@@ -60,14 +64,47 @@ export function byWeek(
   twelve.setUTCDate(twelve.getUTCDate() + (WEEKS - 1) * 7)
   const end = key(twelve) > key(last) ? twelve : last
 
-  const out: { week: string; n: number; future: boolean }[] = []
+  const out: Week[] = []
   for (let w = new Date(first); key(w) <= key(end); ) {
     const k = key(w)
-    out.push({ week: k, n: counts.get(k) ?? 0, future: k > thisWeek })
+    const n = counts.get(k) ?? 0
+    // **A week with visits in it is never "future", whatever the clock says.** Both
+    // the chart and the strips draw a future week as nothing at all, so this is the
+    // difference between a visit being shown and a visit disappearing — and the two
+    // dates being compared do not come from the same place. `visited_on` is the
+    // database's `current_date`, which is Danish; `today` is the browser's UTC day.
+    // Between midnight and 02:00 in Copenhagen those differ, so a member opening the
+    // site late on a Sunday night gets a Monday visit that UTC still calls next week.
+    // You cannot visit in a week that has not happened, so the data settles it.
+    out.push({ week: k, n, future: n === 0 && k > thisWeek })
     w = new Date(w)
     w.setUTCDate(w.getUTCDate() + 7)
   }
   return out.slice(-WEEKS)
+}
+
+/**
+ * One member's visit days laid on the **club's own axis**.
+ *
+ * Lukas, 2026-08-08: *"Vi skal gerne kunne se hvor mange gange hvert medlem har
+ * besøgt og hvornår. Hvis det kan fyldes ind i grafen."* The count was already on
+ * the screen — *"3 dage"* — and the *when* was not: one club-wide total says how
+ * busy a week was and nothing about who made it busy.
+ *
+ * Taking the axis as an argument rather than recomputing one per member is the
+ * whole point. Ten members with ten independently-derived windows would each start
+ * at their own first visit, so the columns would line up with nobody, and the club
+ * bar above would stop being the sum of the strips below it. Given the axis, that
+ * property holds by construction — and it is the property that makes the figure
+ * readable as one thing rather than eleven.
+ */
+export function onAxis(weeks: Week[], dates: string[]): number[] {
+  const counts = new Map<string, number>()
+  for (const iso of dates) {
+    const k = monday(iso)
+    counts.set(k, (counts.get(k) ?? 0) + 1)
+  }
+  return weeks.map((w) => counts.get(w.week) ?? 0)
 }
 
 /**
@@ -81,9 +118,12 @@ export function byWeek(
  * `user_member_mapping` and timestamps nobody can attach to a person are worse than
  * either the closed or the open version.
  *
- * Lukas asked how often the members visit, and nothing in the app could tell
- * him. This is the answer, and the whole of it: one line per member, one date,
- * no count of visits and nothing at all about which pages anyone opened.
+ * Lukas asked how often the members visit, and nothing in the app could tell him.
+ * This is the answer, in three readings of the same rows: the club's weeks as a bar
+ * chart, then per member how many days he has been in and — since 2026-08-08, on his
+ * *"kan det fyldes ind i grafen"* — which weeks those were, on the club's own axis.
+ * **It is still one row per member per day and nothing else**: no page, no order, no
+ * duration. Every figure on this screen is that one row counted a different way.
  *
  * **Folded shut, and that is still the design** — more so now that everyone can
  * open it. This is the only thing the app records about a member's *behaviour*
@@ -122,9 +162,26 @@ export function LastSeen({ roster }: { roster: string[] }) {
   // than months because §9 puts a meeting on the calendar every other month, so a
   // monthly bar would flatten the thing worth seeing — whether the site gets opened
   // between meetings or only around them.
-  const weeks = byWeek(Object.values(data.visits).flat())
+  // The roster's visits, not every mapped account's. An account the club list cannot
+  // name — the tooling admin, say — has no row in the list below, so counting it here
+  // would make the club bar taller than the strips it is supposed to be the sum of.
+  // That property is now the whole point of the figure, so it is enforced rather than
+  // assumed.
+  const weeks = byWeek(names.flatMap((n) => data.visits[n] ?? []))
   const most = Math.max(1, ...weeks.map((w) => w.n))
   const ahead = weeks.filter((w) => w.future).length
+
+  // Each member's own days, on the same twelve weeks. Built here rather than in the
+  // row so `busiest` can be known before the first cell is drawn.
+  const strip: Record<string, number[]> = {}
+  for (const name of names) strip[name] = onAxis(weeks, data.visits[name] ?? [])
+
+  // Shading scales against the busiest week **anyone** had, not against each man's
+  // own best. Per-member scaling would paint a man who came once as darkly as a man
+  // who came five times, which is the one reading this figure must not support.
+  // While every week is a single day — which is all the club has so far — every
+  // filled cell is full strength, so "he was here that week" stays legible.
+  const busiest = Math.max(1, ...Object.values(strip).flat())
 
   return (
     <details data-reveal className="rounded-2xl border border-line bg-surface">
@@ -136,37 +193,9 @@ export function LastSeen({ roster }: { roster: string[] }) {
         <span className="text-[0.62rem] text-faint">Hele klubben</span>
       </summary>
 
-      <ul className="border-t border-line px-4 py-1">
-        {names.map((name) => {
-          const seen = data.seen[name]
-          return (
-            <li
-              key={name}
-              className="flex items-baseline justify-between gap-3 border-b border-line/50 py-2.5 text-sm last:border-b-0"
-            >
-              <span>{name}</span>
-              <span className="flex items-baseline gap-3">
-                {/* How many days he has been in, beside when he last was. Lukas,
-                    2026-08-08: "inkl. hvor mange gange folk har været inde og
-                    hvornår." Days, not page loads — a man who reloads three times
-                    over lunch has been in once, and counting loads would measure
-                    his browser rather than his interest. Hidden at zero rather
-                    than printed as "0 dage": a member with no login has not
-                    stayed away, he was never able to come. */}
-                {days[name] > 0 && (
-                  <span className="tabular text-[0.7rem] text-faint">
-                    {days[name] === 1 ? '1 dag' : `${days[name]} dage`}
-                  </span>
-                )}
-                <span className={seen ? 'tabular text-muted' : 'text-faint'}>
-                  {seen ? daWhen(seen) : withLogin.has(name) ? 'aldrig åbnet siden' : 'intet login'}
-                </span>
-              </span>
-            </li>
-          )
-        })}
-      </ul>
-
+      {/* The club's weeks first, the members' underneath. Reordered on 2026-08-08
+          when the per-member strips arrived: they are read *against* this axis, and
+          an axis explained after the rows that use it is an axis nobody reads. */}
       {weeks.length > 0 && (
         <div className="border-t border-line px-4 py-4">
           <Eyebrow>Besøg pr. uge · hele klubben</Eyebrow>
@@ -230,10 +259,93 @@ export function LastSeen({ roster }: { roster: string[] }) {
         </div>
       )}
 
+      {/* Its own `data-draw`, not the chart's. One wrapper around both would put the
+          observer's 18 % threshold on a box twelve rows tall, so the sweep would wait
+          until half the list was past the thumb — and the chart at the top of it would
+          already have been on screen for a second. Two boxes, each arriving when it is
+          actually looked at. */}
+      <div
+        data-draw
+        className="border-t border-line px-4 py-1"
+        style={{ '--ek-sweep-clip': 'url(#ek-visits-rows-sweep)' } as CSSProperties}
+      >
+        <Sweep id="ek-visits-rows-sweep" />
+        <ul>
+        {names.map((name) => {
+          const seen = data.seen[name]
+          return (
+            <li
+              key={name}
+              className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 border-b border-line/50 py-2.5 text-sm last:border-b-0"
+            >
+              <span>{name}</span>
+              <span className="flex items-baseline gap-3">
+                {/* How many days he has been in, beside when he last was. Lukas,
+                    2026-08-08: "inkl. hvor mange gange folk har været inde og
+                    hvornår." Days, not page loads — a man who reloads three times
+                    over lunch has been in once, and counting loads would measure
+                    his browser rather than his interest. Hidden at zero rather
+                    than printed as "0 dage": a member with no login has not
+                    stayed away, he was never able to come. */}
+                {days[name] > 0 && (
+                  <span className="tabular text-[0.7rem] text-faint">
+                    {days[name] === 1 ? '1 dag' : `${days[name]} dage`}
+                  </span>
+                )}
+                <span className={seen ? 'tabular text-muted' : 'text-faint'}>
+                  {seen ? daWhen(seen) : withLogin.has(name) ? 'aldrig åbnet siden' : 'intet login'}
+                </span>
+              </span>
+
+              {/* His own weeks, on the club's axis — Lukas, 2026-08-08: *"hvor mange
+                  gange hvert medlem har besøgt og hvornår. Hvis det kan fyldes ind i
+                  grafen."* The count was already on the line above; this is the
+                  *hvornår*, and the two together are the answer.
+
+                  Column two of the same grid row would fight the name and the date
+                  for width on a 420 px phone. `col-span-2` on its own line gives it
+                  the full column, which is also what makes it line up with the club
+                  chart above — same width, same twelve cells, same `gap-1`. The club
+                  bar is then visibly the sum of the strips under it.
+
+                  Only for members with a login. Twelve empty cells against a man who
+                  was never given an account reads as "he stays away", and he has not
+                  — he cannot come. */}
+              {weeks.length > 0 && withLogin.has(name) && (
+                <span className="ek-plot col-span-2 mt-2 flex gap-1" aria-hidden="true">
+                  {weeks.map((w, i) => {
+                    const n = strip[name][i]
+                    return (
+                      <span
+                        key={w.week}
+                        className={`h-2 flex-1 rounded-[2px] ${
+                          w.future ? '' : n === 0 ? 'bg-line' : 'bg-accent-d'
+                        }`}
+                        style={
+                          !w.future && n > 0 ? { opacity: 0.45 + 0.55 * (n / busiest) } : undefined
+                        }
+                      />
+                    )
+                  })}
+                </span>
+              )}
+            </li>
+          )
+        })}
+        </ul>
+      </div>
+
       {/* Said on the screen rather than only in this file, because the members
           can be told what is recorded about them by their treasurer reading it
           off the page. */}
-      <p className="px-4 pb-4 text-[0.68rem] leading-relaxed text-faint">
+      <p className="px-4 pb-4 pt-3 text-[0.68rem] leading-relaxed text-faint">
+        {weeks.length > 0 && (
+          <>
+            Striben under hvert navn følger de samme uger som grafen ovenfor: et felt er
+            en uge han var inde, mørkere jo flere dage, og en tom plads er en uge der
+            ikke er kommet endnu.{' '}
+          </>
+        )}
         Der gemmes én linje pr. medlem pr. dag han har åbnet siden — ikke hvilke sider
         nogen har set, og ikke hvor længe. Grafen starter 8. august 2026; før den dato
         gemte siden kun det seneste besøg.
