@@ -124,10 +124,11 @@ describe('sidst set', () => {
     const bars = within(screen.getByRole('list', { name: 'Besøg pr. uge' }))
     await user.click(bars.getAllByRole('button')[0])
 
-    // On the paragraph, not on a text node: the figure sits in its own `tabular`
-    // span so the digits line up, which splits the sentence across elements.
-    const readout = screen.getByText('3. aug. – 9. aug.').closest('p')!
-    expect(readout).toHaveTextContent('2 besøgsdage · Lukas')
+    // The tooltip, by its role rather than by its text: it is a live region, and
+    // the figure sits in its own `tabular` span so the digits line up — which
+    // splits the sentence across elements and defeats a text match.
+    expect(screen.getByRole('status')).toHaveTextContent('3. aug. – 9. aug.')
+    expect(screen.getByRole('status')).toHaveTextContent('2 besøgsdage · Lukas')
   })
 
   it('says so plainly when nobody was in that week', async () => {
@@ -139,7 +140,7 @@ describe('sidst set', () => {
 
     const bars = within(screen.getByRole('list', { name: 'Besøg pr. uge' }))
     await user.click(bars.getAllByRole('button')[3])
-    expect(screen.getByText(/ingen var inde/)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Ingen var inde.')
   })
 
   it('lets go of the week when the same bar is tapped again', async () => {
@@ -152,9 +153,13 @@ describe('sidst set', () => {
     )[0]
     await user.click(bar)
     expect(bar).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('status')).toBeInTheDocument()
+
     await user.click(bar)
     expect(bar).toHaveAttribute('aria-pressed', 'false')
-    // Back to the caption that says what the chart is and how to read it.
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    // The caption stays either way: a chart whose numbers only appear on a tap is
+    // a chart whose numbers a first-time reader never finds.
     expect(screen.getByText(/tryk på en søjle/)).toBeInTheDocument()
   })
 

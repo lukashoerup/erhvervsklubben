@@ -253,12 +253,66 @@ export function LastSeen({ roster }: { roster: string[] }) {
 
               `data-draw` on the plot box, as on the others, so the sweep starts when
               the bars are 18 % into view rather than when the heading is. */}
-          <div data-draw className="mt-3">
+          {/* `relative`, so the tooltip below can hang off the plot. `mt-6` rather
+              than `mt-3` gives an ordinary two-line tooltip room to clear the heading
+              — but the space is *not* reserved for the worst case, because a tooltip
+              overlays. Reserving its height would leave 60 px of blank card above the
+              chart at all times to avoid an overlap that is the correct behaviour: a
+              week with all ten names covers the eyebrow while it is open, exactly as
+              `FinanceChart`'s tooltip covers its own plot. Nothing moves when it opens
+              or closes, which is the part §05 actually asks for. */}
+          <div data-draw className="relative mt-6">
             <Sweep id="ek-visits-sweep" />
+
+            {/* **The tooltip Lukas asked for.** *"Kan vi få nogle tal på graferne når
+                man klikker på dem? Lidt som på grafen med indestående hvor at der
+                kommer en lille tooltip op"* — so it is the same card as
+                `FinanceChart`'s `Readout`, down to the border, the raised ground and
+                the 0.7 rem type. One tooltip idiom in the app, not two.
+
+                **Full width with a caret, rather than a box centred on the bar.**
+                Twelve bars across a 420 px phone are ~28 px each; a card wide enough
+                to hold four names, centred on bar 1 or bar 12, hangs off the side of
+                the card. So the box spans the plot and a caret marks which bar it is
+                about — the same information, and it cannot overflow. The picked bar
+                turns the brighter blue as well, so the pointer is doubled.
+
+                Outside `.ek-plot` on purpose: that class is what the sweep clips, and
+                a tooltip inside it would be cut in half by the arriving animation. */}
+            {week && (
+              <div
+                role="status"
+                className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-line bg-raised px-2.5 py-2 text-[0.7rem] shadow-sm"
+              >
+                <p className="tabular text-faint">{weekLabel(week.week)}</p>
+                <p className="mt-0.5 leading-relaxed">
+                  {week.n === 0 ? (
+                    <span className="text-muted">Ingen var inde.</span>
+                  ) : (
+                    <>
+                      <span className="tabular font-semibold text-ink">
+                        {besoegsdage(week.n)}
+                      </span>
+                      <span className="text-muted"> · {wasIn.join(', ')}</span>
+                    </>
+                  )}
+                </p>
+                {/* Rotated square with two borders, so it reads as a corner of the
+                    card rather than as a separate mark. Positioned on the bar's own
+                    centre; only 8 px wide, so it can sit at either extreme without
+                    anything to clamp. */}
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-1 size-2 -translate-x-1/2 rotate-45 border-b border-r border-line bg-raised"
+                  style={{ left: `${((at + 0.5) / weeks.length) * 100}%` }}
+                />
+              </div>
+            )}
+
             {/* **No longer `aria-hidden`.** The bars are buttons now, so each one
                 carries its own week and figure as its label — which means the chart
                 answers to a screen reader for the first time, in the same words the
-                readout below prints. */}
+                tooltip prints. */}
             <ul
               aria-label="Besøg pr. uge"
               className="ek-plot flex items-end gap-1"
@@ -306,42 +360,23 @@ export function LastSeen({ roster }: { roster: string[] }) {
 
               `aria-live`, so a screen reader is told the readout changed rather than
               having to go and find it — the tap is on the bar, the answer is here. */}
-          <p aria-live="polite" className="mt-2 min-h-8 text-[0.68rem] leading-relaxed">
-            {week ? (
+          {/* Back to a plain caption now that the tooltip carries the reading. It
+              still has to say the total and how to get at the rest: a chart whose
+              numbers only appear on a tap is a chart whose numbers a first-time
+              reader never finds. */}
+          <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
+            Én søjle pr. uge, ældst til venstre — tryk på en søjle for at se hvem der
+            var inde. I alt{' '}
+            <span className="tabular">{weeks.reduce((n, w) => n + w.n, 0)}</span>{' '}
+            besøgsdage
+            {ahead > 0 && (
               <>
-                <span className="font-semibold text-ink">{weekLabel(week.week)}</span>
-                <span className="text-muted">
-                  {' · '}
-                  {/* "0 besøgsdage · ingen var inde" says it twice. A quiet week
-                      gets the sentence a person would say. */}
-                  {week.n === 0 ? (
-                    'ingen var inde'
-                  ) : (
-                    <>
-                      <span className="tabular">{week.n}</span>{' '}
-                      {week.n === 1 ? 'besøgsdag' : 'besøgsdage'}
-                      {' · '}
-                      {wasIn.join(', ')}
-                    </>
-                  )}
-                </span>
+                {' '}
+                — og <span className="tabular">{ahead}</span>{' '}
+                {ahead === 1 ? 'uge' : 'uger'} der endnu ikke er kommet
               </>
-            ) : (
-              <span className="text-faint">
-                Én søjle pr. uge, ældst til venstre — tryk på en søjle for at se hvem
-                der var inde. I alt{' '}
-                <span className="tabular">{weeks.reduce((n, w) => n + w.n, 0)}</span>{' '}
-                besøgsdage
-                {ahead > 0 && (
-                  <>
-                    {' '}
-                    — og <span className="tabular">{ahead}</span>{' '}
-                    {ahead === 1 ? 'uge' : 'uger'} der endnu ikke er kommet
-                  </>
-                )}
-                .
-              </span>
             )}
+            .
           </p>
         </div>
       )}
