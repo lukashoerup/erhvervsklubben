@@ -3,6 +3,40 @@ import { daWhen } from '../lib/dates'
 import { Eyebrow } from './SectionTitle'
 
 /**
+ * Visit dates to a bar per ISO week, oldest first, with the empty weeks kept.
+ *
+ * Dropping a week with no visits would draw a chart that skips over exactly the
+ * quiet stretches it exists to show. Capped at the last 12 weeks, because a bar
+ * narrower than about 8 px on a 420 px phone stops being readable and the club will
+ * have years of this eventually.
+ */
+export function byWeek(dates: string[]): { week: string; n: number }[] {
+  if (dates.length === 0) return []
+  const key = (d: Date) => d.toISOString().slice(0, 10)
+  // Monday of the week a date falls in. `getUTCDay()` is 0 on Sunday, so Sunday
+  // rolls back six days rather than one — the off-by-one that would put a Sunday
+  // visit in the following week.
+  const monday = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00Z`)
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7))
+    return d
+  }
+  const counts = new Map<string, number>()
+  for (const iso of dates) {
+    const k = key(monday(iso))
+    counts.set(k, (counts.get(k) ?? 0) + 1)
+  }
+  const sorted = [...dates].sort()
+  const out: { week: string; n: number }[] = []
+  for (let w = monday(sorted[0]); key(w) <= key(monday(sorted[sorted.length - 1])); ) {
+    out.push({ week: key(w), n: counts.get(key(w)) ?? 0 })
+    w = new Date(w)
+    w.setUTCDate(w.getUTCDate() + 7)
+  }
+  return out.slice(-12)
+}
+
+/**
  * "Sidst set" — when each member last opened the site.
  *
  * **The club's since 2026-08-08**, not the treasurer's. Lukas published it off his
@@ -46,6 +80,16 @@ export function LastSeen({ roster }: { roster: string[] }) {
 
   const names = [...roster].sort((a, b) => a.localeCompare(b, 'da'))
   const withLogin = new Set(data.hasLogin)
+  const days: Record<string, number> = {}
+  for (const name of names) days[name] = data.visits[name]?.length ?? 0
+
+  // The club's own rhythm, by week. Weeks rather than days because a club of ten
+  // produces a handful of visits a day and a daily axis is mostly gaps; and rather
+  // than months because §9 puts a meeting on the calendar every other month, so a
+  // monthly bar would flatten the thing worth seeing — whether the site gets opened
+  // between meetings or only around them.
+  const weeks = byWeek(Object.values(data.visits).flat())
+  const most = Math.max(1, ...weeks.map((w) => w.n))
 
   return (
     <details data-reveal className="rounded-2xl border border-line bg-surface">
@@ -66,20 +110,67 @@ export function LastSeen({ roster }: { roster: string[] }) {
               className="flex items-baseline justify-between gap-3 border-b border-line/50 py-2.5 text-sm last:border-b-0"
             >
               <span>{name}</span>
-              <span className={seen ? 'tabular text-muted' : 'text-faint'}>
-                {seen ? daWhen(seen) : withLogin.has(name) ? 'aldrig åbnet siden' : 'intet login'}
+              <span className="flex items-baseline gap-3">
+                {/* How many days he has been in, beside when he last was. Lukas,
+                    2026-08-08: "inkl. hvor mange gange folk har været inde og
+                    hvornår." Days, not page loads — a man who reloads three times
+                    over lunch has been in once, and counting loads would measure
+                    his browser rather than his interest. Hidden at zero rather
+                    than printed as "0 dage": a member with no login has not
+                    stayed away, he was never able to come. */}
+                {days[name] > 0 && (
+                  <span className="tabular text-[0.7rem] text-faint">
+                    {days[name] === 1 ? '1 dag' : `${days[name]} dage`}
+                  </span>
+                )}
+                <span className={seen ? 'tabular text-muted' : 'text-faint'}>
+                  {seen ? daWhen(seen) : withLogin.has(name) ? 'aldrig åbnet siden' : 'intet login'}
+                </span>
               </span>
             </li>
           )
         })}
       </ul>
 
+      {weeks.length > 0 && (
+        <div className="border-t border-line px-4 py-4">
+          <Eyebrow>Besøg pr. uge · hele klubben</Eyebrow>
+          {/* Bars from the baseline, growing on scroll, the same `data-bar` idiom
+              the anciennitet chart uses (§04: "søjler vokser ved scroll"). Height is
+              an inline style and the growth a scaleY on top of it, so the bar's real
+              height stays the number it represents. */}
+          <ul data-reveal className="mt-3 flex items-end gap-1" aria-hidden="true">
+            {weeks.map((w) => (
+              <li key={w.week} className="flex flex-1 flex-col items-center gap-1">
+                <span className="flex h-16 w-full items-end">
+                  <span
+                    data-bar
+                    className="w-full rounded-t-[3px] bg-accent-d"
+                    style={{ height: `${Math.max(4, (w.n / most) * 100)}%` }}
+                  />
+                </span>
+              </li>
+            ))}
+          </ul>
+          {/* The chart's own text alternative, and the only place the figures are
+              written out. Ten bars two pixels apart cannot carry labels on a 420 px
+              phone, and a chart nobody can read the numbers off is decoration. */}
+          <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
+            {weeks.length === 1 ? 'Den seneste uge' : `De seneste ${weeks.length} uger`}, ældst
+            til venstre. I alt{' '}
+            <span className="tabular">{weeks.reduce((n, w) => n + w.n, 0)}</span> besøgsdage,
+            flest <span className="tabular">{most}</span> på en uge.
+          </p>
+        </div>
+      )}
+
       {/* Said on the screen rather than only in this file, because the members
           can be told what is recorded about them by their treasurer reading it
           off the page. */}
       <p className="px-4 pb-4 text-[0.68rem] leading-relaxed text-faint">
-        Kun tidspunktet for seneste besøg gemmes — ét pr. medlem, som overskrives.
-        Der registreres ikke hvilke sider nogen har set.
+        Der gemmes én linje pr. medlem pr. dag han har åbnet siden — ikke hvilke sider
+        nogen har set, og ikke hvor længe. Grafen starter 8. august 2026; før den dato
+        gemte siden kun det seneste besøg.
       </p>
     </details>
   )

@@ -25,14 +25,18 @@ describe('recording that a member was here', () => {
     await markSeen('u-1')
     // No second argument, ever. That is the whole security argument: there is
     // no parameter in which a member could name another member's row.
-    expect(rpc).toHaveBeenCalledExactlyOnceWith('touch_last_seen')
+    // Two calls, one per question. Neither takes an argument, which is the
+    // property that matters: there is no parameter in which a caller could name
+    // somebody else's row.
+    expect(rpc.mock.calls).toEqual([['touch_last_seen'], ['touch_visit']])
   })
 
   it('writes once per app load, however many screens are opened', async () => {
     // Six navigations inside one loaded page must be one visit, not six. This
-    // is "was here today", not a click counter.
+    // is "was here today", not a click counter. Two calls, because one load asks
+    // both questions once.
     for (let i = 0; i < 6; i++) await markSeen('u-1')
-    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenCalledTimes(2)
   })
 
   it('records the next person after a sign-out and sign-in', async () => {
@@ -40,7 +44,7 @@ describe('recording that a member was here', () => {
     // the second man's visit is not swallowed by the first man's.
     await markSeen('u-1')
     await markSeen('u-2')
-    expect(rpc).toHaveBeenCalledTimes(2)
+    expect(rpc).toHaveBeenCalledTimes(4)
   })
 
   it('does nothing at all when nobody is signed in', async () => {

@@ -58,6 +58,30 @@ export const demoLastSeen: Record<string, string> = Object.fromEntries(
   ]),
 )
 
+/**
+ * A plausible eight weeks of visits, so the demo's graph has a shape.
+ *
+ * Deterministic like everything else here, and deliberately uneven: three men who
+ * open the site most weeks, three who look in now and then, two who almost never.
+ * A flat fixture would make the chart look like it was working when it was not
+ * saying anything.
+ */
+export function demoVisits(): Record<string, string[]> {
+  const day = (back: number) =>
+    new Date(Date.now() - back * 86_400_000).toISOString().slice(0, 10)
+  const out: Record<string, string[]> = {}
+  DEMO_ROSTER.slice(0, 8).forEach((name, m) => {
+    const dates: string[] = []
+    for (let back = 55; back >= 0; back--) {
+      // One arbitrary but stable rule per member, so the eight differ from each
+      // other rather than all thinning out together.
+      if ((back * (m + 2) + m * 3) % (m + 3) === 0) dates.push(day(back))
+    }
+    out[name] = dates
+  })
+  return out
+}
+
 /** Deterministic, so the demo looks the same every time it is opened. */
 function attended(meeting: number, member: number): boolean {
   if (member >= 8) return (meeting * 7 + member) % 4 === 0 // the two who rarely come

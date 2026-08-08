@@ -62,9 +62,17 @@ export const PERSONAL_TABLES = ['profiles', 'event_evaluations'] as const
  * shows *names*: opening only the timestamps leaves every member looking at nine
  * dates he cannot attach to anyone.
  *
+ * `member_visits` joined them the same day, and is the sharper case of the same
+ * shape: one row per member per day he opened the site, read by the whole club,
+ * written by nobody — only `touch_visit()`, which takes no arguments. A write policy
+ * appearing on it would mean a member could forge a visit, which is the one thing
+ * that would make the graph not worth drawing.
+ *
  * `profiles` stays personal, and that is the line that matters — it holds `role`.
  */
-export const MEMBER_READABLE_TABLES = ['user_member_mapping', 'member_last_seen'] as const
+export const MEMBER_READABLE_TABLES = [
+  'user_member_mapping', 'member_last_seen', 'member_visits',
+] as const
 
 /**
  * Admin-only, read included. Ordinary members cannot see these at all.

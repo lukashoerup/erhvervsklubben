@@ -705,6 +705,39 @@ without losing data and without taking the old site down until an approved cutov
   One thing this is *not*: a forgotten-password flow. That needs e-mail delivery
   configured on the Supabase project and is a separate decision.
 
+- **2026-08-08 — the club keeps a visit history, one row per member per day.** Lukas:
+  *"Gerne login aktivitet inkl. hvor mange gange folk har været inde og hvornår. En
+  graf."* And, closing the other question: **Saaby is not an admin.** The three stay
+  Lukas, Anders and Rasmus.
+
+  **The app could not answer this, by design.** T074 built `member_last_seen` as one
+  timestamp per member, overwritten on every visit, and wrote down that *"the count of
+  visits is unrecoverable by construction."* So this is a new table rather than a
+  column, and the honest consequence is that **the graph starts 2026-08-08**. Seven
+  rows were seeded — each member's one surviving timestamp, as a visit on its own
+  date — and that is the entire recoverable past.
+
+  **A day, not a page load**, and that decides what "hvor mange gange" means. A member
+  who reloads three times over lunch has been in once; counting loads would measure
+  his browser rather than his interest. `unique (user_id, visited_on)` enforces it in
+  the schema, so a second tab cannot double-count — the dedupe is not the client's to
+  get right.
+
+  **Still not page tracking.** A row says a member opened the site on a day. Not which
+  screen, in what order, or for how long. That is the same line T074 drew and it has
+  not moved.
+
+  Written by `touch_visit()` only — security definer, no arguments, `anon` revoked —
+  and the table has **no write policy for anyone, the admin included**. A member who
+  could write it could forge a visit, which is the one thing that would make the graph
+  not worth drawing.
+
+  The chart is by **week**: a club of ten produces a handful of visits a day so a
+  daily axis is mostly gaps, and §9 puts a meeting on the calendar every other month
+  so a monthly bar would flatten the thing worth seeing — whether the site is opened
+  between meetings or only around them. Empty weeks are kept, because dropping them
+  would draw over exactly the quiet stretches the chart exists to show.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { READONLY, supabase } from '../lib/supabase'
-import { DEMO, demoLastSeen, DEMO_ROSTER } from './demo'
+import { DEMO, demoLastSeen, demoVisits, DEMO_ROSTER } from './demo'
 
 /**
  * "Sidst set" — one timestamp per member, written when they open the site.
@@ -63,7 +63,20 @@ export async function markSeen(userId: string | null): Promise<void> {
     // name somebody else's row. Errors are swallowed rather than thrown, and
     // supabase() itself throws synchronously when it has no configuration —
     // hence the try around the await and not a .catch() on the promise.
-    await supabase().rpc('touch_last_seen')
+    // Two calls, because they answer two different questions and one cannot be
+    // derived from the other. `touch_last_seen` overwrites a single timestamp —
+    // *when was he last here* — and `touch_visit` adds a dated row if today has no
+    // row yet: *how many days has he been here, and which*. Lukas asked for the
+    // second on 2026-08-08, and it could not be answered from the first because the
+    // first was designed to overwrite (T074).
+    //
+    // Settled together rather than awaited in turn: neither result is used, a
+    // failure of one says nothing about the other, and one round trip's latency on
+    // every page load is enough.
+    await Promise.allSettled([
+      supabase().rpc('touch_last_seen'),
+      supabase().rpc('touch_visit'),
+    ])
   } catch {
     // Silent by design. See above.
   }
@@ -97,23 +110,47 @@ export type LastSeen = {
   seen: Record<string, string>
   /** Every member name that has a login, whether or not they have visited. */
   hasLogin: string[]
+  /**
+   * member name → the dates he opened the site, one entry per day, oldest first.
+   *
+   * Added 2026-08-08 for Lukas's *"hvor mange gange folk har været inde og
+   * hvornår. En graf."* Empty for every member until then and thin for a while
+   * after: `member_last_seen` overwrote itself by design (T074), so the only
+   * history that existed to seed from was one date each. **The graph fills in
+   * from 2026-08-08 forward** and there is no way to recover what came before.
+   */
+  visits: Record<string, string[]>
 }
 
 export function useLastSeen() {
   return useQuery({
     queryKey: ['last-seen'],
     queryFn: async (): Promise<LastSeen> => {
-      if (DEMO) return { seen: { ...demoLastSeen }, hasLogin: DEMO_ROSTER.slice(0, 8) }
+      if (DEMO) {
+        return {
+          seen: { ...demoLastSeen },
+          hasLogin: DEMO_ROSTER.slice(0, 8),
+          visits: demoVisits(),
+        }
+      }
 
-      const [mapping, seen] = await Promise.all([
+      const [mapping, seen, visited] = await Promise.all([
         supabase().from('user_member_mapping').select('user_id, member_name'),
         supabase().from('member_last_seen').select('user_id, last_seen_at'),
+        supabase().from('member_visits').select('user_id, visited_on'),
       ])
       // A member's own row comes back here too, which is harmless and is the
       // reason this is not gated on the response: the policy decides what is
       // returned, the page decides whether to ask. Both, never one.
       if (mapping.error) throw mapping.error
       if (seen.error) throw seen.error
+      // Not thrown. `member_visits` arrived on 2026-08-08 and a database that
+      // predates it should cost the graph and nothing else — the same trade
+      // `readRecords` makes for its optional columns. An empty list draws an
+      // empty chart, which is also what the club's first day looks like.
+      const visitRows = visited.error
+        ? []
+        : ((visited.data ?? []) as { user_id: string; visited_on: string }[])
 
       const names = new Map(
         ((mapping.data ?? []) as { user_id: string; member_name: string }[]).map((m) => [
@@ -128,7 +165,15 @@ export function useLastSeen() {
         // cannot name — Claude's own admin account, for one. Nothing to show.
         if (name) out[name] = row.last_seen_at
       }
-      return { seen: out, hasLogin: [...names.values()] }
+      const visits: Record<string, string[]> = {}
+      for (const row of visitRows) {
+        const name = names.get(row.user_id)
+        if (!name) continue
+        ;(visits[name] ??= []).push(row.visited_on)
+      }
+      for (const list of Object.values(visits)) list.sort()
+
+      return { seen: out, hasLogin: [...names.values()], visits }
     },
   })
 }

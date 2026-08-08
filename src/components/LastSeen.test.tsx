@@ -37,7 +37,7 @@ vi.mock('../lib/supabase', () => ({
   supabase: () => ({ from: (t: string) => builder(t) }),
 }))
 
-const { LastSeen } = await import('./LastSeen')
+const { LastSeen, byWeek } = await import('./LastSeen')
 
 /** The club as the roster hands it over: two of them have never had a login. */
 const ROSTER = ['Lukas', 'Saaby', 'Kasper', 'Have']
@@ -83,5 +83,53 @@ describe('sidst set', () => {
     show()
     await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
     expect(screen.getByText(/ikke hvilke sider/i)).toBeInTheDocument()
+  })
+})
+
+/**
+ * The visit history, added 2026-08-08 for Lukas's *"hvor mange gange folk har været
+ * inde og hvornår. En graf."*
+ *
+ * `byWeek` gets its own tests because the whole chart is one function, and two of
+ * its properties are the kind that look right on a screenshot while being wrong:
+ * a quiet week has to draw as a gap rather than vanish, and a Sunday visit has to
+ * land in its own week rather than the next one.
+ */
+describe('visits by week', () => {
+  it('keeps the quiet weeks instead of closing the gap', () => {
+    // Three weeks apart. A chart that dropped the empty ones would show three
+    // equal bars and say the club was here every week — the exact opposite.
+    const weeks = byWeek(['2026-06-01', '2026-06-22'])
+    expect(weeks.map((w) => w.n)).toEqual([1, 0, 0, 1])
+  })
+
+  it('puts a Sunday in its own week, not the next one', () => {
+    // 2026-06-07 is a Sunday; its Monday is 2026-06-01. `getUTCDay()` is 0 on
+    // Sunday, so the naive subtraction rolls back one day into the wrong week.
+    expect(byWeek(['2026-06-07'])[0].week).toBe('2026-06-01')
+    expect(byWeek(['2026-06-08'])[0].week).toBe('2026-06-08')
+  })
+
+  it('counts a day per member, so one week can exceed the roster', () => {
+    // Two men on the same day is two visit-days, and the bar is visits and not
+    // people. Stated because "besøg pr. uge" could be read either way.
+    expect(byWeek(['2026-06-02', '2026-06-02', '2026-06-03'])[0].n).toBe(3)
+  })
+
+  it('shows at most twelve weeks, keeping the newest', () => {
+    const dates = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(Date.UTC(2026, 0, 5))
+      d.setUTCDate(d.getUTCDate() + i * 7)
+      return d.toISOString().slice(0, 10)
+    })
+    const weeks = byWeek(dates)
+    expect(weeks).toHaveLength(12)
+    expect(weeks[weeks.length - 1].week).toBe(dates[dates.length - 1])
+  })
+
+  it('draws nothing at all before there is anything to draw', () => {
+    // The club's first day, and every database that predates the table. An empty
+    // chart with an axis reads as a broken feature; nothing reads as "not yet".
+    expect(byWeek([])).toEqual([])
   })
 })

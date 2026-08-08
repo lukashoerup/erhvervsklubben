@@ -40,6 +40,11 @@ møde" card say something about *you*.
 listen?"* The fold on `/anciennitet` is every member's now, and it is still a fold:
 publishing it changed who may open it, not whether there is one.
 
+Extended the same day: *"Gerne login aktivitet inkl. hvor mange gange folk har været
+inde og hvornår. En graf."* That needed a **new table** — the old design overwrote
+itself, so no count existed to publish — and the graph therefore starts on 2026-08-08.
+See `member_visits` and PROJECT.md.
+
 It was not as cheap as this file guessed, and the reason is worth keeping. It took
 **two** tables, not one — the screen shows names, and those live in
 `user_member_mapping`, own-row-only until then, so opening only the timestamps would
