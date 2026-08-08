@@ -130,17 +130,50 @@ valgt ledelse, og ingen formuekrav.
    navn, adresse og e-mailadresse. Gratis. Skattestyrelsen godkender automatisk og
    sender beviset til foreningens digitale postkasse. **Skal fornys hvert 3. år** —
    der kommer en mail.
-2. **Referatet** med investeringsbeslutningen og de fire positioner ordret. Banken
+2. **LEI-kode.** Se afsnit 4.1 — uden den kan der ikke handles overhovedet.
+3. **Referatet** med investeringsbeslutningen og de fire positioner ordret. Banken
    vil se det.
-3. **Foreningskonto.** Banken skal bruge vedtægter, referat fra generalforsamling og
+4. **Foreningskonto.** Banken skal bruge vedtægter, referat fra generalforsamling og
    konstituerende møde, CVR-nummer og legitimation på de tegningsberettigede. Efter
    Finanstilsynets vejledning fra september 2025 rækker MitID på de
    tegningsberettigede ofte. Et CVR-nummer er et lovkrav for en forening med
    bankkonto.
    **§8 stk. 3: foreningen tegnes af formanden sammen med enten næstformand eller
    kasserer** — altså Anders sammen med Rasmus eller Lukas.
-4. **Depot i foreningens CVR-nummer.**
-5. **NemKonto**, hvis foreningen nogensinde skal modtage offentlige midler.
+5. **Depot i foreningens CVR-nummer.** Simplest i samme pengeinstitut som
+   foreningskontoen: ét sæt dokumenter, én kundekendskabsprocedure, og et institut
+   der laver foreningskonti laver også foreningsdepoter. Nordnet og lignende
+   platforme markedsfører et *virksomheds*depot — en forening er ikke en virksomhed,
+   så det skal bekræftes hos dem før det lægges til grund.
+6. **NemKonto**, hvis foreningen nogensinde skal modtage offentlige midler.
+
+### 4.1 LEI-koden er en forudsætning, ikke en formalitet
+
+Efter MiFID II skal enhver **juridisk person** — foreninger udtrykkeligt medregnet —
+have en LEI-kode (Legal Entity Identifier) for at købe eller sælge værdipapirer.
+
+> En værdipapirhandler **må ikke** udføre en ordre for en juridisk person uden
+> LEI-kode. Uden den kan foreningen altså ikke handle. Punktum.
+
+Koden bestilles hos en LEI-udsteder (fx NordLEI eller LEI Service), kræver
+CVR-nummeret, og **skal fornys hvert 12. måned** for at forblive aktiv.
+
+| Udbyder | Pris |
+|---|---|
+| LEI Service, 5 år forud | 239 kr./år ekskl. moms |
+| NordLEI, 1 år | 579 kr. |
+| NordLEI, 3 år | 1.455 kr. |
+| NordLEI, 5 år | 2.325 kr. |
+
+**Det er den dyreste post i hele projektet, og den løber hvert år.** På en beholdning
+på 10.000 kr. svarer 239-579 kr. om året til **2,4-5,8 % årligt** i ren driftsudgift,
+før der er tjent en krone. Til sammenligning ligger et historisk aktieafkast omkring
+7 % om året.
+
+Det er ikke en indvending mod at investere — det er et tal generalforsamlingen bør
+kende, og det taler for enten at binde LEI-koden flere år forud til den lave takst,
+eller at investere et større beløb, så den faste udgift fylder mindre. Begge dele er
+klubbens beslutning, ikke en anbefaling herfra.
 
 ### Den eneste måde det går galt på
 
@@ -160,8 +193,18 @@ papirarbejde. Det er værd at vide før, ikke efter.
 For danske aktier kan en forening omfattet af SEL § 1, stk. 1, nr. 6 få et
 **udbyttefrikort**, så danske selskaber ikke skal indeholde udbytteskat.
 
-**Kurtage.** Fire handler på tre markeder for i alt ca. 10.000 kr. kan let koste
-2-4 % af beløbet. Ikke en indvending — et tal der bør være kendt inden ordren.
+**Kurtage.** Fire handler på tre markeder for i alt ca. 10.000 kr. Kurtage starter
+typisk omkring 25-30 kr. pr. handel hos en online-platform og højere i et
+traditionelt pengeinstitut, og der er som regel en minimumskurtage pr. marked. Regn
+med 100-300 kr. for de fire handler. Ikke en indvending — et tal der bør være kendt
+inden ordren.
+
+**Valutaveksling.** Tre af fire handler afregnes i SEK eller USD. Vekselomkostningen
+ligger typisk omkring 0,15-0,25 % af beløbet, altså i størrelsesordenen 15-20 kr. i
+alt. Ubetydeligt ved siden af LEI-koden.
+
+**Aktiesparekonto kan ikke bruges.** Den er forbeholdt private personer. En forening
+handler på et almindeligt depot.
 
 ## 6. Til næste generalforsamling
 
@@ -199,6 +242,7 @@ er en helhedsvurdering, som kun Skattestyrelsen kan afgøre bindende.
 
 **Kilder**
 
+- Finanstilsynet, *LEI-koder — hvad er det, og hvem skal have en?* — finanstilsynet.dk
 - Skattestyrelsen, *Foreninger: skattefri eller skattepligtig* — skat.dk
 - Erhvervsstyrelsen, *Vejledning om foreninger*, kap. 1-2 — erhvervsstyrelsen.dk
 - Byretsdom om forening kontra interessentskab, kontrolperioden 2001-03, med
