@@ -241,11 +241,11 @@ describe('sidst set', () => {
     expect(new Date(rows[0].last_seen_at as string).getFullYear()).toBeGreaterThan(2020)
   })
 
-  // Ordered before the denial tests that follow *and* independent of them: this
-  // used to call `member2.rpc('touch_last_seen')`, which left member2 a row and made
-  // "a member cannot write anyone else's timestamp" pass or fail on test order
-  // rather than on the policy. It seeds through the service client instead, which
-  // is not the path under test.
+  // This test needs a second member to have a row — that is the whole point of it
+  // — and it seeds one through the service client rather than by signing in as
+  // member2, so the path under test stays the read and not the write. The row it
+  // leaves behind is why the denial test below asserts *unchanged* rather than
+  // *empty*: nothing here may quietly decide whether that one passes.
   test('every member reads the whole club\'s, and can name them', async () => {
     // Lukas published this on 2026-08-08 — his own wishlist, and a reversal of the
     // fold T074 built deliberately. Two tables, because a timestamp nobody can
@@ -282,9 +282,16 @@ describe('sidst set', () => {
   })
 
   test('a member cannot write anyone else\'s timestamp', async () => {
+    // Asserted as *unchanged*, not as *empty*. Whether member2 has a row at this
+    // point depends on which tests ran before — and a denial test whose result
+    // depends on test order is measuring the order, not the policy. What the
+    // policy promises is narrower and always true: nothing member1 sends alters
+    // member2's row, whether or not there is one.
+    const before = await stored(SEED.member2.id)
+
     const { error } = await member1.from('member_last_seen').insert({ user_id: SEED.member2.id })
     expect(error?.code).toBe(RLS_DENIED)
-    expect(await stored(SEED.member2.id)).toEqual([])
+    expect(await stored(SEED.member2.id)).toEqual(before)
   })
 
   test('a member cannot write even their own row directly', async () => {
