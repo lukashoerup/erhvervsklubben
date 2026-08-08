@@ -107,6 +107,29 @@ export const HISTORIC_RULE_ID = 'historisk'
 export const VOLUNTARY_RULE_ID = 'frivillig'
 
 /**
+ * A fine the club agreed on the night, which the regulativ does not contain.
+ *
+ * Lukas, 2026-08-08: *"Esben får en bøde fordi at han taber i bowling. Det er ikke
+ * en bødekasse regel, men bøden går til bødekassen. Så den skal med i opgørelsen."*
+ *
+ * **Both halves of that sentence have to be true at once**, and neither of the two
+ * existing non-rule ids can carry it. `historisk` means *nobody knows what this
+ * was*, and everybody knows exactly what this was. `frivillig` means *nobody
+ * charged him*, and somebody did. Filing it under either would put a false
+ * statement in the club's own books to save inventing a word.
+ *
+ * So: the offence is known and named, the money is real and goes in the box, and
+ * the club never voted a rule for it. That is a third thing, and it will happen
+ * again — a bet, a forfeit, a Lead's ruling on the night. It has a home now.
+ *
+ * **Deliberately not a member of `FINE_RULES`**, the same as the two above and for
+ * the same reason: it has no amount, because the amount is whatever was agreed. A
+ * chip to tap in the capture UI would imply a price the club never set. It is
+ * written by hand with its own amount and read back off history.
+ */
+export const AGREED_RULE_ID = 'aftalt'
+
+/**
  * What to show for a fine's `rule_id`, including ids this build does not know.
  *
  * `fines.rule_id` is text precisely so the club can vote in a new rule without
@@ -124,6 +147,7 @@ export function describeRule(ruleId: string): string {
   if (known) return known.offence
   if (ruleId === HISTORIC_RULE_ID) return 'Historisk bøde — forseelse ikke registreret'
   if (ruleId === VOLUNTARY_RULE_ID) return 'Frivillige bøder/indbetalinger'
+  if (ruleId === AGREED_RULE_ID) return 'Aftalt bøde — uden for regulativet'
   return `Ukendt bøderegel (${ruleId})`
 }
 

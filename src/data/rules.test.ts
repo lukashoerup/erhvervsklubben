@@ -1,4 +1,5 @@
 import {
+  AGREED_RULE_ID,
   DUES_SCHEDULE,
   FINE_RULES,
   HISTORIC_RULE_ID,
@@ -239,6 +240,24 @@ describe('the offences behind the club’s fines (T075)', () => {
     expect(describeRule('drikkevare')).toBe(
       'Bestille en anden type drikkevare end Lead under maden',
     )
+  })
+
+  test('the three non-rule ids each say a different thing, and none is a rule', () => {
+    // They are three because they mean three things, and using the wrong one puts
+    // a false statement in the club's books about a named member. `historisk` says
+    // nobody knows what the offence was. `frivillig` says nobody charged him.
+    // `aftalt` — added 2026-08-08 for Esben's bowling defeat — says the club knew
+    // exactly what it was, charged him for it, and never voted a rule for it.
+    const ids = [HISTORIC_RULE_ID, VOLUNTARY_RULE_ID, AGREED_RULE_ID]
+    expect(new Set(ids).size).toBe(3)
+    expect(new Set(ids.map(describeRule)).size).toBe(3)
+
+    // None may be tappable in the capture UI: none has an amount, because none is
+    // a price the club set. A chip for any of them would imply one.
+    for (const id of ids) expect(FINE_RULES.map((r) => r.id)).not.toContain(id)
+    for (const id of ids) expect(describeRule(id)).not.toMatch(/^Ukendt/)
+
+    expect(describeRule(AGREED_RULE_ID)).toBe('Aftalt bøde — uden for regulativet')
   })
 
   test('the one fine still without an offence keeps saying so', () => {
