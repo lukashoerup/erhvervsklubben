@@ -1,6 +1,6 @@
 import { useLastSeen } from '../data/lastSeen'
-import { daWhen } from '../lib/dates'
-import type { CSSProperties } from 'react'
+import { daDate, daWhen } from '../lib/dates'
+import { useState, type CSSProperties } from 'react'
 import { Sweep } from './Sweep'
 import { Eyebrow } from './SectionTitle'
 
@@ -83,6 +83,24 @@ export function byWeek(dates: string[], today = new Date().toISOString().slice(0
   return out.slice(-WEEKS)
 }
 
+const DAY_MONTH: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
+
+/**
+ * "27. jul. – 2. aug." — a week said the way a member would say it.
+ *
+ * Not "uge 31". The club does not talk in ISO week numbers and neither does anyone
+ * outside a payroll department; the two dates are longer and are the only version
+ * that can be read without counting.
+ */
+export function weekLabel(monday: string): string {
+  const end = new Date(`${monday}T00:00:00Z`)
+  end.setUTCDate(end.getUTCDate() + 6)
+  return `${daDate(monday, DAY_MONTH)} – ${daDate(end.toISOString().slice(0, 10), DAY_MONTH)}`
+}
+
+/** Danish has a singular, and it is not "besøgsdag(e)". */
+const besoegsdage = (n: number) => `${n} ${n === 1 ? 'besøgsdag' : 'besøgsdage'}`
+
 /**
  * One member's visit days laid on the **club's own axis**.
  *
@@ -146,6 +164,19 @@ export function onAxis(weeks: Week[], dates: string[]): number[] {
  */
 export function LastSeen({ roster }: { roster: string[] }) {
   const { data, isPending, error } = useLastSeen()
+  /**
+   * Which week the reader has tapped, or null.
+   *
+   * Lukas, 2026-08-08: *"Kan man lave noget så man kan se lidt tal når man trykker
+   * på graferne? Det skal gerne give incitament til at man kommer mere ind."*
+   *
+   * So the readout is not only the figure — it is **the names**. A count says the
+   * week was quiet; a list of four men says who was here and, by omission, who was
+   * not, and the reader is one of the ten either way. That is the incentive he asked
+   * for, and it needs no ranking to work: the fold is still alphabetical, and no
+   * screen here orders the club by how much anyone has been away.
+   */
+  const [picked, setPicked] = useState<string | null>(null)
 
   // No error state and no spinner. Nothing on this page depends on it, and a
   // red box about a feature nobody asked to see is worse than the fold staying
@@ -183,6 +214,13 @@ export function LastSeen({ roster }: { roster: string[] }) {
   // filled cell is full strength, so "he was here that week" stays legible.
   const busiest = Math.max(1, ...Object.values(strip).flat())
 
+  // The tapped week, resolved once. `at` is -1 when nothing is picked, which is the
+  // index no strip has — so every "is this the picked cell" test below is one
+  // comparison and needs no null check of its own.
+  const at = picked ? weeks.findIndex((w) => w.week === picked) : -1
+  const week = at >= 0 ? weeks[at] : null
+  const wasIn = week ? names.filter((n) => strip[n][at] > 0) : []
+
   return (
     <details data-reveal className="rounded-2xl border border-line bg-surface">
       {/* min-h-12: the design system's tap floor, and this is a control. The
@@ -217,14 +255,27 @@ export function LastSeen({ roster }: { roster: string[] }) {
               the bars are 18 % into view rather than when the heading is. */}
           <div data-draw className="mt-3">
             <Sweep id="ek-visits-sweep" />
+            {/* **No longer `aria-hidden`.** The bars are buttons now, so each one
+                carries its own week and figure as its label — which means the chart
+                answers to a screen reader for the first time, in the same words the
+                readout below prints. */}
             <ul
+              aria-label="Besøg pr. uge"
               className="ek-plot flex items-end gap-1"
               style={{ '--ek-sweep-clip': 'url(#ek-visits-sweep)' } as CSSProperties}
-              aria-hidden="true"
             >
               {weeks.map((w) => (
                 <li key={w.week} className="flex flex-1 flex-col items-center gap-1">
-                  <span className="flex h-16 w-full items-end">
+                  {/* h-16 clears §03's 48 px tap floor on the axis that can: twelve
+                      columns on a 420 px phone are ~28 px wide and no layout makes
+                      them 48. Height is what a thumb has to hit here. */}
+                  <button
+                    type="button"
+                    aria-pressed={w.week === picked}
+                    onClick={() => setPicked(w.week === picked ? null : w.week)}
+                    aria-label={`${weekLabel(w.week)}: ${besoegsdage(w.n)}`}
+                    className="flex h-16 w-full items-end"
+                  >
                     {/* A week nobody visited is a stub on the baseline; a week that
                         has not arrived is nothing at all. They are different facts
                         and a bar chart draws them the same unless told otherwise. */}
@@ -232,29 +283,65 @@ export function LastSeen({ roster }: { roster: string[] }) {
                       <span className="h-px w-full rounded-full bg-line" />
                     ) : (
                       <span
-                        className="w-full rounded-t-[3px] bg-accent-d"
+                        /* The picked bar takes the brighter blue. §01 marks a live
+                           row by border weight rather than fill, but a bar *is*
+                           fill — there is no border to thicken — so the one thing
+                           left that does not move the layout is the hue. */
+                        className={`w-full rounded-t-[3px] ${
+                          w.week === picked ? 'bg-accent' : 'bg-accent-d'
+                        }`}
                         style={{ height: `${Math.max(4, (w.n / most) * 100)}%` }}
                       />
                     )}
-                  </span>
+                  </button>
                 </li>
               ))}
             </ul>
           </div>
-          {/* The chart's own text alternative, and the only place the figures are
-              written out. Ten bars two pixels apart cannot carry labels on a 420 px
-              phone, and a chart nobody can read the numbers off is decoration. */}
-          <p className="mt-2 text-[0.68rem] leading-relaxed text-faint">
-            Én søjle pr. uge, ældst til venstre. I alt{' '}
-            <span className="tabular">{weeks.reduce((n, w) => n + w.n, 0)}</span> besøgsdage
-            {ahead > 0 && (
+          {/* What a tap buys. Twelve bars two pixels apart cannot carry labels on a
+              420 px phone, so the figures live here — and the *names* live here too,
+              which is the half Lukas asked for: "Det skal gerne give incitament til
+              at man kommer mere ind." A count says the week was quiet. Four names
+              says who was here, and the reader is one of the ten either way.
+
+              `aria-live`, so a screen reader is told the readout changed rather than
+              having to go and find it — the tap is on the bar, the answer is here. */}
+          <p aria-live="polite" className="mt-2 min-h-8 text-[0.68rem] leading-relaxed">
+            {week ? (
               <>
-                {' '}
-                — og <span className="tabular">{ahead}</span>{' '}
-                {ahead === 1 ? 'uge' : 'uger'} der endnu ikke er kommet
+                <span className="font-semibold text-ink">{weekLabel(week.week)}</span>
+                <span className="text-muted">
+                  {' · '}
+                  {/* "0 besøgsdage · ingen var inde" says it twice. A quiet week
+                      gets the sentence a person would say. */}
+                  {week.n === 0 ? (
+                    'ingen var inde'
+                  ) : (
+                    <>
+                      <span className="tabular">{week.n}</span>{' '}
+                      {week.n === 1 ? 'besøgsdag' : 'besøgsdage'}
+                      {' · '}
+                      {wasIn.join(', ')}
+                    </>
+                  )}
+                </span>
               </>
+            ) : (
+              <span className="text-faint">
+                Én søjle pr. uge, ældst til venstre — tryk på en søjle for at se hvem
+                der var inde. I alt{' '}
+                <span className="tabular">{weeks.reduce((n, w) => n + w.n, 0)}</span>{' '}
+                besøgsdage
+                {ahead > 0 && (
+                  <>
+                    {' '}
+                    — og <span className="tabular">{ahead}</span>{' '}
+                    {ahead === 1 ? 'uge' : 'uger'} der endnu ikke er kommet
+                  </>
+                )}
+                .
+              </span>
             )}
-            .
           </p>
         </div>
       )}
@@ -270,7 +357,7 @@ export function LastSeen({ roster }: { roster: string[] }) {
         style={{ '--ek-sweep-clip': 'url(#ek-visits-rows-sweep)' } as CSSProperties}
       >
         <Sweep id="ek-visits-rows-sweep" />
-        <ul>
+        <ul aria-label="Sidst set, pr. medlem">
         {names.map((name) => {
           const seen = data.seen[name]
           return (
@@ -288,7 +375,7 @@ export function LastSeen({ roster }: { roster: string[] }) {
                     than printed as "0 dage": a member with no login has not
                     stayed away, he was never able to come. */}
                 {days[name] > 0 && (
-                  <span className="tabular text-[0.7rem] text-faint">
+                  <span className="tabular text-[0.8rem] font-semibold text-ink">
                     {days[name] === 1 ? '1 dag' : `${days[name]} dage`}
                   </span>
                 )}
@@ -318,9 +405,14 @@ export function LastSeen({ roster }: { roster: string[] }) {
                     return (
                       <span
                         key={w.week}
+                        /* The tapped week, marked down every strip at once. This is
+                           what turns one tap into a column you can read vertically:
+                           the club's bar above and, under it, which of the ten it
+                           was made of. A ring rather than a colour change, so a
+                           week with no visits still shows where the column is. */
                         className={`h-2 flex-1 rounded-[2px] ${
-                          w.future ? '' : n === 0 ? 'bg-line' : 'bg-accent-d'
-                        }`}
+                          w.week === picked ? 'ring-1 ring-accent' : ''
+                        } ${w.future ? '' : n === 0 ? 'bg-line' : 'bg-accent-d'}`}
                         style={
                           !w.future && n > 0 ? { opacity: 0.45 + 0.55 * (n / busiest) } : undefined
                         }
@@ -347,8 +439,8 @@ export function LastSeen({ roster }: { roster: string[] }) {
           </>
         )}
         Der gemmes én linje pr. medlem pr. dag han har åbnet siden — ikke hvilke sider
-        nogen har set, og ikke hvor længe. Grafen starter 8. august 2026; før den dato
-        gemte siden kun det seneste besøg.
+        nogen har set, og ikke hvor længe. Dagene før 8. august 2026 er hentet fra
+        login-loggen og tæller de dage, hvor siden har været åbnet.
       </p>
     </details>
   )

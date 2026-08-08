@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { withQuery, minTapHeightPx } from '../test/harness'
 
 /**
@@ -77,7 +78,11 @@ describe('sidst set', () => {
     // not been around — in a club of ten that is a different social object.
     show()
     await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
-    const names = screen.getAllByRole('listitem').map((li) => li.firstChild?.textContent)
+    // Scoped to the member list by its label. The chart's twelve bars are list
+    // items too since they became buttons — they are in the accessibility tree on
+    // purpose now, and an unscoped query would read them as members.
+    const list = within(screen.getByRole('list', { name: 'Sidst set, pr. medlem' }))
+    const names = list.getAllByRole('listitem').map((li) => li.firstChild?.textContent)
     expect(names).toEqual(['Have', 'Kasper', 'Lukas', 'Saaby'])
   })
 
@@ -105,6 +110,62 @@ describe('sidst set', () => {
     show()
     await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
     expect(screen.getByText(/besøgsdage/)).toHaveTextContent('I alt 2 besøgsdage')
+  })
+
+  it('names who was in when a week is tapped, which is the incentive', async () => {
+    // Lukas, 2026-08-08: *"Kan man lave noget så man kan se lidt tal når man
+    // trykker på graferne? Det skal gerne give incitament til at man kommer mere
+    // ind."* A count says the week was quiet; the names say who was here, and the
+    // reader is one of the ten either way. That is the half that does the work.
+    const user = userEvent.setup()
+    show()
+    await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
+
+    const bars = within(screen.getByRole('list', { name: 'Besøg pr. uge' }))
+    await user.click(bars.getAllByRole('button')[0])
+
+    // On the paragraph, not on a text node: the figure sits in its own `tabular`
+    // span so the digits line up, which splits the sentence across elements.
+    const readout = screen.getByText('3. aug. – 9. aug.').closest('p')!
+    expect(readout).toHaveTextContent('2 besøgsdage · Lukas')
+  })
+
+  it('says so plainly when nobody was in that week', async () => {
+    // The weeks that motivate. An empty readout, or a bar that does not respond,
+    // would read as a broken chart rather than as a quiet week.
+    const user = userEvent.setup()
+    show()
+    await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
+
+    const bars = within(screen.getByRole('list', { name: 'Besøg pr. uge' }))
+    await user.click(bars.getAllByRole('button')[3])
+    expect(screen.getByText(/ingen var inde/)).toBeInTheDocument()
+  })
+
+  it('lets go of the week when the same bar is tapped again', async () => {
+    const user = userEvent.setup()
+    show()
+    await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
+
+    const bar = within(screen.getByRole('list', { name: 'Besøg pr. uge' })).getAllByRole(
+      'button',
+    )[0]
+    await user.click(bar)
+    expect(bar).toHaveAttribute('aria-pressed', 'true')
+    await user.click(bar)
+    expect(bar).toHaveAttribute('aria-pressed', 'false')
+    // Back to the caption that says what the chart is and how to read it.
+    expect(screen.getByText(/tryk på en søjle/)).toBeInTheDocument()
+  })
+
+  it('gives every bar its figure as a label, so the chart can be heard', async () => {
+    // It was `aria-hidden` while it was decoration. The bars carry the numbers now,
+    // in the same words the readout prints.
+    show()
+    await waitFor(() => expect(screen.getByText('Lukas')).toBeInTheDocument())
+    expect(
+      screen.getByRole('button', { name: '3. aug. – 9. aug.: 2 besøgsdage' }),
+    ).toBeInTheDocument()
   })
 
   it('says on the screen what is recorded, so a member can be told', async () => {
