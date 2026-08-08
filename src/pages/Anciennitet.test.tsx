@@ -482,8 +482,9 @@ describe('the calendar and the fines, now that /moeder is gone', () => {
       // Far enough ahead that the suite cannot age into calling it held.
       date: '2099-08-08',
       time: '18.30',
+      lead: 'Kasper',
       location: 'Frk. Barners',
-      description: 'Kasper er Lead.',
+      description: '',
     },
   ]
   const FINES = [
@@ -503,10 +504,12 @@ describe('the calendar and the fines, now that /moeder is gone', () => {
 
   it('shows a member what is planned, on the page that survived', async () => {
     renderPage('user')
-    // By its heading, which for a plain numbered title is the venue — the card
-    // and the held meetings below now share one head (MeetingHead), at Lukas's
-    // word: "planlagte møder skal fremgå som de tidligere. Blot uden anciennitet."
-    expect(await screen.findByText('Frk. Barners')).toBeInTheDocument()
+    // By its heading, which for a plain numbered title is the *lead* — the same
+    // slot a held meeting's card uses, which is what Lukas asked for: "planlagte
+    // møder skal fremgå som de tidligere. Blot uden anciennitet." The venue moved
+    // to the row below with the pin, where a held meeting puts its route.
+    expect(await screen.findByText('Kasper')).toBeInTheDocument()
+    expect(screen.getByText('Frk. Barners')).toBeInTheDocument()
     expect(screen.getByText('29')).toBeInTheDocument()
     expect(screen.getByText('Planlagte møder')).toBeInTheDocument()
     // The calendar's own editing is the admin's, exactly as it was on /moeder.
@@ -536,6 +539,7 @@ describe('the calendar and the fines, now that /moeder is gone', () => {
     expect(screen.getByText(/lægges i kalenderen/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /til stede/ })).not.toBeInTheDocument()
     await user.type(screen.getByLabelText(/Tidspunkt/), '18.30')
+    await user.type(screen.getByLabelText(/^Lead/), 'Have')
     await user.click(screen.getByRole('button', { name: 'Gem' }))
 
     await waitFor(() => expect(writes).toHaveLength(1))
@@ -545,8 +549,66 @@ describe('the calendar and the fines, now that /moeder is gone', () => {
       // The club's own title convention, so `calendarHead` reads the number back
       // out of it and a meeting planned here is indistinguishable from the twelve
       // the club typed itself.
-      values: { title: 'Erhvervsklub #29', date: '2099-08-08', location: 'Frk. Barners' },
+      //
+      // **`lead` is the assertion this test was missing.** Lukas, 2026-08-08:
+      // *"Have er lead, men jeg skrev TBD … kan ikke ændre det."* This form has
+      // always shown a Lead field on this branch, and until then the calendar
+      // insert threw the value away — accepted, acknowledged, stored nowhere.
+      values: {
+        title: 'Erhvervsklub #29',
+        date: '2099-08-08',
+        lead: 'Have',
+        location: 'Frk. Barners',
+      },
     })
+  })
+
+  it('lets the club name the lead afterwards, which is the whole point', async () => {
+    // The exact thing he could not do. A meeting is routinely written down before
+    // §9's lead has called it, so "set it later" is not an edge case — it is how
+    // every one of these rows starts.
+    const user = userEvent.setup()
+    renderPage('admin')
+    // By the venue, not by the lead: the lead's name is now also in the roster
+    // list inside the "Sidst set" fold, so `cardFor` would find two of him.
+    const card = within((await screen.findByText('Frk. Barners')).closest('article')!)
+    await user.click(card.getByRole('button', { name: 'Rediger' }))
+
+    const lead = screen.getByLabelText(/^Lead/)
+    expect(lead).toHaveValue('Kasper')
+    fireEvent.change(lead, { target: { value: 'Have' } })
+    await user.click(screen.getByRole('button', { name: 'Gem' }))
+
+    await waitFor(() => expect(writes).toHaveLength(1))
+    expect(writes[0]).toMatchObject({
+      table: 'events',
+      verb: 'update',
+      id: 'e1',
+      values: { lead: 'Have' },
+    })
+  })
+
+  it('carries the lead onto the meeting instead of asking for it again', async () => {
+    // The lead is the one field the record form *requires*, so before `events` had
+    // the column the single fact the club always decides in advance was the one it
+    // had to retype the morning after.
+    // Dated today: "Registrér deltagelse" only appears once the evening has come,
+    // and the fixture above sits in 2099 so the suite cannot age into calling it
+    // held. This is the one case that needs the button, so it makes its own row.
+    const today = new Date().toISOString().slice(0, 10)
+    reset({
+      attendance_records: RECORDS,
+      attendances: ATTENDANCES,
+      events: [{ ...PLANNED[0], date: today }],
+      fines: FINES,
+      payments: [],
+    })
+
+    const user = userEvent.setup()
+    renderPage('admin')
+    const card = within((await screen.findByText('Frk. Barners')).closest('article')!)
+    await user.click(card.getByRole('button', { name: 'Registrér deltagelse' }))
+    expect(screen.getByLabelText(/^Lead/)).toHaveValue('Kasper')
   })
 
   it('does not move a held meeting into the calendar when its date is mistyped', async () => {

@@ -227,6 +227,12 @@ export type EventItem = {
   title: string
   date: string
   time: string
+  /**
+   * Who runs the evening, since 2026-08-08. Empty until the club decides — §9 has
+   * the lead calling the meeting two weeks ahead, so "not yet" is the ordinary
+   * state of this column and not a gap to be filled in with a guess.
+   */
+  lead: string
   location: string
   description: string
 }
@@ -249,7 +255,7 @@ export function useUpcoming() {
       }
       const { data, error } = await supabase()
         .from('events')
-        .select('id, title, date, time, location, description')
+        .select('id, title, date, time, lead, location, description')
         .gte('date', today)
         .order('date', { ascending: true })
         .limit(2)
@@ -278,7 +284,7 @@ export function useEvents() {
       if (DEMO) return newestFirst(demoEvents)
       const { data, error } = await supabase()
         .from('events')
-        .select('id, title, date, time, location, description')
+        .select('id, title, date, time, lead, location, description')
         .order('date', { ascending: false })
       if (error) throw error
       return (data ?? []) as EventItem[]
@@ -539,6 +545,11 @@ export function useSaveMeeting() {
           title: `Erhvervsklub #${record.meeting_number}`,
           date: record.meeting_date,
           time: time?.trim() || '',
+          // **Dropped here until 2026-08-08**, which is exactly the bug Lukas hit:
+          // the form shows a Lead field on this branch too, so it accepted what he
+          // typed, said nothing, and stored nothing. `events` now has the column
+          // `attendance_records` has had from the beginning.
+          lead: record.lead,
           location: record.main_location || '',
           description: record.description ?? '',
         }

@@ -25,6 +25,13 @@ import {
  */
 const FIELDS: Field[] = [
   { name: 'title', label: 'Titel' },
+  // Second, where a held meeting's form puts it, and the reason this whole change
+  // exists. Lukas, 2026-08-08: *"Have er lead, men jeg skrev TBD … kan ikke ændre
+  // det."* He could not, because the column did not exist and the create form threw
+  // the value away. The hint says the empty state is allowed rather than leaving him
+  // to type "TBD" again — §9 has the lead calling the meeting two weeks ahead, so a
+  // meeting written down before the lead is decided is the normal case.
+  { name: 'lead', label: 'Lead', hint: 'kan stå tom indtil klubben har valgt' },
   { name: 'date', label: 'Dato', kind: 'date' },
   { name: 'time', label: 'Tidspunkt', hint: 'fx 18.30' },
   { name: 'location', label: 'Sted' },
@@ -33,6 +40,7 @@ const FIELDS: Field[] = [
 
 const draftOf = (e: EventItem): Draft => ({
   title: e.title,
+  lead: e.lead,
   date: e.date,
   time: e.time,
   location: e.location,
@@ -78,11 +86,20 @@ export function calendarHead(e: EventItem): { figure: string; heading: string } 
   // What the club said about this evening beyond naming and numbering it.
   // "Erhvervsklub #25 JUBILÆUM" keeps JUBILÆUM, because that is exactly the sort
   // of thing that must survive; "Erhvervsklub #29" keeps nothing and stands aside
-  // for the venue. Only the leading club word goes — anything else is kept, which
+  // for the lead. Only the leading club word goes — anything else is kept, which
   // is why the pattern is one short anchored alternation rather than a list that
   // would start eating real titles.
   const rest = e.title.replace(numbered[0], ' ').replace(GENERIC, ' ').replace(/\s+/g, ' ').trim()
-  return { figure: numbered[1], heading: rest || e.location || 'Sted endnu ikke sat' }
+  // **The lead, which is what a held meeting's card puts here.** Until 2026-08-08
+  // `events` had no lead at all, so the venue stood in for it — and the two kinds of
+  // card, which Lukas asked to look the same, said different things in the same slot.
+  // The venue has not lost its place: it falls to the row below with the pin, which
+  // is where a held meeting's route sits, and it still takes the heading on the rows
+  // where nobody has been named yet.
+  return {
+    figure: numbered[1],
+    heading: rest || e.lead || e.location || 'Lead ikke valgt endnu',
+  }
 }
 
 /**

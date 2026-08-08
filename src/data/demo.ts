@@ -168,30 +168,37 @@ export const demoEvents: EventItem[] = [
     // meeting two weeks ahead, so both states are real and the card has to read
     // in each. Titled the way the club titles them, so `calendarHead` is exercised
     // by the demo rather than only by its tests.
+    lead: 'Oskar',
     location: 'Frk. Barners',
-    description: 'Oskar lægger op.',
+    description: '',
   },
   {
+    // No lead and no venue: the state a meeting is in for most of the months
+    // before it. The card falls back to naming what is missing rather than
+    // rendering an empty heading, and the demo is where that gets looked at.
     id: 'u2',
     title: 'Erhvervsklub #30',
     date: new Date(Date.now() + 79 * 864e5).toISOString().slice(0, 10),
     time: '18.30',
+    lead: '',
     location: '',
-    description: 'Lukas lægger op.',
+    description: '',
   },
   {
     id: 'p1',
     title: 'Erhvervsklub #28 JUBILÆUM',
     date: new Date(Date.now() - 44 * 864e5).toISOString().slice(0, 10),
     time: '18.30',
+    lead: 'Esben',
     location: 'Propaganda',
-    description: 'Esben lagde op. Otte af ti mødte frem.',
+    description: 'Otte af ti mødte frem.',
   },
   {
     id: 'p2',
     title: 'Generalforsamling 2026',
     date: new Date(Date.now() - 98 * 864e5).toISOString().slice(0, 10),
     time: '17.00',
+    lead: 'Saaby',
     location: 'Tivolihallen',
     description: 'Kontingentet blev fordoblet med virkning fra juni.',
   },

@@ -122,16 +122,22 @@ export default function Anciennitet() {
    * **Written, then retired, in that order.** The meeting is created first and the
    * calendar row deleted only on success, so a save that fails leaves the plan
    * exactly where it was rather than losing both. Nothing is lost either way: the
-   * date, the venue and what the lead wrote all move onto the meeting.
+   * date, the lead, the venue and what the lead wrote all move onto the meeting.
+   *
+   * The lead joined that list on 2026-08-08, when `events` got a column to keep it
+   * in. It is the field this form *requires*, so before then the one fact the club
+   * always decides in advance was the one fact it had to retype at the end.
    */
   const recordFrom = (e: {
     id: string
     date: string
+    lead: string
     location: string
     description: string
   }) => {
     setFromEvent({
       meeting_date: e.date,
+      lead: e.lead,
       main_location: e.location,
       description: e.description,
     })

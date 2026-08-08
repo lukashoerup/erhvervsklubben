@@ -35,13 +35,16 @@ const day = (offset: number) => new Date(Date.now() + offset * 864e5).toISOStrin
  * unnumbered.
  */
 const EVENTS = [
-  { id: 'e2', title: 'Erhvervsklub #30', date: day(70), time: '18.30', location: '', description: '' },
-  { id: 'e1', title: 'Erhvervsklub #29', date: day(14), time: '18.30', location: 'Propaganda', description: 'Oskar lægger op.' },
+  // Nothing decided but the date: no lead and no venue. The state §9 puts a meeting
+  // in for most of the months before it, and since 2026-08-08 the state the card has
+  // to name rather than head with an empty string.
+  { id: 'e2', title: 'Erhvervsklub #30', date: day(70), time: '18.30', lead: '', location: '', description: '' },
+  { id: 'e1', title: 'Erhvervsklub #29', date: day(14), time: '18.30', lead: 'Oskar', location: 'Propaganda', description: '' },
   // Behind, and a duplicate of a card in the history below.
-  { id: 'dup', title: 'Erhvervsklub #28 JUBILÆUM', date: day(-46), time: '18.30', location: 'Tivolihallen', description: '' },
+  { id: 'dup', title: 'Erhvervsklub #28 JUBILÆUM', date: day(-46), time: '18.30', lead: 'Esben', location: 'Tivolihallen', description: '' },
   // Behind, and *not* a duplicate — the club's own `Erhvervsklub #20`, whose record
   // never got a date. Gone from the frontend too since 2026-07-30, at Lukas's word.
-  { id: 'orphan', title: 'Generalforsamling 2026', date: day(-120), time: '17.00', location: 'Marv og Ben', description: '' },
+  { id: 'orphan', title: 'Generalforsamling 2026', date: day(-120), time: '17.00', lead: 'Saaby', location: 'Marv og Ben', description: '' },
 ]
 
 
@@ -71,15 +74,15 @@ describe('what a member sees', () => {
   it('shows the meetings still ahead', async () => {
     renderPage('user')
     // By the heading each card shows: a plain numbered title puts the number in
-    // the serif slot and the venue in the heading, so no element holds the title.
-    expect(await screen.findByText('Propaganda')).toBeInTheDocument()
-    expect(screen.getByText('Sted endnu ikke sat')).toBeInTheDocument()
+    // the serif slot and the *lead* in the heading, so no element holds the title.
+    expect(await screen.findByText('Oskar')).toBeInTheDocument()
+    expect(screen.getByText('Lead ikke valgt endnu')).toBeInTheDocument()
     expect(screen.getByText('Planlagte møder')).toBeInTheDocument()
   })
 
   it('draws nothing at all for a date in the past', async () => {
     renderPage('user')
-    await screen.findByText('Propaganda')
+    await screen.findByText('Oskar')
     // Both past rows, and for two different reasons. The duplicate is the defect
     // Lukas found — its evening is already a card in the history below. The other
     // is not a duplicate and goes anyway, at his word: "De er gamle og vi laver
@@ -91,7 +94,7 @@ describe('what a member sees', () => {
 
   it('offers a member nothing that writes, and nobody a second new-meeting button', async () => {
     renderPage('user')
-    await screen.findByText('Propaganda')
+    await screen.findByText('Oskar')
     expect(screen.queryByRole('button', { name: 'Rediger' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Slet' })).not.toBeInTheDocument()
 
@@ -114,7 +117,7 @@ describe('what a member sees', () => {
 describe('what an admin can correct', () => {
   it('gives Rediger and Slet on a meeting ahead', async () => {
     renderPage('admin')
-    await screen.findByText('Propaganda')
+    await screen.findByText('Oskar')
     const card = within(cardFor('Propaganda'))
     expect(card.getByRole('button', { name: 'Rediger' })).toBeInTheDocument()
     expect(card.getByRole('button', { name: 'Slet' })).toBeInTheDocument()
@@ -123,7 +126,7 @@ describe('what an admin can correct', () => {
   it('warns before a date change makes the card leave the list', async () => {
     const user = userEvent.setup()
     renderPage('admin')
-    await screen.findByText('Propaganda')
+    await screen.findByText('Oskar')
     await user.click(within(cardFor('Propaganda')).getByRole('button', { name: 'Rediger' }))
 
     expect(screen.queryByText(/forsvinder fra listen/i)).not.toBeInTheDocument()
@@ -136,7 +139,7 @@ describe('what an admin can correct', () => {
   it('corrects the date against the meeting’s own id', async () => {
     const user = userEvent.setup()
     renderPage('admin')
-    await screen.findByText('Propaganda')
+    await screen.findByText('Oskar')
     await user.click(within(cardFor('Propaganda')).getByRole('button', { name: 'Rediger' }))
 
     const date = screen.getByLabelText(/Dato/)
@@ -152,7 +155,7 @@ describe('what an admin can correct', () => {
   it('asks before deleting, and names the row it asked about', async () => {
     const user = userEvent.setup()
     renderPage('admin')
-    await screen.findByText('Propaganda')
+    await screen.findByText('Oskar')
     await user.click(within(cardFor('Propaganda')).getByRole('button', { name: 'Slet' }))
 
     // The *title*, not the card's derived heading: this asks about a row, and the
@@ -175,28 +178,45 @@ describe('what an admin can correct', () => {
  * "JUBILÆUM" or "Generalforsamling" off a card that still looked perfectly fine.
  */
 describe('reading a calendar title', () => {
-  const ev = (title: string, location = '', date = '2026-08-08') => ({
+  const ev = (title: string, location = '', date = '2026-08-08', lead = '') => ({
     id: 'x',
     title,
     date,
     time: '18.30',
+    lead,
     location,
     description: '',
   })
 
-  it('lifts the club’s own number out, and lets the venue take the heading', () => {
+  it('lifts the club’s own number out, and lets the lead take the heading', () => {
+    // The lead, since 2026-08-08 — which is what a *held* meeting's card puts in
+    // this slot, and the reason the two kinds of card now read the same.
+    expect(calendarHead(ev('Erhvervsklub #29', 'Frk. Barners', '2026-08-08', 'Oskar'))).toEqual({
+      figure: '29',
+      heading: 'Oskar',
+    })
+    // "Møde #30" too: the club writes both, and neither word is a heading.
+    expect(calendarHead(ev('Møde #30', '', '2026-08-08', 'Lukas'))).toEqual({
+      figure: '30',
+      heading: 'Lukas',
+    })
+  })
+
+  it('falls back to the venue while nobody has been named', () => {
+    // §9 has the lead calling the meeting two weeks ahead, so a booked venue with
+    // no lead yet is an ordinary state and not a half-filled row.
     expect(calendarHead(ev('Erhvervsklub #29', 'Frk. Barners'))).toEqual({
       figure: '29',
       heading: 'Frk. Barners',
     })
-    // "Møde #30" too: the club writes both, and neither word is a heading.
-    expect(calendarHead(ev('Møde #30', 'Lukas'))).toEqual({ figure: '30', heading: 'Lukas' })
   })
 
   it('keeps anything the title says beyond naming and numbering', () => {
     // The assertion that matters most. Strip one word too many and the club's
     // 25th meeting stops saying it was its jubilee.
-    expect(calendarHead(ev('Erhvervsklub #25 JUBILÆUM', 'Marv & Ben'))).toEqual({
+    // Ahead of the lead, deliberately: the club only writes something into a title
+    // when that something is the point of the evening.
+    expect(calendarHead(ev('Erhvervsklub #25 JUBILÆUM', 'Marv & Ben', '2026-08-08', 'Saaby'))).toEqual({
       figure: '25',
       heading: 'JUBILÆUM',
     })
@@ -212,10 +232,13 @@ describe('reading a calendar title', () => {
     ).toEqual({ figure: '20', heading: 'Udarbejdelse af vedtægtsudkast' })
   })
 
-  it('says the venue is unset rather than heading a card with nothing', () => {
+  it('names what is missing rather than heading a card with nothing', () => {
+    // Nothing decided but the date. It says the lead is missing rather than the
+    // venue, because the lead is what the club decides first and what the rest of
+    // the evening hangs off — §9 has him calling the meeting two weeks ahead.
     expect(calendarHead(ev('Erhvervsklub #31'))).toEqual({
       figure: '31',
-      heading: 'Sted endnu ikke sat',
+      heading: 'Lead ikke valgt endnu',
     })
   })
 })
