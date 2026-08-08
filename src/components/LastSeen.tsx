@@ -1,5 +1,7 @@
 import { useLastSeen } from '../data/lastSeen'
 import { daWhen } from '../lib/dates'
+import type { CSSProperties } from 'react'
+import { Sweep } from './Sweep'
 import { Eyebrow } from './SectionTitle'
 
 /**
@@ -135,23 +137,41 @@ export function LastSeen({ roster }: { roster: string[] }) {
       {weeks.length > 0 && (
         <div className="border-t border-line px-4 py-4">
           <Eyebrow>Besøg pr. uge · hele klubben</Eyebrow>
-          {/* Bars from the baseline, growing on scroll, the same `data-bar` idiom
-              the anciennitet chart uses (§04: "søjler vokser ved scroll"). Height is
-              an inline style and the growth a scaleY on top of it, so the bar's real
-              height stays the number it represents. */}
-          <ul data-reveal className="mt-3 flex items-end gap-1" aria-hidden="true">
-            {weeks.map((w) => (
-              <li key={w.week} className="flex flex-1 flex-col items-center gap-1">
-                <span className="flex h-16 w-full items-end">
-                  <span
-                    data-bar
-                    className="w-full rounded-t-[3px] bg-accent-d"
-                    style={{ height: `${Math.max(4, (w.n / most) * 100)}%` }}
-                  />
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/* **The same sweep as every other chart in the app.** Lukas, 2026-08-08:
+              *"Husk animationerne på grafen som der er på de andre grafer."* It had
+              `data-bar` — the ten-bar grow the anciennitet chart uses, 900 ms — which
+              is a different gesture from the one the three charts on /oekonomi share,
+              and picking whichever neighbour is closest is how a page ends up with
+              three ways of arriving. `Sweep` is that one gesture: a single clipped
+              edge scaling up from the baseline over 1600 ms, uncovering the whole
+              plot at once.
+
+              It clips an ordinary list of `<span>`s here rather than an SVG chart,
+              which is exactly what `clipPathUnits="objectBoundingBox"` buys — the
+              clip is the element's own box in fractions, so nothing has to know how
+              tall this is.
+
+              `data-draw` on the plot box, as on the others, so the sweep starts when
+              the bars are 18 % into view rather than when the heading is. */}
+          <div data-draw className="mt-3">
+            <Sweep id="ek-visits-sweep" />
+            <ul
+              className="ek-plot flex items-end gap-1"
+              style={{ '--ek-sweep-clip': 'url(#ek-visits-sweep)' } as CSSProperties}
+              aria-hidden="true"
+            >
+              {weeks.map((w) => (
+                <li key={w.week} className="flex flex-1 flex-col items-center gap-1">
+                  <span className="flex h-16 w-full items-end">
+                    <span
+                      className="w-full rounded-t-[3px] bg-accent-d"
+                      style={{ height: `${Math.max(4, (w.n / most) * 100)}%` }}
+                    />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
           {/* The chart's own text alternative, and the only place the figures are
               written out. Ten bars two pixels apart cannot carry labels on a 420 px
               phone, and a chart nobody can read the numbers off is decoration. */}
