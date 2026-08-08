@@ -57,6 +57,14 @@ quoting any fine figure**, because there are now three and they are all correct:
   730 kr.  udestående  what the club is owed               11 rows
 ```
 
+**The wording is Lukas's own since 2026-08-08**, and the change is two words:
+*"Indbetalt i alt. Bøder pålagt 2.510 kr., heraf er 1.780 kr. **opkrævet** —
+**udestående bøder** 730 kr."* The card opened on *Indbetalt* i alt (the balance) and
+then said 1.780 kr. *indbetalt*, so one word named two different things four words
+apart; and a bare *udestående* on a card about money reads as the club being short
+rather than as unpaid fines. His reason: *"Jeg tror at det vil forvirre nogen lidt."*
+The trailing sentence explaining the 730 went with it — the label now says it.
+
 The card summed the first and printed it under the third's name — it overstated
 what the membership owes **by the entire amount it had already paid**. Not an
 arithmetic error: every number was computed correctly, and one number was doing

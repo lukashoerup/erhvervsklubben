@@ -335,25 +335,25 @@ export default function Oekonomi() {
             the one balance on the page (§ the Klubkassen note above), and
             three tiles under it would read as four balances.
 
+            **The wording is Lukas's, verbatim** (2026-08-08): *"Indbetalt i alt.
+            Bøder pålagt 2.510 kr., heraf er 1.780 kr. opkrævet — udestående bøder
+            730 kr."* His reason: *"Jeg tror at det vil forvirre nogen lidt."*
+
+            Two words carry the whole fix, and both are worth keeping. The card
+            opened on **Indbetalt** i alt — the balance — and then said 1.780 kr.
+            **indbetalt**, so one word named two different things four words
+            apart; the fines' half is now **opkrævet**. And the last figure was a
+            bare *udestående*, which on a card about money reads as the club's
+            balance being short. **Udestående bøder** says which of the two it is.
+
             No full stop after the last figure: `kr()` ends in one, and the
             sentence used to add a second — "730 kr.." on Lukas's own screen. */}
         <p className="mt-2 text-xs leading-relaxed text-muted">
           Indbetalt i alt. Bøder pålagt{' '}
-          <span className="tabular">{kr(totals.incurredKr)}</span>, heraf indbetalt{' '}
-          <span className="tabular">{kr(totals.collectedKr)}</span> — udestående{' '}
+          <span className="tabular">{kr(totals.incurredKr)}</span>, heraf er{' '}
+          <span className="tabular">{kr(totals.collectedKr)}</span> opkrævet — udestående bøder{' '}
           <span className="tabular font-semibold text-ink">{kr(totals.outstandingKr)}</span>
         </p>
-        {/* The 730 kr. is not a rounding gap, it is three evenings nobody
-            billed (§15.1), and whether to collect it is Lukas's decision and
-            not the app's. So the card states the fact once and stops — no
-            badge, no red, no "husk at opkræve". A number that nags every time
-            he opens the page is a number he stops reading. */}
-        {totals.outstandingKr > 0 && (
-          <p className="mt-1.5 text-[0.68rem] leading-relaxed text-faint">
-            De <span className="tabular">{kr(totals.outstandingKr)}</span> er bøder, en Lead
-            har noteret, og som aldrig er blevet opkrævet.
-          </p>
-        )}
       </section>
 
       {READONLY && (

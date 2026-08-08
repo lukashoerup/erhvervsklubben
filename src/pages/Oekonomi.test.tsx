@@ -440,3 +440,41 @@ describe('who the club charges', () => {
     expect(offered).toContain('Anders')
   })
 })
+
+/**
+ * The sentence under the club's balance, which has now carried two defects Lukas
+ * found by reading the page rather than by anything failing.
+ *
+ * First it printed 2.510 kr. under the word *udestående* — one figure doing the job
+ * of three, overstating what the membership owed by the whole amount it had already
+ * paid. Then it wrote "730 kr..", because `kr()` supplies the full stop and the
+ * sentence added another. Now the wording itself, his (2026-08-08): *"Jeg tror at
+ * det vil forvirre nogen lidt."*
+ *
+ * So it gets a test. Not on the prose — on the pairing of each figure with the word
+ * that says what it is, which is the thing that was wrong all three times.
+ */
+describe('the sentence under the balance', () => {
+  it('pairs each of the three figures with what it means', async () => {
+    // `aClubWithBooks`, because it is the fixture where the three are genuinely
+    // different numbers: 810 incurred, 500 collected, 310 outstanding. On a
+    // fixture where two of them coincide the assertion would pass while saying
+    // nothing, which is the failure mode this whole card had in the first place.
+    aClubWithBooks()
+    renderPage('user')
+    await screen.findByRole('img', { name: CURVE })
+    const kasse = screen.getByText(/Klubkassen/).closest('section')!
+
+    // "Indbetalt i alt" is the balance above; the fines' collected half is
+    // "opkrævet". One word naming two different things four words apart is what
+    // Lukas said would confuse people.
+    expect(kasse).toHaveTextContent(
+      /Bøder pålagt\s*810 kr\., heraf er\s*500 kr\. opkrævet — udestående bøder\s*310 kr\./,
+    )
+    // Never a bare "udestående" before the last figure: on a card about money that
+    // reads as the club's balance being short rather than as unpaid fines.
+    expect(kasse).not.toHaveTextContent(/— udestående\s*310 kr/)
+    // And exactly one full stop after the last figure, from kr() alone.
+    expect(kasse).not.toHaveTextContent(/310 kr\.\./)
+  })
+})
