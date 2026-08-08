@@ -831,6 +831,36 @@ without losing data and without taking the old site down until an approved cutov
   teaser cards clamp instead, so a 1200-character referat cannot become the club's
   public front page.
 
+- **2026-08-08 — the club is investing, and the members' two worries are answered.**
+  Lukas: *"Vi har besluttet at investere ca. 10k kr. … Nogle er lidt bange for om de
+  'hæfter' for noget eller det går ind i deres forskudsopgørelse."* Written up in
+  full at `docs/investering-og-cvr.md`; the short of it:
+
+  **No liability and nothing on anyone's tax.** Shares bought for cash create no
+  debt, and a forening under SEL § 1, stk. 1, nr. 6 is taxed only on *erhvervsmæssig*
+  income — which by Skattestyrelsen's own list excludes dividends, share gains,
+  omsætning med medlemmer and kontingent. That is the whole of this club's economy,
+  the bødekasse included.
+
+  **Everything hangs on one classification**, and the club scores five of the six
+  criteria (TfS 1984.434). A byretsdom on weaker facts — a four-member forening the
+  tax authorities had called an interessentskab — went the forening's way, weighting
+  above all that the vedtægter said nothing about personal liability and gave no
+  departing member a claim on the assets. Both are true here. The one criterion that
+  fails is §4's closed admission, which that case also failed and survived.
+
+  **The registration follows from the tax answer**: no skatte- or afgiftspligt means
+  *frivillig forening*, which is the cheapest route — three fields on virk.dk, free,
+  auto-approved, renewed every three years. Not F.M.B.A., whose name is the trap.
+
+  **The one way it goes wrong** is operational, not legal: if a member buys the
+  shares in his own depot "for the club", they are his — taxed on his årsopgørelse
+  and his to lose. The depot must carry the forening's CVR before anything is bought.
+
+  Three sources were needed and none was reachable from this session's network;
+  Lukas pasted them in. Recorded because the next such question will hit the same
+  wall.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
