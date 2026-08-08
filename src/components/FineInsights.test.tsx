@@ -22,6 +22,7 @@ const fine = (
   minutes: number | null = null,
   settled: string | null = null,
 ): FineRow => ({
+  note: null,
   member_name: member,
   amount_kr: kr,
   record_id: 1,

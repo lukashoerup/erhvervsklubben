@@ -401,17 +401,32 @@ export function useDeleteRow(table: ContentTable) {
 export async function readFines(): Promise<FineRow[]> {
   const full = await supabase()
     .from('fines')
-    .select('member_name, amount_kr, record_id, rule_id, minutes, settled_at')
+    .select('member_name, amount_kr, record_id, rule_id, minutes, settled_at, note')
   if (!full.error) return (full.data ?? []) as FineRow[]
   if (full.error.code !== UNDEFINED_COLUMN) throw full.error
 
+  // One rung down: `note` arrived 2026-08-08 with the ad-hoc fines, and a database
+  // older than it should cost the reasons and nothing else. Without this rung the
+  // ladder would fall straight to the bottom and report every fine the club has as
+  // `historisk` — throwing away four columns to be missing one.
+  const withoutNote = await supabase()
+    .from('fines')
+    .select('member_name, amount_kr, record_id, rule_id, minutes, settled_at')
+  if (!withoutNote.error) {
+    return ((withoutNote.data ?? []) as Omit<FineRow, 'note'>[]).map((f) => ({ ...f, note: null }))
+  }
+  if (withoutNote.error.code !== UNDEFINED_COLUMN) throw withoutNote.error
+
   const { data, error } = await supabase().from('fines').select('member_name, amount_kr, record_id')
   if (error) throw error
-  return ((data ?? []) as Omit<FineRow, 'rule_id' | 'minutes' | 'settled_at'>[]).map((f) => ({
+  return (
+    (data ?? []) as Omit<FineRow, 'rule_id' | 'minutes' | 'settled_at' | 'note'>[]
+  ).map((f) => ({
     ...f,
     rule_id: HISTORIC_RULE_ID,
     minutes: null,
     settled_at: null,
+    note: null,
   }))
 }
 

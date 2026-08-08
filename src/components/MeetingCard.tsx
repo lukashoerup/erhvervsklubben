@@ -13,6 +13,8 @@ export type MeetingFine = {
   rule_id: string
   minutes: number | null
   amount_kr: number
+  /** Why, on an ad-hoc fine. Null on the five voted rules, where the id is the reason. */
+  note?: string | null
 }
 
 /**
@@ -256,12 +258,19 @@ export function MeetingCard({
               <ul className="mt-2">
                 {fines.map((f, i) => (
                   <li
-                    key={`${f.member_name}-${f.rule_id}-${i}`}
+                    key={`${f.member_name}-${f.rule_id}-${f.amount_kr}-${i}`}
                     className="flex items-baseline justify-between gap-3 border-b border-line/50 py-1.5 text-xs last:border-b-0"
                   >
                     <span className="min-w-0">
                       <span className="font-medium">{f.member_name}</span>
-                      <span className="text-muted"> · {describeRule(f.rule_id)}</span>
+                      {/* The club's own words where it wrote any, and the rule's
+                          otherwise. An ad-hoc fine's `rule_id` says only "the club
+                          agreed something" — printing that beside an amount is the
+                          `historisk` problem all over again, and it is why the
+                          database refuses an ad-hoc fine with no note. Lukas,
+                          2026-08-08, from the bowling alley: *"når vi finder på
+                          væddemål hvor vi giver bøder af hov."* */}
+                      <span className="text-muted"> · {f.note?.trim() || describeRule(f.rule_id)}</span>
                       {f.minutes ? (
                         <span className="text-faint"> ({daMinutes(f.minutes)})</span>
                       ) : null}

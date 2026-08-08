@@ -167,6 +167,60 @@ describe('clicking into a meeting', () => {
     expect(card).toHaveTextContent('155 kr.')
   })
 
+  it('prints the club’s own words on an ad-hoc fine, not the bucket’s name', () => {
+    // Lukas, 2026-08-08, from the bowling alley: *"når vi finder på væddemål hvor
+    // vi giver bøder af hov."* An `aftalt` row's rule id says only "the club agreed
+    // something", which beside an amount is the `historisk` problem T075 spent a
+    // migration clearing up. The reason is the row's own note, and the database
+    // refuses an ad-hoc fine without one.
+    render(
+      <MeetingCard
+        meeting={meeting()}
+        labels={LABELS}
+        fines={[
+          {
+            member_name: 'Esben',
+            rule_id: 'aftalt',
+            minutes: null,
+            amount_kr: 100,
+            note: 'Tabte 1. runde i bowling',
+          },
+        ]}
+      />,
+    )
+    const card = screen.getByRole('article')
+    expect(card).toHaveTextContent('Tabte 1. runde i bowling')
+    expect(card).not.toHaveTextContent(describeRule('aftalt'))
+  })
+
+  it('lists two ad-hoc fines against one man on one evening', () => {
+    // The constraint the club's regulativ puts on its five voted rules — one fine
+    // per offence per meeting — never applied to this bucket, and enforcing it here
+    // is what forced Esben's two bowling rounds to be summed into a single row on
+    // the night. Two rounds are two things, and the card has to show both.
+    render(
+      <MeetingCard
+        meeting={meeting()}
+        labels={LABELS}
+        fines={[
+          { member_name: 'Esben', rule_id: 'aftalt', minutes: null, amount_kr: 100, note: '1. runde' },
+          { member_name: 'Esben', rule_id: 'aftalt', minutes: null, amount_kr: 50, note: '2. runde' },
+        ]}
+      />,
+    )
+    const card = screen.getByRole('article')
+    expect(card).toHaveTextContent('1. runde')
+    expect(card).toHaveTextContent('2. runde')
+    expect(card).toHaveTextContent('150 kr.')
+  })
+
+  it('falls back to the rule when a row carries no note', () => {
+    // Which is almost every row the club has: for the five voted rules the id *is*
+    // the reason, and a note would only repeat it.
+    render(<MeetingCard meeting={meeting()} labels={LABELS} fines={FINES} />)
+    expect(screen.getByRole('article')).toHaveTextContent(describeRule('skaal'))
+  })
+
   it('prints the minutes only where the row holds them', () => {
     render(<MeetingCard meeting={meeting()} labels={LABELS} fines={FINES} />)
     const rows = screen.getAllByRole('listitem')

@@ -28,6 +28,7 @@ import { FINE_RULES, fineAmount } from './rules'
 
 /** `for-sent` is 50 + 5·minutes, so a fixture that lies about it is caught below. */
 const late = (member: string, record: number, minutes: number, settled: string | null): FineRow => ({
+  note: null,
   member_name: member,
   amount_kr: 50 + 5 * minutes,
   record_id: record,
@@ -37,6 +38,7 @@ const late = (member: string, record: number, minutes: number, settled: string |
 })
 
 const flat = (member: string, record: number, rule: string, settled: string | null): FineRow => ({
+  note: null,
   member_name: member,
   amount_kr: 50,
   record_id: record,

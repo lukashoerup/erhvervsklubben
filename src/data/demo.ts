@@ -356,13 +356,19 @@ export function demoDeleteMeeting(id: number) {
  * rules are 50.
  */
 export const demoFines: FineRow[] = [
-  { member_name: 'Mads', amount_kr: 200, record_id: 28, rule_id: 'for-sent', minutes: 30, settled_at: null },
-  { member_name: 'Saaby', amount_kr: 110, record_id: 28, rule_id: 'for-sent', minutes: 12, settled_at: null },
-  { member_name: 'Emil', amount_kr: 50, record_id: 28, rule_id: 'skaal', minutes: null, settled_at: null },
-  { member_name: 'Mads', amount_kr: 185, record_id: 27, rule_id: 'for-sent', minutes: 27, settled_at: '2026-04-01' },
-  { member_name: 'Kasper', amount_kr: 265, record_id: 27, rule_id: 'for-sent', minutes: 43, settled_at: '2026-04-01' },
-  { member_name: 'Rasmus', amount_kr: 50, record_id: 27, rule_id: 'skaal', minutes: null, settled_at: '2026-04-01' },
-  { member_name: 'Esben', amount_kr: 50, record_id: 26, rule_id: 'drikkevare', minutes: null, settled_at: '2026-04-01' },
+  { member_name: 'Mads', amount_kr: 200, record_id: 28, rule_id: 'for-sent', minutes: 30, settled_at: null, note: null },
+  { member_name: 'Saaby', amount_kr: 110, record_id: 28, rule_id: 'for-sent', minutes: 12, settled_at: null, note: null },
+  { member_name: 'Emil', amount_kr: 50, record_id: 28, rule_id: 'skaal', minutes: null, settled_at: null, note: null },
+  // The ad-hoc category, in the demo because it is the one kind of fine whose
+  // reason is not derivable from anything else on the row (2026-08-08).
+  {
+    member_name: 'Kasper', amount_kr: 100, record_id: 28, rule_id: 'aftalt',
+    minutes: null, settled_at: null, note: 'Tabte væddemål om regningen',
+  },
+  { member_name: 'Mads', amount_kr: 185, record_id: 27, rule_id: 'for-sent', minutes: 27, settled_at: '2026-04-01', note: null },
+  { member_name: 'Kasper', amount_kr: 265, record_id: 27, rule_id: 'for-sent', minutes: 43, settled_at: '2026-04-01', note: null },
+  { member_name: 'Rasmus', amount_kr: 50, record_id: 27, rule_id: 'skaal', minutes: null, settled_at: '2026-04-01', note: null },
+  { member_name: 'Esben', amount_kr: 50, record_id: 26, rule_id: 'drikkevare', minutes: null, settled_at: '2026-04-01', note: null },
 ]
 
 export const demoPayments = [

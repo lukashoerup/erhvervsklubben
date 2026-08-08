@@ -49,6 +49,18 @@ export type FineRow = {
    * over-claiming it.
    */
   settled_at: string | null
+  /**
+   * Why, in the club's own words — and **required on `aftalt`**, by a check
+   * constraint rather than by convention.
+   *
+   * For the five voted rules the `rule_id` *is* the reason, so this stays null on
+   * almost every row the club has. An ad-hoc fine has no rule to name it: Lukas,
+   * 2026-08-08, from the bowling alley — *"når vi finder på væddemål hvor vi giver
+   * bøder af hov."* Without this the books would hold an amount against a man with
+   * nothing to explain it, which is exactly the `historisk` mess T075 spent a
+   * migration clearing up.
+   */
+  note: string | null
 }
 
 export type FineTotals = {
