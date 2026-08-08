@@ -1,6 +1,7 @@
 # T088 — Lukas's wishlist, 2026-08-08
 
-**Status:** not started. Recorded so it survives the chat window.
+**Status:** 2 of 4 done (2026-08-08). Left: **comments on news** and **sign up for
+events**. Recorded so it survives the chat window.
 
 He photographed a note titled *"Foreslag til hjemmeside"* and said: *"her er der
 andre features vi skal have lagt ind senere."* Later, not now — this file exists so
@@ -44,8 +45,17 @@ publishing it changed who may open it, not whether there is one.
 
 Extended the same day: *"Gerne login aktivitet inkl. hvor mange gange folk har været
 inde og hvornår. En graf."* That needed a **new table** — the old design overwrote
-itself, so no count existed to publish — and the graph therefore starts on 2026-08-08.
-See `member_visits` and PROJECT.md.
+itself, so no count existed to publish. See `member_visits` and PROJECT.md.
+
+**Corrected the same evening.** This file, and the migration, said the graph could
+only start on 2026-08-08 because the history was unrecoverable. That was wrong, and
+the mistake was one of scope: I reasoned about the tables *this app owns* and stopped
+there. `auth.audit_log_entries` is Supabase's own and has been running since the
+project was created — logins, logouts and token refreshes reconstruct **136 visit-days
+across eight members back to 2025-04-20**. Recovered by
+`20260808133000_visits_from_auth_log.sql`, which also records what a token refresh
+does and does not prove. Recoverable exactly once: Supabase prunes that log on its own
+schedule.
 
 It was not as cheap as this file guessed, and the reason is worth keeping. It took
 **two** tables, not one — the screen shows names, and those live in

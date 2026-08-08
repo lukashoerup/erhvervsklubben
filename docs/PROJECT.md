@@ -713,9 +713,22 @@ without losing data and without taking the old site down until an approved cutov
   **The app could not answer this, by design.** T074 built `member_last_seen` as one
   timestamp per member, overwritten on every visit, and wrote down that *"the count of
   visits is unrecoverable by construction."* So this is a new table rather than a
-  column, and the honest consequence is that **the graph starts 2026-08-08**. Seven
-  rows were seeded — each member's one surviving timestamp, as a visit on its own
-  date — and that is the entire recoverable past.
+  column. Seven rows were seeded from each member's one surviving timestamp.
+
+  **"The graph starts 2026-08-08, and that is the entire recoverable past" — which is
+  what this entry said, and it was wrong.** Lukas, hours later: *"Kan det passe at der
+  kun er data i denne uge? Kan vi tage sidste uge med?"* It could, and the answer was
+  not a workaround: `auth.audit_log_entries` is Supabase's own table, has been running
+  since 2025-04-20, and its logins, logouts and token refreshes are a real record of
+  the site being open. It reconstructs **136 visit-days across eight members**,
+  thirteen of them in the week he asked about. The error was one of scope — I reasoned
+  about the tables this app owns and stopped at its edge — and that is the part worth
+  remembering, rather than the one bad claim.
+
+  What a token refresh proves has a soft edge, stated on the screen and in
+  `20260808133000_visits_from_auth_log.sql` rather than hidden: a tab left open
+  overnight can refresh with nobody looking at it, adding at most a day. Recoverable
+  exactly once — Supabase prunes that log on its own schedule.
 
   **A day, not a page load**, and that decides what "hvor mange gange" means. A member
   who reloads three times over lunch has been in once; counting loads would measure
