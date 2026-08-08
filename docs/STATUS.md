@@ -1,7 +1,8 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-30 (T080 — the meetings page folded into anciennitet; /oekonomi opened to every member). Single source of truth for "where are we". Update this at the
-end of every working session._
+_Updated 2026-08-08 (T081 — the August statement: the club's last outstanding
+kontingent settled, klubkassen at 16.880 kr.). Single source of truth for "where
+are we". Update this at the end of every working session._
 
 ## Start here if you are picking this up in a new session
 
@@ -113,26 +114,48 @@ accident* because both were 900 ms. `SWEEP_MS` in `src/lib/reveal.ts` must equal
 CSS duration and **a test compares the two source files**. §01's 900 ms still
 governs every other figure. Argued in `design/README.md`.
 
-**The books are reconciled against the real bank statement** (2026-07-30, T076).
-Read this before quoting any figure on this page: **`payments` is 14 rows summing
-to 14.880 kr.**, not the 13 rows / 13.280 kr. the sheet had. The club's actual
-account statement — all 90 transactions to 30.07.2026, closing 15.080,00 kr. —
-arrived and supersedes the spreadsheet for every month it covers.
+**The club has no outstanding kontingent, and klubkassen is 16.880 kr.**
+(2026-08-08, T081). Read this before quoting any figure on this page:
+**`payments` is 15 rows summing to 16.880 kr.** The August statement — the
+account 01.06–04.08.2026, closing 16.880,00 kr. — arrived on the morning of an EK
+meeting, with Lukas's own summary: *"Anders Tørring har indbetalt det han
+skylder. Og der er mere i kassen."*
 
 ```
-13.100  kontingent settled, June 2025 – July 2026
+15.100  kontingent settled, June 2025 – August 2026
 +1.780  bøder collected, February 2026
 ------
-14.880  reconciled       = the balance Lukas photographed on 27.07 ✓
-  +200  Rasmus, settling August 2026 — held out on purpose
-------
-15.080  bank, 30.07.2026 = the statement's own closing balance ✓
+16.880  reconciled
+16.880  bank, 04.08.2026 = the statement's own closing balance ✓
 ```
 
-**It ties out to 200 kr.**, and that 200 kr. was already known: **Anders owes
-July 2026** because he has changed bank (Lukas, 2026-07-30). He is the only
-member with anything outstanding in fourteen months; every month from June 2025
-to June 2026 is settled in full by every member the club charged.
+**It ties out exactly — the first time in fourteen months.** Anders's 200 kr. for
+July (he had changed bank) came on 03.08 as a single **400 kr.** transfer
+covering July *and* August; the allocation places it across the two on its own,
+oldest month first, with no remainder. All nine payers have settled August.
+
+**Do not read the exact agreement as a better result than T076's.** It is a fact
+about the calendar, not about the club: T076 had to hold Rasmus's 200 kr. out as
+August money, and here nobody has paid September in advance yet, so there is no
+float to hold out. **The gap reopens at the end of August** when Rasmus and Lukas
+transfer again, and it should — a reconciliation that always lands on the balance
+has stopped distinguishing earned from received. Full workings: §17.
+
+**What is still owed is the 730 kr. of fines** a Lead noted and nobody billed.
+A settled kontingent month does not touch it, and the two were deliberately not
+netted: `fines` was not written to at all.
+
+**The August statement also independently corroborates T076.** It overlaps that
+CSV by two full months and reproduces every line of it — same dates, same
+transfer texts, same amounts, the awkward ones included. §16 attributed 87
+transfers by hand out of a mis-encoded export and rewrote thirteen months of
+`payments` on the strength of it; this is the first external check that exercise
+has ever had. **Nothing before 2026-07-30 moved.**
+
+The preceding reconciliation (2026-07-30, T076) is what all of that is built on:
+`payments` went from the sheet's 13 rows / 13.280 kr. to 14 rows / 14.880 kr.
+when the club's actual account statement — all 90 transactions to 30.07.2026 —
+superseded the spreadsheet for every month it covers.
 
 **The one decision worth understanding before touching these numbers:
 `payments.month` is the month a payment *settles*, not the month the money
@@ -408,7 +431,7 @@ Supabase's own advisor confirms the function is `authenticated`-only. Applied to
 production 2026-07-29; the club's data read back **unchanged** (28 meetings, 235
 attendances, 18 fines / 1.780 kr., 13 payments / 13.280 kr., 10 members) and
 `member_last_seen` at 0 rows. (Both finance figures have since moved — 30 fines /
-2.510 kr. after T075, and 14 payments / 14.880 kr. after T076.)
+2.510 kr. after T075, and 15 payments / 16.880 kr. after T076 and T081.)
 
 An admin sees it on `/anciennitet`, **folded shut and alphabetical**: in a club
 of ten a permanent ranking by absence is a different social object from a fact
@@ -539,10 +562,11 @@ behind the login; admins additionally edit news, events and attendance.
 Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-REVIEW.md).
 
 ## Green right now
-- `npm test` — 394 component/derivation tests (jsdom, fast, offline). Eighteen of
-  them are T076's: the club's whole bank statement is pinned as a table and run
-  through `allocateDues`, so the reconciliation to 14.880 kr. and the single
-  200 kr. outstanding are re-proved on every run rather than remembered in a
+- `npm test` — 407 component/derivation tests (jsdom, fast, offline). Eighteen of
+  them are T076's, extended by T081: the club's whole bank statement is pinned as
+  a table — 95 transfers to 04.08.2026 — and run through `allocateDues`, so the
+  reconciliation to 16.880 kr. and the zero outstanding kontingent are re-proved
+  on every run rather than remembered in a
   document — along with a catch-up transfer spread across the months it settles,
   a member who starts paying mid-history, and the June 2026 rate change paid in
   two instalments. `allocateDues` **throws** rather than absorbing a transfer it
@@ -624,13 +648,14 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    What §14.5 was reaching for was **Mads**, who did owe a year of arrears and
    **paid them in full on 01.05.2026** — 1.200 kr., twelve months, no remainder.
    Nobody owes a buy-in, so no receivable concept is needed.
-4. **Chase 200 kr. and decide about 730 kr.** — since T078 the 730 is on the page
-   as its own figure rather than buried in a wrong total, stated once and with no
-   badge or nag, because whether to bill it is his call and not the app's. Since
-   2026-07-30 the whole club can see it, which is a nudge no badge could be. — Anders's July 2026 kontingent
-   (he has changed bank; the club's only outstanding kontingent) and the 730 kr.
-   of fines a Lead noted and nobody billed. Neither is a code task; both are the
-   treasurer's.
+4. **Decide about the 730 kr.** — ~~chase 200 kr.~~ ✅ **settled 2026-08-08
+   (T081)**: Anders paid July and August together on 03.08, and the club now has
+   no outstanding kontingent at all. What is left is the 730 kr. of fines a Lead
+   noted and nobody billed. Since T078 it is on the page as its own figure rather
+   than buried in a wrong total, stated once and with no badge or nag, because
+   whether to bill it is his call and not the app's. Since 2026-07-30 the whole
+   club can see it, which is a nudge no badge could be. Not a code task; it is
+   the treasurer's.
 5. **Deploy to Vercel** (phase 8) — nothing is hosted yet.
 6. **T011 — automated schema parity** (`tests/schema/parity.sh`): diff local
    objects (pg_policies, pg_proc, pg_trigger, relrowsecurity, FK confdeltype,

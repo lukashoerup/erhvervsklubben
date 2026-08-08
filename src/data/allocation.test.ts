@@ -18,13 +18,18 @@ import { buildLedger } from './ledger'
  */
 
 /**
- * Every dues transfer on the club's account, 30.08.2025 – 30.07.2026, decoded
+ * Every dues transfer on the club's account, 30.08.2025 – 04.08.2026, decoded
  * from `Erhvervsklubkonto40863416622026073o.csv` (Latin-1, semicolon-delimited,
- * Danish decimals). The fourth column is the bank's own transfer text, kept
- * because it is what attributes the row.
+ * Danish decimals) to 30.07.2026, and from the statement Lukas photographed on
+ * 2026-08-08 for the eight after it. The fourth column is the bank's own
+ * transfer text, kept because it is what attributes the row.
+ *
+ * The second statement overlaps the first from 01.06.2026 and reproduces it
+ * line for line — same dates, same texts, same amounts — so the overlap is
+ * corroboration rather than a second source to reconcile. §17.
  *
  * Two attributions are not read off the text and are marked where they occur:
- * the three bare `Overførsel` lines are **Mads** (Lukas, 2026-07-30 — the one
+ * the four bare `Overførsel` lines are **Mads** (Lukas, 2026-07-30 — the one
  * member whose transfers carry no name), and `Ekstra kontingent i juni` is
  * **Esben** by elimination. See docs/finance-reconciliation.md §16.2.
  *
@@ -119,6 +124,19 @@ const STATEMENT: [string, string, number, string][] = [
   ['2026-07-02', 'Emil', 200, 'Emil kontingent'],
   ['2026-07-02', 'Kasper', 200, 'Kontingent Kasper'],
   ['2026-07-30', 'Rasmus', 200, 'Rasmus Holst Anderse'], // settles August 2026
+  // ---- new on the statement of 04.08.2026 (T081) ----
+  ['2026-07-31', 'Lukas', 200, 'Lukas'],
+  ['2026-08-03', 'Esben', 200, 'Kontingent - Esben C.'],
+  // 400, and the only transfer in the club's history that settles two months at
+  // the same rate: July 2026, which he owed after changing bank, and August. The
+  // text is `Anders Tørring` where every earlier line of his reads `Anders
+  // Tørring Hanse` — the new bank, corroborating the reason July was late. §17.
+  ['2026-08-03', 'Anders', 400, 'Anders Tørring'],
+  ['2026-08-04', 'Emil', 200, 'Emil kontingent'],
+  ['2026-08-04', 'Kasper', 200, 'Kontingent Kasper'],
+  ['2026-08-04', 'Mads', 200, 'Overførsel'], // Mads
+  ['2026-08-04', 'Have', 200, 'Christian Have'],
+  ['2026-08-04', 'Saaby', 200, 'Mathias Saaby'],
 ]
 
 /**
@@ -288,84 +306,93 @@ describe('the rate change of June 2026', () => {
   })
 })
 
-describe("the club's bank statement, 30.07.2026", () => {
+describe("the club's bank statement, 04.08.2026", () => {
   const transfers: Transfer[] = STATEMENT.map(([date, member, kr]) => ({ date, member, kr }))
 
   test('every krone of dues in the statement is a krone of dues in the books', () => {
-    expect(transfers).toHaveLength(87)
-    expect(transfers.reduce((n, t) => n + t.kr, 0)).toBe(13_300)
+    expect(transfers).toHaveLength(95)
+    expect(transfers.reduce((n, t) => n + t.kr, 0)).toBe(15_100)
   })
 
   const a = allocateDues({
     transfers,
     duesFrom: DUES_FROM,
     from: '2025-06',
-    through: '2026-07',
+    through: '2026-08',
   })
 
-  test('reconciles to 14.880 kr. — the balance Lukas photographed on 27.07', () => {
+  test('reconciles to 16.880 kr. — the statement\'s own closing balance', () => {
     const fines = FINE_RECEIPTS.reduce((n, f) => n + f.kr, 0)
     expect(fines).toBe(1_780)
-    expect(a.settled).toBe(13_100)
-    expect(a.settled + fines).toBe(14_880)
+    expect(a.settled).toBe(15_100)
+    expect(a.settled + fines).toBe(16_880)
 
-    // The statement closes at 15.080. The 200 kr. between the two is Rasmus's
-    // transfer of 30.07, which settles August — the club is mid month-change
-    // and its members transfer on different days, so a reconciliation drawn at
-    // the end of July must hold it out or report eight members delinquent for a
-    // month that has not happened.
-    expect(a.prepaid).toBe(200)
-    expect(a.settled + fines + a.prepaid).toBe(15_080)
+    // **Nothing is held out this time, and that is a fact about the calendar
+    // rather than a tidier answer.** At 30.07 the books had to hold Rasmus's
+    // 200 kr. out as August money (T076) or report eight members delinquent for
+    // a month that had barely begun. Here every August transfer has arrived and
+    // nobody has paid September in advance yet, so the float is zero and the
+    // reconciliation lands exactly on the bank. The gap reopens at the end of
+    // August when Rasmus and Lukas transfer again, and it should.
+    expect(a.prepaid).toBe(0)
+    expect(a.settled + fines + a.prepaid).toBe(16_880)
   })
 
-  test('the only outstanding dues are 200 kr. — Anders, July 2026', () => {
-    expect(a.outstanding).toBe(200)
-    expect(a.byMember.filter((m) => m.outstanding > 0)).toEqual([
-      { member: 'Anders', owed: 1_600, settled: 1_400, outstanding: 200, prepaid: 0 },
-    ])
-    expect(a.grid.filter((c) => c.settled < c.owed)).toEqual([
-      { member: 'Anders', month: '2026-07', owed: 200, settled: 0 },
-    ])
+  test('no kontingent is outstanding anywhere — the first time in fourteen months', () => {
+    // Anders's 200 kr. of July 2026 was the club's only outstanding kontingent
+    // since June 2025. He settled it on 03.08 with a 400 kr. transfer covering
+    // July and August, having changed bank. Note the allocation is not told
+    // that: FIFO places it across the two months on its own, and the fact that
+    // 400 divides into exactly the months he owed with no remainder is what
+    // corroborates the reading. §17.
+    expect(a.outstanding).toBe(0)
+    expect(a.byMember.filter((m) => m.outstanding > 0)).toEqual([])
+    expect(a.grid.filter((c) => c.settled < c.owed)).toEqual([])
+    expect(a.byMember.find((m) => m.member === 'Anders')).toEqual({
+      member: 'Anders', owed: 1_800, settled: 1_800, outstanding: 0, prepaid: 0,
+    })
   })
 
-  test('every month from June 2025 to June 2026 is settled in full', () => {
-    // Thirteen months with nothing outstanding, and the payer count rising from
+  test('every month from June 2025 to August 2026 is settled in full', () => {
+    // Fifteen months with nothing outstanding, and the payer count rising from
     // eight to nine in May 2026 when Christian Have's first transfer arrives.
     expect(a.byMonth.map((m) => m.payers)).toEqual([
-      8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9,
+      8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9,
     ])
-    expect(a.byMonth.slice(0, 13).every((m) => m.outstanding === 0)).toBe(true)
+    expect(a.byMonth.every((m) => m.outstanding === 0)).toBe(true)
     expect(a.byMonth.map((m) => m.owed)).toEqual([
-      800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 900, 1800, 1800,
+      800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 800, 900, 1800, 1800, 1800,
     ])
   })
 
   test('Mads reads as having paid every month, and has', () => {
-    // The point of the exercise. Three transfers — 1.200 in May 2026, then 200
-    // and 200 — settle fourteen months, and the man who paid a year late is
+    // The point of the exercise. Four transfers — 1.200 in May 2026, then 200 a
+    // month — settle fifteen months, and the man who paid a year late is
     // recorded as owing the club nothing, because he owes the club nothing.
     const mads = a.grid.filter((c) => c.member === 'Mads')
-    expect(mads).toHaveLength(14)
+    expect(mads).toHaveLength(15)
     expect(mads.every((c) => c.settled === c.owed)).toBe(true)
     expect(a.byMember.find((m) => m.member === 'Mads')).toEqual({
-      member: 'Mads', owed: 1_600, settled: 1_600, outstanding: 0, prepaid: 0,
+      member: 'Mads', owed: 1_800, settled: 1_800, outstanding: 0, prepaid: 0,
     })
-    // And the bank is not flattered by it: his 1.600 kr. is exactly the 1.600
+    // And the bank is not flattered by it: his 1.800 kr. is exactly the 1.800
     // kr. the statement shows arriving under `Overførsel`.
-    expect(transfers.filter((t) => t.member === 'Mads').reduce((n, t) => n + t.kr, 0)).toBe(1_600)
+    expect(transfers.filter((t) => t.member === 'Mads').reduce((n, t) => n + t.kr, 0)).toBe(1_800)
   })
 
   test('the payments rows sum to the reconciled balance', () => {
     const rows = paymentRows(a, FINE_RECEIPTS)
-    expect(rows).toHaveLength(14)
-    expect(rows.reduce((n, r) => n + r.amount_kr, 0)).toBe(14_880)
+    expect(rows).toHaveLength(15)
+    expect(rows.reduce((n, r) => n + r.amount_kr, 0)).toBe(16_880)
     // February 2026 is the club's one month with fines in it: 800 kr. of dues
     // plus the 1.780 kr. of fines the treasurer collected in two transfers.
     expect(rows.find((r) => r.month === '2026-02')).toEqual({ month: '2026-02', amount_kr: 2_580 })
-    expect(rows.find((r) => r.month === '2026-07')).toEqual({ month: '2026-07', amount_kr: 1_600 })
+    // July was 1.600 until Anders settled it, and August is nine of nine.
+    expect(rows.find((r) => r.month === '2026-07')).toEqual({ month: '2026-07', amount_kr: 1_800 })
+    expect(rows.find((r) => r.month === '2026-08')).toEqual({ month: '2026-08', amount_kr: 1_800 })
   })
 
-  test('through the ledger, the club is behind by 200 + 730 and nothing else', () => {
+  test('through the ledger, the 730 kr. of unbilled fines is all that is left', () => {
     // Every fine the club has incurred, by the month of the meeting that
     // produced it — the 2.510 kr. of `fines` as T075 left it. Note the window
     // opens a month before the dues do, because møde #21 was 31 May 2025 and a
@@ -380,26 +407,26 @@ describe("the club's bank statement, 30.07.2026", () => {
 
     const ledger = buildLedger({
       from: '2025-05',
-      to: '2026-07',
+      to: '2026-08',
       fines,
       payments: paymentRows(a, FINE_RECEIPTS),
       payingMembers: (month) =>
         Object.values(DUES_FROM).filter((from) => from <= month).length,
     })
     const last = ledger[ledger.length - 1]
-    expect(last.actualBalance).toBe(14_880)
+    expect(last.actualBalance).toBe(16_880)
     // May 2025 charges no kontingent — the club's dues start in June, and the
     // payer count is asked per month rather than assumed from today's roster.
     expect(ledger[0].dues).toBe(0)
-    expect(ledger.reduce((n, m) => n + m.dues, 0)).toBe(13_300)
+    expect(ledger.reduce((n, m) => n + m.dues, 0)).toBe(15_100)
 
-    // And the whole of the club's position in one figure, decomposed:
-    //   200 kr  Anders's July 2026 — he has changed bank (Lukas, 2026-07-30)
-    //   730 kr  fines a Lead noted and nobody ever billed (§15.1)
-    // Incurred and collected stay two different quantities: 2.510 was charged,
-    // 1.780 came in, and the 730 between them is the club being owed money —
-    // not a reconciliation error to be tidied away.
-    expect(last.outstanding).toBe(930)
-    expect(last.outstanding - 730).toBe(200)
+    // And the whole of the club's position in one figure. Until 03.08.2026 this
+    // was 930: Anders's 200 kr. of July plus the fines. The 200 is settled, so
+    // what is left is **only** the 730 kr. of fines a Lead noted and nobody ever
+    // billed (§15.1). Incurred and collected stay two different quantities:
+    // 2.510 was charged, 1.780 came in, and the 730 between them is the club
+    // being owed money — not a reconciliation error to be tidied away, and not
+    // something a settled kontingent month makes go away.
+    expect(last.outstanding).toBe(730)
   })
 })

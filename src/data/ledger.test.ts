@@ -184,7 +184,7 @@ describe('the imported history as the sheet left it (T068/T069)', () => {
     // **Superseded on 2026-07-30 by the bank statement (T076), and kept because
     // it is the only place these figures are now written down as arithmetic.**
     // 13.280 kr. was the Google Sheet's `E29` and the annual report's total;
-    // `payments` now holds 14 rows summing to 14.880 kr., reconciled against the
+    // `payments` now holds 15 rows summing to 16.880 kr., reconciled against the
     // real ledger. 1.730 kr. was the fines as first imported; they are 2.510 kr.
     // since T075 found 730 kr. that a Lead noted and nobody billed.
     //

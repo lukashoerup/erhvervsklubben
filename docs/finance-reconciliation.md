@@ -1641,3 +1641,163 @@ Emil's 110 kr. at møde #25 — §15.6's one flagged row — is now stored as
 `{=60+50}` said it was. Somebody re-recorded that meeting in the app after T075,
 and in doing so answered §15.6. Nothing was changed here; the docs were simply
 one row behind the database.
+
+---
+
+## 17. The August statement — T081, 2026-08-08
+
+Lukas, on the morning of an EK meeting: *"Der er EK møde i dag. Jeg vil gerne
+have opdateret hjemmesiden med seneste status. Anders Tørring har indbetalt det
+han skylder. Og der er mere i kassen."* Source: a photograph of the account
+statement for 4086341662, **01.06.2026 – 04.08.2026**, 27 transactions, closing
+**16.880,00 kr.**
+
+### 17.1 Lead first: the books and the bank now agree exactly
+
+```
+15.100  kontingent settled, June 2025 – August 2026
++1.780  bøder collected, February 2026
+------
+16.880  reconciled
+16.880  bank, 04.08.2026 = the statement's own closing balance ✓
+```
+
+**Kontingent outstanding: 0 kr.** — the first time in the fourteen months the
+club has records for. §16.1 tied out *to* 200 kr.; this ties out *to nothing*.
+
+**Do not read the exact agreement as a better result than §16's.** It is a fact
+about the calendar. T076 had to hold Rasmus's 200 kr. of 30.07 out of the books
+because the club was mid month-change and its members transfer on different days;
+here every August transfer has arrived and nobody has paid September in advance
+yet, so there is no float to hold out. **The gap reopens at the end of August**
+when Rasmus and Lukas transfer again, and it should — a reconciliation that
+always lands on the balance is one that has stopped distinguishing earned from
+received.
+
+What is still outstanding is the **730 kr. of fines** a Lead noted and nobody
+billed (§15.1). A settled kontingent month does not touch it, and the two were
+deliberately not netted: `fines` was not written to at all.
+
+### 17.2 The overlap is corroboration, not a second source
+
+The statement begins 01.06.2026, so it overlaps T076's CSV by two full months.
+Every line in the overlap reproduces the CSV exactly — same dates, same transfer
+texts, same amounts, including the awkward ones: `Ekstra kontingent i juni (var
+ikke del af den faste overførsel)` on 03.06, Kasper's split 100 + 100 on 02.06
+and 06.06, and the 400 kr. of §5.3 as Rasmus (29.06) and Lukas (30.06).
+
+That matters more than it sounds. §16 read a Latin-1 CSV that had been exported
+through the wrong encoding, attributed 87 transfers by hand, and rewrote thirteen
+months of `payments` on the strength of it. An independently pulled statement
+reproducing all of it is the first external check that exercise has ever had.
+**No figure before 2026-07-30 moves.**
+
+### 17.3 The eight new transfers
+
+| Date | Text on the statement | kr. | Settles |
+|---|---|---:|---|
+| 31.07.2026 | `Lukas` | 200 | august |
+| 03.08.2026 | `Kontingent - Esben C.` | 200 | august |
+| 03.08.2026 | `Anders Tørring` | **400** | **juli + august** |
+| 04.08.2026 | `Emil kontingent` | 200 | august |
+| 04.08.2026 | `Kontingent Kasper` | 200 | august |
+| 04.08.2026 | `Overførsel` | 200 | august — Mads (§16.2) |
+| 04.08.2026 | `Christian Have` | 200 | august |
+| 04.08.2026 | `Mathias Saaby` | 200 | august |
+
+Nine members paid August and only eight transfers are listed, because the ninth
+is **Rasmus's 200 kr. of 30.07**, already on T076's statement and deliberately
+held out there as August money. It is in the 2026-08 row now, which is what it
+was always for.
+
+The bare `Overførsel` is Mads, on the same basis as the other three (§16.2) and
+now with one more corroboration: every other payer appears exactly once in the
+run, Mads appears nowhere by name, and his total is again exactly what he was
+charged.
+
+### 17.4 Anders's 400 kr. — the one line that had to be interpreted
+
+The bank says `Anders Tørring` and `400,00`. Three independent things place it
+across two months, and the point of listing them is that no one of them would be
+enough:
+
+1. **Lukas said so** — *"Anders Tørring har indbetalt det han skylder."* That is
+   the treasurer holding the club's records, the same standard §15.2 set.
+2. **The arithmetic has exactly one solution.** He owed 200 kr. — July 2026, the
+   club's only outstanding kontingent in fourteen months (§16.8), because he had
+   changed bank — and August's rate is 200 kr. 400 = 200 + 200, no remainder.
+   `allocateDues` is not told any of this: FIFO places it oldest-month-first on
+   its own, and the fact that it lands with nothing left over is the test.
+3. **The transfer text changed with him.** Every earlier line of his reads
+   `Anders Tørring Hanse`; this one reads `Anders Tørring`. The new bank is what
+   T076 recorded as the reason July was late in the first place, so the text
+   corroborates the story instead of muddying it.
+
+Had the 400 not divided cleanly — 300, or 450 — it would have been recorded as
+one transfer against July and the remainder flagged, not spread to make August
+look paid. `allocateDues` **throws** rather than absorbing money it cannot place,
+and that is asserted on every test run.
+
+### 17.5 Per member, June 2025 – August 2026
+
+Every payer at 1.800 kr. owed and 1.800 kr. settled, bar Christian Have, who is
+charged from May 2026 (§16.3) and owes 700. Oskar is charged nothing (§12).
+
+| Member | Owed | Settled | Outstanding | Prepaid |
+|---|---:|---:|---:|---:|
+| Anders | 1.800 | 1.800 | **0** | 0 |
+| Emil | 1.800 | 1.800 | 0 | 0 |
+| Esben | 1.800 | 1.800 | 0 | 0 |
+| Have | 700 | 700 | 0 | 0 |
+| Kasper | 1.800 | 1.800 | 0 | 0 |
+| Lukas | 1.800 | 1.800 | 0 | 0 |
+| Mads | 1.800 | 1.800 | 0 | 0 |
+| Rasmus | 1.800 | 1.800 | 0 | 0 |
+| Saaby | 1.800 | 1.800 | 0 | 0 |
+| Oskar | — | — | — | — |
+| **Total** | **15.100** | **15.100** | **0** | **0** |
+
+Rasmus's 200 kr. of prepayment in §16.8 is gone from this column not because he
+stopped paying early but because August has arrived: the same krone is now
+earned rather than held.
+
+### 17.6 What was written to `payments`
+
+`supabase/migrations/20260808120000_august_2026_statement.sql`, two statements.
+
+| Month | was | now | was balance | now balance | Why |
+|---|---:|---:|---:|---:|---|
+| 2026-07 | 1.600 | **1.800** | 15.080 | 15.080 | Anders settled it on 03.08 |
+| 2026-08 | *(new)* | **1.800** | — | **16.880** | Nine of nine; the statement's closing Saldo |
+
+Net effect on the total: +200 (July) +1.800 (August) = **14.880 → 16.880 kr.**
+
+**July's `bank_balance_kr` deliberately stays at 15.080.** That is what the
+account held on 30.07.2026, which is what the column has always meant, and it
+stays true when the row's `amount_kr` changes. One trap for anyone reading these
+two columns later: 15.080 is *also* the running total of `amount_kr` through
+July now, and **that is a coincidence, not a reconciliation** — the balance
+contained Rasmus's August transfer and not Anders's July one, and both happen to
+be 200 kr. §16.9's warning that the two columns differ on purpose still stands.
+
+### 17.7 Read back from production after writing
+
+Applied to `urlabzyihqrsdeasvrfe`.
+
+| Check | Value |
+|---|---|
+| `payments` rows | **15** |
+| `sum(amount_kr)` | **16.880** — the statement's own closing balance |
+| Final `bank_balance_kr` | 16.880 (04.08.2026) |
+| `fines` | 30 rows / **2.510 kr.**, 1.780 settled — unchanged |
+| `members` / `members.dues_from` | 10 / 9 set, Oskar null — unchanged |
+| `attendances` / `attendance_records` / `news` / `events` / `profiles` | unchanged |
+| Second application | **total no-op** |
+
+### 17.8 What is now open
+
+1. **The 730 kr. of unbilled fines** (§15.1) is the club's only outstanding
+   money and is still Lukas's decision, not the app's. Since T078 it is on
+   `/oekonomi` as its own figure, visible to every member.
+2. **Nothing else moved.** §16.11's open items 1–6 stand exactly as written —
+   they concern months this statement does not reach.

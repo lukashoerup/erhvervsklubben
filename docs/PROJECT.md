@@ -376,9 +376,10 @@ without losing data and without taking the old site down until an approved cutov
 
   - **The bank total cannot move.** Allocation redistributes a payment across
     months; it can neither create nor destroy a krone. `payments` sums to
-    14.880 kr. — the statement's closing balance less one transfer that settles
-    August — and `allocation.test.ts` re-proves it against all 87 real transfers
-    on every run.
+    16.880 kr. — since T081 exactly the statement's closing balance, because
+    August has arrived and there is no longer a transfer to hold out; it was
+    14.880 against a 15.080 balance at 30.07.2026 — and `allocation.test.ts`
+    re-proves it against all 95 real transfers on every run.
   - **What changes is the monthly view**, which stops recording a man as eleven
     months delinquent and then wildly overpaid, and starts recording what
     happened: he owed those months, and those months are paid.
