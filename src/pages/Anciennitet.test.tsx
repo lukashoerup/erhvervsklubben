@@ -689,6 +689,44 @@ describe('recording the evening from its own card', () => {
     expect(screen.queryByRole('button', { name: 'Registrér deltagelse' })).not.toBeInTheDocument()
   })
 
+  it('retires the calendar entry once the meeting exists, so there is one card', async () => {
+    const user = userEvent.setup()
+    renderPage('admin')
+    await screen.findByText('Frk. Barners')
+    await user.click(
+      within(cardFor('Frk. Barners')).getByRole('button', { name: 'Registrér deltagelse' }),
+    )
+    await user.type(screen.getByLabelText(/Lead/), 'Mads')
+    await user.click(screen.getByRole('button', { name: /^Gem/ }))
+
+    // Lukas: "det bliver så automatisk et møde når man registrerer deltagelse …
+    // så der ikke er to forskellige typer cards." Written first, retired second:
+    // the meeting has to exist before the plan is thrown away.
+    await waitFor(() => expect(writes.some((w) => w.table === 'events')).toBe(true))
+    const wrote = writes.findIndex((w) => w.table === 'attendance_records')
+    const retired = writes.findIndex((w) => w.table === 'events' && w.verb === 'delete')
+    expect(wrote).toBeGreaterThanOrEqual(0)
+    expect(retired).toBeGreaterThan(wrote)
+    expect(writes[retired]).toMatchObject({ table: 'events', verb: 'delete', id: 'e29' })
+  })
+
+  it('leaves the plan alone when the meeting itself fails to save', async () => {
+    const user = userEvent.setup()
+    state.failWrites = true
+    renderPage('admin')
+    await screen.findByText('Frk. Barners')
+    await user.click(
+      within(cardFor('Frk. Barners')).getByRole('button', { name: 'Registrér deltagelse' }),
+    )
+    await user.type(screen.getByLabelText(/Lead/), 'Mads')
+    await user.click(screen.getByRole('button', { name: /^Gem/ }))
+
+    // The failure mode worth guarding: delete-then-write would lose the evening
+    // twice over — no meeting, and no plan to try again from.
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Gem/ })).toBeInTheDocument())
+    expect(writes.some((w) => w.table === 'events' && w.verb === 'delete')).toBe(false)
+  })
+
   it('opens the form already carrying what the club announced', async () => {
     const user = userEvent.setup()
     renderPage('admin')

@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { useAttendance, useDeleteMeeting, useFinance, useMyMemberName } from '../data/useClubData'
+import {
+  useAttendance,
+  useDeleteMeeting,
+  useDeleteRow,
+  useFinance,
+  useMyMemberName,
+} from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
 import { daDate } from '../lib/dates'
 import { AttendanceSummary, MeetingCard, type MeetingFine } from '../components/MeetingCard'
@@ -59,6 +65,9 @@ export default function Anciennitet() {
    * announced rather than retyped from memory the morning after.
    */
   const [fromEvent, setFromEvent] = useState<Draft | undefined>(undefined)
+  /** The calendar row that becomes this meeting, retired once the meeting exists. */
+  const [fromEventId, setFromEventId] = useState<string | null>(null)
+  const retireEvent = useDeleteRow('events')
 
   // Admin is Lukas and Claude, nobody else (PROJECT.md 2026-07-27) — and never
   // a read-only build. RLS refuses a member's write regardless; this is what
@@ -88,22 +97,35 @@ export default function Anciennitet() {
       roster={names}
       nextNumber={nextNumber}
       preset={id === null ? fromEvent : undefined}
+      onSaved={() => {
+        if (fromEventId) retireEvent.mutate(fromEventId)
+      }}
       onClose={() => {
         setOpen(null)
         setFromEvent(undefined)
+        setFromEventId(null)
       }}
     />
   )
 
   /**
-   * Open the meeting form seeded from a calendar entry.
+   * Open the meeting form seeded from a calendar entry, and retire that entry once
+   * the meeting exists.
    *
-   * The calendar row is deliberately **left alone**. It disappears from the planned
-   * list by itself the day after its date, and deleting it here would throw away the
-   * club's own announcement of the evening at the exact moment the evening is being
-   * recorded — with nothing to put it back if the save then fails.
+   * Lukas, 2026-08-08: *"Før mødet er begyndt, er det blot en kommende begivenhed og
+   * det bliver så automatisk et møde når man registrerer deltagelse"* — and, in the
+   * same breath, *"så der ikke er to forskellige typer cards."* The first version of
+   * this left the calendar row alone and let it expire the next day, which put the
+   * evening on the page twice for the length of its own night. That is the
+   * duplication he has now objected to three times, and he is right each time.
+   *
+   * **Written, then retired, in that order.** The meeting is created first and the
+   * calendar row deleted only on success, so a save that fails leaves the plan
+   * exactly where it was rather than losing both. Nothing is lost either way: the
+   * date, the venue and what the lead wrote all move onto the meeting.
    */
   const recordFrom = (e: {
+    id: string
     date: string
     location: string
     description: string
@@ -113,6 +135,7 @@ export default function Anciennitet() {
       main_location: e.location,
       description: e.description,
     })
+    setFromEventId(e.id)
     setOpen('ny')
   }
 

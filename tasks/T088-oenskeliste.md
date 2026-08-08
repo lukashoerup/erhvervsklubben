@@ -44,6 +44,32 @@ up."* Publishing it is a reversal of that, and it is Lukas's to make, the same w
 he opened the finances on 2026-07-30. Cheap to build, so the decision is the whole
 of the work.
 
+## Deferred with a reason: the lead may edit his own evening's attendance
+
+Lukas, 2026-08-08: *"Kun formandskabet skal kunne ændre anciennitet/mødedeltagerne på
+møderne. Evt. lead også hvis det ikke er for bøvlet at implementere."*
+
+The first half already holds and needed no work — attendance editing has been
+admin-only since T065. **The second half is more bother than it looks**, and the
+reason is worth having written down before anyone estimates it again:
+
+* The write is not one table. Ticking a member off writes `attendances`, whose rows
+  reach the meeting through `record_id` — so a policy would have to join to
+  `attendance_records` to ask whose evening it was, on every row written.
+* `attendance_records.lead` is **free text**, with no key to `members` and no
+  constraint. Matching a signed-in user to it means going user → `user_member_mapping`
+  → name → string comparison against a column anyone can type anything into. A
+  renamed or mistyped lead silently grants or removes the right, and nothing fails
+  loudly when it does.
+* It widens who may write the club's **anciennitet**, which is the one number the
+  club actually measures itself by (§11) and the basis of every chart on `/hjem`.
+
+None of that makes it wrong — it makes it a security change with a fiddly key, not a
+switch. It also needs a decision that has not been made: is "formandskabet" the three
+admins (Lukas, Anders, Rasmus), or the club's actual chairmanship? **Saaby is
+formand and is not an admin today.** That question should be settled before any of
+this is built.
+
 ## Also open, from the same conversation
 
 - **Password reset by e-mail.** Lukas, 2026-08-08: *"Så de kan få en mail og gøre

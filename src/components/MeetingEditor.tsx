@@ -119,6 +119,7 @@ export function MeetingEditor({
   roster,
   nextNumber,
   preset,
+  onSaved,
   onClose,
 }: {
   /** Null creates one. */
@@ -133,6 +134,12 @@ export function MeetingEditor({
    * morning after is how they end up different from what was announced.
    */
   preset?: Draft
+  /**
+   * Called once the rows are actually written, before the form closes. Its one
+   * caller retires the calendar entry this meeting was recorded from — which is why
+   * it fires on success only: a failed save must leave the plan where it was.
+   */
+  onSaved?: () => void
   onClose: () => void
 }) {
   const stored = storedAttendance(meeting)
@@ -202,7 +209,12 @@ export function MeetingEditor({
       },
       // Closed only once the rows are actually written — closing on the tap
       // would show a saved-looking card built from a request that may fail.
-      { onSuccess: onClose },
+      {
+        onSuccess: () => {
+          onSaved?.()
+          onClose()
+        },
+      },
     )
   }
 
