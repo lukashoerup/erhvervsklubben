@@ -861,6 +861,25 @@ without losing data and without taking the old site down until an approved cutov
   Lukas pasted them in. Recorded because the next such question will hit the same
   wall.
 
+- **2026-09-05 — database work no longer waits for Lukas's approval.** Lukas: *"Kan vi
+  gøre sådan at jeg ikke skal acceptere alt du laver på databasen? Jeg tjekker alligevel
+  ikke hvad du udfører. Så det er blot irriterende for os begge at du skal vente på at
+  jeg lige ser notifikationen og gør noget ved det."* An approval nobody reads is a
+  delay, not a safeguard, so it went. The Supabase connector's database tools — reads,
+  writes, migrations, logs, advisors — are pre-approved in `.claude/settings.json`;
+  the actions that still prompt are the ones with a project or a bill attached
+  (create/pause/restore project, branches, cost confirmation), which are his.
+
+  **What replaces the thumb.** Every production write goes through a migration that is
+  committed under the version production holds, guarded so a fresh stack writes
+  nothing, re-runnable, and read back after writing — the shape every data migration
+  in this repo already has, and the thing that actually protected the club's books on
+  2026-08-08 when a migration was applied and not committed. And the session still asks
+  before anything that deletes or overwrites club data, changes RLS, or costs money:
+  those are decisions genuinely his (workbench CLAUDE.md, "Talking to Lukas"). This
+  reverses the 2026-07-24 boundary's *"anything touching prod data"*; CLAUDE.md carries
+  the new wording.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

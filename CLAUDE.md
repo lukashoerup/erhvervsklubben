@@ -15,17 +15,24 @@ cutover; production data must never be lost.
 - Work on a branch `task/T<id>-<slug>`. Never directly on main.
 - Commit per completed task (atomic — rollback = one revert).
 - NEVER add dependencies without Lukas's approval.
-- NEVER touch: production Supabase data, `~/.secrets/`, `~/backups/`, `.env`.
+- Production data changes only through a migration that is committed, guarded
+  (writes nothing on a fresh stack), re-runnable, and read back after writing.
+- NEVER touch: `~/.secrets/`, `~/backups/`, `.env`.
 - Dev/CI NEVER holds prod credentials — only local stack + staging.
 - Max 3 attempts on the same failing test → stop, note it in the task file, move on.
 - Done = tests green + affected docs updated + task file moved to `tasks/done/`.
 
-## Autonomy boundary (agreed with Lukas 2026-07-24)
+## Autonomy boundary (agreed with Lukas 2026-07-24; database rule changed 2026-09-05)
 **Proceed without asking:** anything inside an approved plan/task file —
 expanding agreed test suites, building pages per the reviewed spec, fixing red
-tests, updating docs.
-**Always stop and ask first:** schema or RLS changes, new dependencies,
-deploys, cutover, anything touching prod data or secrets.
+tests, updating docs — and, since 2026-09-05, **the database**: reading
+production, adding rows, additive migrations. Lukas: *"Kan vi gøre sådan at jeg
+ikke skal acceptere alt du laver på databasen? Jeg tjekker alligevel ikke hvad
+du udfører."* The Supabase tools are pre-approved in `.claude/settings.json`;
+the safeguard moved from his thumb to the migration file (see Contract).
+**Always stop and ask first:** anything that deletes or overwrites the club's
+data, RLS changes (who can see what), new dependencies, deploys, cutover,
+anything that costs money, secrets.
 **Blocked on a decision?** Park it: write the question into the task file,
 push, notify Lukas (Telegram if available), and continue with unblocked work.
 Lukas answers via the Claude app; the answer gets committed to the task file.
