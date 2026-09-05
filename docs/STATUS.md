@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-07-30 (T080 — the meetings page folded into anciennitet; /oekonomi opened to every member). Single source of truth for "where are we". Update this at the
+_Updated 2026-09-05 (T089 — September 2026 in the books; the migration that kept CI red since 08.08 guarded). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -20,8 +20,45 @@ production drifted apart for nine hours):
 absent.** So `count(*)` per member is ~28 for everyone and means nothing. The number
 the club calls fremmøde is `count(*) filter (where attended)`. As of 2026-08-08:
 **261 rows, 190 attendances.** Getting this wrong once told Lukas his database was
-broken when it was correct.
+broken when it was correct. As of 2026-09-05: **271 rows, 200 attendances** — møde #29
+(2026-08-08, record id 30) added ten of each, so all ten were there.
 
+
+**September 2026 is in the books** (2026-09-05, T089). Lukas sent a screenshot of the
+account on 05.09: **saldo 18.680,00 kr.** `payments` is now **16 rows summing to
+18.680 kr.**, and for the second month running the sum of what the club has collected
+is exactly what the bank holds — nobody has paid October ahead, nothing is outstanding.
+Nine of nine paid September. Six of the nine transfers are on the screenshot (Anders,
+Emil, Kasper, Mads and Saaby on 02.09, Have on 04.09); the other three are inferred
+from 18.680 − 16.880 = 1.800 = 9 × 200 and from who paid early in August (Rasmus, Lukas,
+Esben) — **arithmetic, not sight**, and the row's note says so. Applied to production
+and committed in the same hour as `supabase/migrations/20260905103847_september_2026_statement.sql`,
+filename version = the database's version, so check 1 above passes. Workings:
+`docs/finance-reconciliation.md` §17.
+
+**Three things this session found that the paragraphs below do not know:**
+
+1. **CI on `main` was red from 2026-08-08 15:52 until this commit** — three commits,
+   unnoticed because the two later ones were documents. Not the tests: the `rls` job
+   died at `supabase start`, because `20260808180000_adhoc_fines.sql` inserts a fine
+   against `attendance_records` id 30 — the bowling evening — and a fresh database has
+   no such row (foreign key, SQLSTATE 23503). Production ran it fine; the row was there.
+   Fixed here by guarding the three data statements and the assertion on that record
+   existing, the way `fines_settled` already guards on the club's own totals. **A data
+   migration that names a production row must say what to do when the row is absent**,
+   and `supabase start` on a clean machine is the test that proves it does.
+2. **The fine figures below are one evening behind.** `fines` is **36 rows / 2.875 kr.**,
+   not 30 / 2.510: møde #29 (2026-08-08, bowling, record id 30, lead Mads) added six
+   rows — four `aftalt` bets at 50 kr. (Lukas, Saaby, Kasper, Esben), Esben's 100 kr.
+   first round, and Kasper 3 minutes late (65 kr.). None is settled, so **udestående
+   bøder is 1.095 kr.** (730 + 365) and the Klubkassen card says so; 1.780 kr. collected
+   is unchanged. The 2.510 / 730 figures below are right for the date each paragraph
+   carries. Table in `docs/finance-reconciliation.md` §17.3.
+3. **The home server has been silent since 07.08 05:05.** `workbench/STATUS.md` is
+   regenerated every 30 minutes and that is its last commit; by its own rule the box is
+   offline or the publisher is broken. Nothing in this repo depends on it — CI is
+   GitHub's and the site is Vercel's (production deployment of `main` is `READY`) —
+   but the Telegram alerts and the nightly brief come from that machine.
 
 **It is live and writable.** <https://erhvervsklubben.vercel.app>, deployed from
 `main` by Vercel's GitHub integration on every push. Build config is in

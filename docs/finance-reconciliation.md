@@ -1641,3 +1641,129 @@ Emil's 110 kr. at møde #25 — §15.6's one flagged row — is now stored as
 `{=60+50}` said it was. Somebody re-recorded that meeting in the app after T075,
 and in doing so answered §15.6. Nothing was changed here; the docs were simply
 one row behind the database.
+
+## 17. August and September 2026 — from the app's own books and one screenshot
+
+**Read this first: the August workings were never written down.** The migration that
+put August into `payments` — `20260808052337_august_2026_statement.sql` — cites this
+section, ran against production at 05:23 on 2026-08-08, and was recovered from the
+database nine hours later; the statement it was read from (01.06–04.08.2026, closing
+16.880,00 kr.) was never committed and is not available here. So §17.1 is
+reconstructed from that migration's own notes and from what `payments` holds, not
+from the bank. §17.2 is September, and its whole source is in the repo.
+
+### 17.1 August 2026 — as the migration recorded it (T081)
+
+Nine of nine paid, and the last outstanding kontingent in the club's history —
+Anders's July, §16.11 item 1 — settled with it: his 400 kr. of 03.08 covers July and
+August together.
+
+| Day | Who | kr. | Running, from 15.080 on 30.07 |
+|---|---|---:|---:|
+| 30.07 | Rasmus | 200 | *already inside 15.080 — §16.1's held-out 200* |
+| 31.07 | Lukas | 200 | 15.280 |
+| 03.08 | Esben | 200 | 15.480 |
+| 03.08 | Anders — July **and** August | 400 | 15.880 |
+| 04.08 | Emil, Kasper, Mads, Have, Saaby | 5 × 200 | 16.880 |
+
+```
+15.080  bank, 30.07.2026 (§16.1) — includes Rasmus's August
++1.800  seven × 200 (Lukas, Esben, Emil, Kasper, Mads, Have, Saaby) + Anders's 400
+------
+16.880  bank, 04.08.2026 = the migration's own closing figure ✓
+```
+
+What was written: July's row 1.600 → 1.800 with its note rewritten and
+`bank_balance_kr` deliberately left at 15.080 (what the account held on 30.07, which
+is what the column means); an August row of 1.800 / 16.880. `payments` went 14 → 15
+rows, 14.880 → 16.880 kr. **For the first time the running sum of `amount_kr`
+equalled the bank** — because nobody had paid September ahead and nothing was
+outstanding. Two figures that agree by timing, not by rule (§16.9).
+
+### 17.2 September 2026 — the screenshot of 05.09 (T089)
+
+**Lead first: it ties out exactly, with three of nine transfers inferred rather
+than seen.**
+
+```
+16.880  bank, 04.08.2026 (§17.1)
++1.800  nine × 200 kr. — September kontingent, nine payers
+------
+18.680  bank, 04.09.2026 = the screenshot's Saldo ✓
+```
+
+Lukas sent a screenshot of the account (*Erhvervsklub konto*; *Kommende betalinger
+0,00*; section *September 2026*). Six rows of 200,00 are visible, each with the
+running balance beside it:
+
+| Day | Bank text | kr. | Saldo after |
+|---|---|---:|---:|
+| 04.09 | Christian Have | 200 | 18.680,00 |
+| 02.09 | Mathias Saaby | 200 | 18.480,00 |
+| 02.09 | Overførsel — Mads, per §16.2 | 200 | 18.280,00 |
+| 02.09 | Kontingent Kasper | 200 | 18.080,00 |
+| 02.09 | Emil kontingent | 200 | 17.880,00 |
+| *(cut off)* | Anders Tørring | 200 | *(17.680,00 by subtraction)* |
+
+That is 1.200 kr. seen. The balance before Anders's transfer is 17.680 − 200 =
+17.480, which is **600 kr. above the 04.08 figure** — three transfers of 200 that the
+screenshot does not reach. Who: the three members who paid before the 4th in August
+as well — Rasmus (30.07), Lukas (31.07), Esben (03.08) — and nobody else is left:
+nine payers, six seen, three to place. **This is arithmetic, not sight**, and the
+row's note says so. One look at the statement for 05.08–01.09 closes it. If any of
+the three is not there, the September row's 1.800 is 200 too high per absent member
+and the bank holds 200 from someone or something else.
+
+What is *not* in the 1.800: none of the bowling fines of 08.08 (§17.3). 600 does not
+decompose into any combination of 150, 115, 50 and 50, and 1.800 is exactly nine
+dues.
+
+**What was written.** One row, `2026-09-01 / 1.800 / 18.680`, guarded on the club's
+ten names and `on conflict (month) do nothing`, the same shape as August. Applied to
+production on 2026-09-05 as version `20260905103847` and committed in the same hour
+as `supabase/migrations/20260905103847_september_2026_statement.sql` — the version
+in the filename is the one `supabase_migrations.schema_migrations` holds, so a
+`supabase db reset` neither re-runs nor skips it (the August lesson; STATUS.md
+check 1). A second application against production wrote **0 rows**, verified with a
+sentinel note.
+
+`bank_balance_kr` is the **4th-of-the-month balance** for August and September, not
+the calendar month's close that §16.9 defines the column as and that every earlier
+row holds. It is the balance on the day the treasurer looked, both times. Recorded so
+nobody "corrects" the older rows to match the newer, and so the September figure can
+be replaced by the 30.09 close when a statement shows it — `amount_kr` would not
+move.
+
+**What the page says now.** Klubkassen: **18.680 kr.**, the sum of `amount_kr`, and
+for the second month running exactly what the bank holds. The ledger runs through
+September with nine payers throughout since May 2026 and no kontingent outstanding.
+
+### 17.3 The fines moved on 08.08, and the sections above did not
+
+`fines` is **36 rows / 2.875 kr.**, not the 30 / 2.510 that §16.10 read back.
+Møde #29 — 2026-08-08, the bowling evening, record id 30, lead Mads — added six rows
+in the app and by the ad-hoc migration:
+
+| Member | Rule | kr. | Note |
+|---|---|---:|---|
+| Esben | aftalt | 100 | Tabte 1. runde i bowling |
+| Esben | aftalt | 50 | Tabte 2. runde i bowling mod det andet hold |
+| Kasper | aftalt | 50 | same |
+| Lukas | aftalt | 50 | same |
+| Saaby | aftalt | 50 | same |
+| Kasper | for-sent | 65 | 3 minutes |
+
+365 kr., none settled. So the three figures the Klubkassen card computes are now
+**2.875 pålagt, 1.780 opkrævet, 1.095 udestående** — 730 from møder #26–#28 plus
+365 from #29. The card is live and right; the paragraphs above that say 2.510 / 730
+are right for the date each one carries.
+
+### 17.4 Still open after this
+
+1. **The three unseen September transfers** (§17.2). One statement page closes it.
+2. **1.095 kr. of fines noted and never billed** — §15.1's 730 plus the bowling
+   evening. Still Lukas's decision, now four evenings old rather than three.
+3. **The August statement itself** is not in the repo, so §17.1 is a reconstruction.
+4. **`bank_balance_kr` means two things** — month-end close through July, day-of-check
+   balance for August and September. Harmless to the page, which never reads it, and
+   noted above so the next statement can make it one thing again.

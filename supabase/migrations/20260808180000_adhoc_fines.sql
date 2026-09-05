@@ -27,6 +27,14 @@
 -- So: a note column, the uniqueness relaxed for `aftalt` alone, and — the part worth
 -- arguing for — **an ad-hoc fine without a reason is refused by the database.** The
 -- whole point of this category is that the reason lives nowhere else.
+--
+-- **Guarded on 2026-09-05, after a month of red CI.** The rows below name
+-- `attendance_records` id 30 — the bowling evening — and a fresh database has no
+-- such row, so `supabase start` died on the foreign key (SQLSTATE 23503) on every
+-- CI run from 2026-08-08 15:52 onward. Production ran it fine because the row was
+-- there. The three data statements and the assertion now do what every other data
+-- migration in this directory does: nothing, out loud, when the club's own rows are
+-- absent. The column, the index and the check constraint are applied everywhere.
 
 alter table public.fines add column if not exists note text;
 
@@ -50,18 +58,23 @@ create unique index if not exists fines_one_per_offence
 -- Written before the check below, or the check would refuse the rows it is meant to
 -- protect. Order matters here and nowhere else in this file.
 update public.fines set note = 'Tabte 2. runde i bowling mod det andet hold'
- where record_id = 30 and rule_id = 'aftalt' and member_name in ('Lukas', 'Saaby', 'Kasper');
+ where record_id = 30 and rule_id = 'aftalt' and member_name in ('Lukas', 'Saaby', 'Kasper')
+   and exists (select 1 from public.attendance_records where id = 30);
 
 -- Esben's 150 kr goes back to being the two fines it always was. The sum was a
 -- workaround for the constraint above, recorded openly at the time as one; with the
 -- constraint corrected there is no reason to keep the club's books saying one thing
 -- happened where two did.
 update public.fines set amount_kr = 50, note = 'Tabte 2. runde i bowling mod det andet hold'
- where record_id = 30 and rule_id = 'aftalt' and member_name = 'Esben';
+ where record_id = 30 and rule_id = 'aftalt' and member_name = 'Esben'
+   and exists (select 1 from public.attendance_records where id = 30);
 
+-- The exists-guard is what a fresh stack needs: without it this insert is the
+-- statement that broke CI, because the fine's meeting is a production row.
 insert into public.fines (record_id, member_name, rule_id, amount_kr, minutes, note)
 select 30, 'Esben', 'aftalt', 100, 0, 'Tabte 1. runde i bowling'
-where not exists (
+where exists (select 1 from public.attendance_records where id = 30)
+  and not exists (
   select 1 from public.fines
    where record_id = 30 and member_name = 'Esben' and rule_id = 'aftalt' and amount_kr = 100
 );
@@ -83,6 +96,12 @@ declare
   unnamed int;
   esben   int;
 begin
+  -- Not this club's fine book: the schema is in place, the evening is not.
+  if not exists (select 1 from public.attendance_records where id = 30) then
+    raise notice 'adhoc_fines: no meeting record 30 here — note, index and check added, no rows written';
+    return;
+  end if;
+
   select count(*), count(*) filter (where coalesce(btrim(note), '') = '')
     into adhoc, unnamed
     from public.fines where rule_id = 'aftalt';
