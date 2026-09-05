@@ -880,6 +880,21 @@ without losing data and without taking the old site down until an approved cutov
   reverses the 2026-07-24 boundary's *"anything touching prod data"*; CLAUDE.md carries
   the new wording.
 
+- **2026-09-05 — how often each man has been lead is on the anciennitet strip, as a
+  figure, not a line.** Lukas: *"Kan vi få ind på anciennitetsgrafen hvor mange gange
+  folk har været lead? Tænker en linje."* The strip is ten columns with the attendance
+  printed above each, and a drawn line was refused on two counts before any code: the
+  values are 1–4 against attendances in the twenties on a plot 56 px tall, so the line
+  would lie flat along the baseline; and a line joins *people*, drawing a trend
+  between neighbours in a sort order that is about something else. What is legible is
+  the treatment the strip already uses — a printed figure — one under each name in the
+  faint ink of the labels, explained once under the strip. Two rules travelled with it:
+  the count is read from each record's own lead field, whole names only, so *"Rasmus
+  (Co-lead Oskar)"* on møde 18 credits both men as the club wrote it; and it is **not
+  anciennitet** (§11 is attendance alone), so it never orders the strip or colours a
+  bar. If he wants it drawn after all, the honest drawing is a lead share at the foot of
+  each bar — part-to-whole in the same hue — and not a line.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

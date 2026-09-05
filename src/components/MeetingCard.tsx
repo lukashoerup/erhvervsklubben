@@ -299,10 +299,23 @@ export function MeetingCard({
  * Every member on the top score is highlighted, not just the first. Five of
  * them are usually tied, and colouring one of a tie crowns a leader the data
  * does not have.
+ *
+ * **How many times each man has been lead sits under his name, as a figure**
+ * (2026-09-05). Lukas: *"Kan vi få ind på anciennitetsgrafen hvor mange gange
+ * folk har været lead? Tænker en linje."* A line was tried on paper first and
+ * refused: the counts are 1–4 against attendances up to the high twenties, on a
+ * plot 56 px tall, so a line through them lies flat along the baseline and reads
+ * as nothing — and a line across ten *people* draws a trend between neighbours
+ * who have nothing between them. What he can read is a row: the same figure
+ * treatment the count above the bar already has, one line of numbers, labelled
+ * once under the strip. It is not anciennitet — §11 is attendance alone — so
+ * it does not order the strip, colour the bar or join the eyebrow; it rides
+ * beside the count in the faint ink the labels use.
  */
 export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
   const top = roster[0]?.attended ?? 0
   const total = roster[0]?.total ?? 0
+  const gange = (n: number) => (n === 1 ? '1 gang' : `${n} gange`)
   return (
     <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
       <Eyebrow>Anciennitet · antal deltagelser{total ? ` af ${total}` : ''}</Eyebrow>
@@ -310,8 +323,8 @@ export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
         {roster.map((r) => (
           <li
             key={r.name}
-            aria-label={`${r.name}: ${r.attended} af ${r.total}`}
-            title={`${r.name}: ${r.attended} af ${r.total}`}
+            aria-label={`${r.name}: ${r.attended} af ${r.total} · lead ${gange(r.led)}`}
+            title={`${r.name}: ${r.attended} af ${r.total} · lead ${gange(r.led)}`}
             className="flex flex-1 flex-col items-center gap-0.5"
           >
             {/* No count-up on these ten, and §04's own Anciennitet mock agrees:
@@ -342,9 +355,20 @@ export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
               />
             </span>
             <span className="tabular text-[0.55rem] leading-none text-muted">{r.label}</span>
+            {/* Faint, not muted: the label is what a reader scans for, and this
+                figure is what he reads once he has found the man. Zero is
+                printed as 0 — a member who has never led is a fact about the
+                rota, not a gap in it. */}
+            <span data-led className="tabular text-[0.55rem] leading-none text-faint">
+              {r.led}
+            </span>
           </li>
         ))}
       </ul>
+      {/* Said once under the strip rather than ten times inside it. */}
+      <p className="mt-2 text-[0.6rem] leading-snug text-faint">
+        Nederste tal: antal gange som lead.
+      </p>
     </section>
   )
 }

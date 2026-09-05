@@ -452,9 +452,15 @@ describe('the club’s history with no observer at all', () => {
     // club actually reads, count-up or not. Anders is at two of two, and a
     // figure that had been animated from zero would still read 0 here.
     expect(screen.getAllByLabelText(/Anders: \d+ af \d+/).length).toBeGreaterThan(0)
-    for (const el of screen.getAllByLabelText(/: \d+ af \d+$/)) {
-      const [, shown, total] = el.getAttribute('aria-label')!.match(/: (\d+) af (\d+)$/)!
+    // Since 2026-09-05 the label carries the lead count after the attendance —
+    // "Anders: 2 af 2 · lead 1 gang" — so the pattern is no longer anchored, and
+    // the second figure has to rest on its number too.
+    for (const el of screen.getAllByLabelText(/: \d+ af \d+ · lead \d+ gang/)) {
+      const [, shown, total, led] = el
+        .getAttribute('aria-label')!
+        .match(/: (\d+) af (\d+) · lead (\d+) gang/)!
       expect(el.textContent).toContain(shown)
+      expect(el.textContent).toContain(led)
       expect(Number(shown)).toBeLessThanOrEqual(Number(total))
     }
 

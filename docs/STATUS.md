@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-09-05 (T089 — September 2026 in the books; the migration that kept CI red since 08.08 guarded). Single source of truth for "where are we". Update this at the
+_Updated 2026-09-05 (T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -35,6 +35,20 @@ Esben) — **arithmetic, not sight**, and the row's note says so. Applied to pro
 and committed in the same hour as `supabase/migrations/20260905103847_september_2026_statement.sql`,
 filename version = the database's version, so check 1 above passes. Workings:
 `docs/finance-reconciliation.md` §17.
+
+**The anciennitet strip says how many times each man has been lead** (2026-09-05,
+T090). Lukas: *"Kan vi få ind på anciennitetsgrafen hvor mange gange folk har været
+lead? Tænker en linje."* It is a line of figures under the names, said once under the
+strip, not a line drawn across them: lead counts run 1–4 against attendances in the
+twenties on a 56 px plot, so a drawn line would lie flat on the baseline and read as
+nothing, and a line across ten *people* draws a trend between neighbours who have
+nothing between them. Counted from each record's own lead field against the roster,
+whole names only, so møde 18's *"Rasmus (Co-lead Oskar)"* credits both men and a guest
+lead credits nobody. **Not part of anciennitet** — §11 is attendance alone — so it
+neither orders the strip, colours a bar nor joins the eyebrow. Live: Anders, Esben and
+Mads on 4; Emil, Oskar, Rasmus and Saaby on 3; Lukas 2; Have and Kasper 1. Tests
+467 → 476. If Lukas wants it drawn after all, the honest drawing is a lead share at the
+foot of each bar, and the reason it was not done first is in `tasks/done/T090`.
 
 **Three things this session found that the paragraphs below do not know:**
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { MeetingCard } from './MeetingCard'
-import type { Meeting } from '../data/derive'
+import { AttendanceSummary, MeetingCard } from './MeetingCard'
+import type { Meeting, RosterEntry } from '../data/derive'
 import { describeRule } from '../data/rules'
 
 /**
@@ -239,5 +239,39 @@ describe('clicking into a meeting', () => {
     render(<MeetingCard meeting={meeting()} labels={LABELS} />)
     expect(screen.queryByText('Mere')).not.toBeInTheDocument()
     expect(screen.getByRole('article').querySelector('details')).toBeNull()
+  })
+})
+
+describe('the anciennitet strip', () => {
+  // Lukas, 2026-09-05: "Kan vi få ind på anciennitetsgrafen hvor mange gange folk
+  // har været lead? Tænker en linje." It is a line of figures, one under each
+  // name, said once under the strip — not a line drawn across ten people.
+  const roster: RosterEntry[] = [
+    { name: 'Anders', attended: 22, total: 29, label: 'An', status: 'aktiv', duesFrom: null, led: 4 },
+    { name: 'Kasper', attended: 20, total: 29, label: 'Ka', status: 'aktiv', duesFrom: null, led: 1 },
+    { name: 'Have', attended: 6, total: 29, label: 'Ha', status: 'aktiv', duesFrom: null, led: 0 },
+  ]
+
+  it('prints how many times each man has been lead, under his name', () => {
+    const { container } = render(<AttendanceSummary roster={roster} />)
+    const led = [...container.querySelectorAll('[data-led]')].map((el) => el.textContent)
+    expect(led).toEqual(['4', '1', '0'])
+    expect(screen.getByText('Nederste tal: antal gange som lead.')).toBeInTheDocument()
+  })
+
+  it('says it in words for a screen reader, with the count still first', () => {
+    render(<AttendanceSummary roster={roster} />)
+    expect(screen.getByLabelText('Anders: 22 af 29 · lead 4 gange')).toBeInTheDocument()
+    expect(screen.getByLabelText('Kasper: 20 af 29 · lead 1 gang')).toBeInTheDocument()
+    expect(screen.getByLabelText('Have: 6 af 29 · lead 0 gange')).toBeInTheDocument()
+  })
+
+  it('does not let the lead count into the eyebrow or the bar', () => {
+    // §11 is attendance alone. The bar's height is the attendance and the
+    // eyebrow names attendances; the lead count is a figure beside them.
+    const { container } = render(<AttendanceSummary roster={roster} />)
+    expect(screen.getByText(/Anciennitet · antal deltagelser af 29/)).toBeInTheDocument()
+    const bars = [...container.querySelectorAll('[data-bar]')].map((el) => (el as HTMLElement).style.height)
+    expect(bars[0]).toBe('100%')
   })
 })

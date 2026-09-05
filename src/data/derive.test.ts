@@ -1,4 +1,4 @@
-import { buildMeetings, buildRoster, shortLabels, type AttendanceRow, type RecordRow } from './derive'
+import { buildMeetings, buildRoster, leadsIn, shortLabels, type AttendanceRow, type RecordRow } from './derive'
 import type { Member } from './members'
 
 const records: RecordRow[] = [
@@ -98,6 +98,64 @@ describe('the roster', () => {
     ])
     expect(roster[0].attended).toBe(0)
     expect(roster[0].total).toBe(1)
+  })
+})
+
+describe('who has been lead', () => {
+  // Lukas, 2026-09-05: "Kan vi få ind på anciennitetsgrafen hvor mange gange folk
+  // har været lead?" Counted from the records' own lead field, against the roster.
+  test('counts the meetings each member has led', () => {
+    const roster = buildRoster(records, rows)
+    expect(roster.map((r) => [r.name, r.led])).toEqual([
+      ['Anders', 0],
+      ['Rasmus', 1],
+      ['Kasper', 0],
+    ])
+  })
+
+  test('a lead the roster does not know credits nobody and joins nobody', () => {
+    // Emil and Mads lead meetings 2 and 3 and are in neither the member list nor
+    // the attendance rows. Leading is not what makes a member (§11: attendance
+    // is), so they do not appear — and their evenings are not credited to anyone.
+    const names = buildRoster(records, rows).map((r) => r.name)
+    expect(names).not.toContain('Emil')
+    expect(names).not.toContain('Mads')
+  })
+
+  test('credits a co-lead the club wrote into the lead field', () => {
+    // Møde 18, the London trip, is recorded as "Rasmus (Co-lead Oskar)". The club
+    // named both; both are credited. A first-word rule would decide the club was
+    // wrong about its own evening.
+    const london: RecordRow = {
+      id: 18, meeting_number: 18, lead: 'Rasmus (Co-lead Oskar)',
+      pre_location: null, main_location: 'London', post_location: null,
+    }
+    const roster = buildRoster(
+      [...records, london],
+      [...rows, { record_id: 18, member_name: 'Oskar', attended: true }],
+    )
+    expect(roster.find((r) => r.name === 'Rasmus')!.led).toBe(2)
+    expect(roster.find((r) => r.name === 'Oskar')!.led).toBe(1)
+  })
+
+  test('does not order the roster — §11 is attendance alone', () => {
+    // Rasmus has led once and Anders never; Anders still comes first, on
+    // attendances. The count rides beside anciennitet, it is not part of it.
+    expect(buildRoster(records, rows).map((r) => r.name)).toEqual(['Anders', 'Rasmus', 'Kasper'])
+  })
+
+  test('a member with no meeting yet has led nought, not nothing', () => {
+    const have = buildRoster(records, rows, [{ name: 'Have', status: 'aktiv' }]).find((r) => r.name === 'Have')!
+    expect(have.led).toBe(0)
+  })
+
+  test('matches whole names only', () => {
+    expect(leadsIn('Anders', ['Anders', 'And', 'Andersen'])).toEqual(['Anders'])
+    expect(leadsIn('Andersen', ['Anders'])).toEqual([])
+    expect(leadsIn('Rasmus (Co-lead Oskar)', ['Oskar', 'Rasmus', 'Lead'])).toEqual(['Oskar', 'Rasmus'])
+    expect(leadsIn('Christian Have', ['Christian Have', 'Kasper'])).toEqual(['Christian Have'])
+    expect(leadsIn('', ['Anders'])).toEqual([])
+    expect(leadsIn('Anders', ['', ' '])).toEqual([])
   })
 })
 

@@ -78,6 +78,33 @@ export type RosterEntry = {
    * count per month, not once — see `payingMembersIn` in members.ts.
    */
   duesFrom: string | null
+  /**
+   * Meetings he has led, counted from `attendance_records.lead`.
+   *
+   * Lukas, 2026-09-05: *"Kan vi få ind på anciennitetsgrafen hvor mange gange
+   * folk har været lead?"* Not part of anciennitet — §11 is attendance alone —
+   * so it never orders the roster; it rides beside the count. See `leadsIn`.
+   */
+  led: number
+}
+
+/**
+ * The roster names a meeting's `lead` field credits.
+ *
+ * The field is free text, and the club has used it freely: 29 of 30 records hold
+ * one bare name, and møde 18 — the London trip — holds *"Rasmus (Co-lead Oskar)"*.
+ * Both men are named as leading it, so both are credited: the club wrote Oskar's
+ * name into the lead field, and a rule that counted only the first word would be
+ * this app deciding the club was wrong about its own evening.
+ *
+ * Whole names only. The string is split on anything that is not a letter and the
+ * name has to appear as a run of whole words, so "Anders" is never credited by
+ * "Andersen" and a two-word name still matches. A lead the roster does not know —
+ * a guest, a typo — credits nobody rather than inventing a bar.
+ */
+export function leadsIn(lead: string, names: Iterable<string>): string[] {
+  const words = ` ${lead.split(/[^\p{L}]+/u).filter(Boolean).join(' ')} `
+  return [...names].filter((name) => name.trim() && words.includes(` ${name.trim()} `))
 }
 
 /**
@@ -142,6 +169,15 @@ export function buildRoster(
   const names = [...seen.keys()]
   const labels = shortLabels(names)
 
+  // One credit per meeting record per name it leads with. Counted against the
+  // roster as it stands, so a lead who is neither a member nor in the attendance
+  // history — a guest — is dropped rather than added: leading an evening is not
+  // what §11 says makes a member, turning up is.
+  const led = new Map<string, number>()
+  for (const r of records) {
+    for (const name of leadsIn(r.lead, names)) led.set(name, (led.get(name) ?? 0) + 1)
+  }
+
   return names
     .map((name) => ({
       name,
@@ -149,6 +185,7 @@ export function buildRoster(
       label: labels[name],
       status: status.get(name) ?? null,
       duesFrom: duesFrom.get(name) ?? null,
+      led: led.get(name) ?? 0,
     }))
     // Most attendances first; ties alphabetical so the order never jitters
     // between renders, which would make the bar chart look alive when it isn't.
