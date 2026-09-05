@@ -920,6 +920,16 @@ without losing data and without taking the old site down until an approved cutov
   recorded because it will recur: **a reconciliation against the bank can confirm
   what was paid; it cannot cancel what was agreed.** §17.5.
 
+  **Corrected within the hour: in the papers, not on the site.** Lukas: *"Du skal
+  ikke skrive det nogen steder på hjemmesiden. Det er blot så vi har styr på det. Vi
+  skal lige sikre at Have er med på den."* Have has not been asked; until he agrees
+  the 1.100 kr. is an intention, not a charge, and a charge is what `dues_from` and
+  `/oekonomi` express. So `dues_from` went back to 2026-05-01 the same evening, the
+  page reads 1.095 kr. of fines outstanding and nothing else, and the figure is kept
+  in `members.note` (never rendered) and in §17.5. **The rule that came out of it:
+  the site shows what the club has decided with its members, not what the treasurer
+  intends to put to them.** When Have agrees, the June-2025 charge goes back on.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

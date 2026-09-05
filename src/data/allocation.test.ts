@@ -137,25 +137,19 @@ const DUES_FROM: Record<string, string> = {
   Emil: '2025-06',
   Anders: '2025-06',
   Mads: '2025-06',
-  // The month the bank first *billed* him — which is what this map is: the
-  // statement's own view, from which `payments` was written. It is not the month
-  // the club *charges* him. He buys June 2025 – April 2026 in retroactively
-  // (Lukas, 2026-07-29 and 2026-09-05; §17.5), and that charge lives on
-  // `members.dues_from` and in the ledger, not in the bank's allocation. Moving
-  // this to 2025-06 would make the allocator settle his May–July 2026 transfers
-  // against 2025 instead, and rewrite three reconciled `payments` rows to do it.
+  // The month the bank first billed him, and the month the club charges him
+  // from until his buy-in is agreed — see the note under this map.
   Have: '2026-05',
 }
 
 /**
- * What the club charges, per member, which is what `members.dues_from` holds in
- * production and what /oekonomi's expected line is built from. Differs from
- * `DUES_FROM` in one man: Have is charged from June 2025 and has paid from May
- * 2026, and the 1.100 kr. between the two is his buy-in — agreed, unpaid, and
- * the club's to collect. T076 read his transfers matching his bills as "owes
- * nothing"; the bank never saw the agreement.
+ * Not in this map, on purpose: Have's buy-in. Lukas intends him to pay June 2025 –
+ * April 2026 retroactively — 1.100 kr., §17.5 — and Have has not been asked yet.
+ * Until he has agreed it is not a charge the club makes, so it is not on
+ * `members.dues_from`, not on /oekonomi, and not here (Lukas, 2026-09-05: "Det
+ * skal ikke fremgå af hjemmesiden endnu. Blot vores dokumentation."). When he
+ * agrees, `dues_from` moves to 2025-06 and the ledger test below gains 1.100.
  */
-const CHARGED_FROM: Record<string, string> = { ...DUES_FROM, Have: '2025-06' }
 
 /**
  * The fine money, kept separate from the dues throughout. `Emil bødekasse` 235
@@ -352,8 +346,8 @@ describe("the club's bank statement, 30.07.2026", () => {
   test('every month from June 2025 to June 2026 is settled in full, as billed', () => {
     // Thirteen months with nothing outstanding against the bills, and the count
     // of members billed rising from eight to nine in May 2026 when Christian
-    // Have's first transfer arrives. Charged is a different count — nine
-    // throughout, see CHARGED_FROM — and the difference is his buy-in.
+    // Have's first transfer arrives. The club's charge is the same count until
+    // his buy-in is agreed with him (§17.5).
     expect(a.byMonth.map((m) => m.payers)).toEqual([
       8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9,
     ])
@@ -388,7 +382,7 @@ describe("the club's bank statement, 30.07.2026", () => {
     expect(rows.find((r) => r.month === '2026-07')).toEqual({ month: '2026-07', amount_kr: 1_600 })
   })
 
-  test('through the ledger, the club is behind by 200 + 730 + 1.100 and nothing else', () => {
+  test('through the ledger, the club is behind by 200 + 730 and nothing else', () => {
     // Every fine the club has incurred, by the month of the meeting that
     // produced it — the 2.510 kr. of `fines` as T075 left it. Note the window
     // opens a month before the dues do, because møde #21 was 31 May 2025 and a
@@ -406,28 +400,25 @@ describe("the club's bank statement, 30.07.2026", () => {
       to: '2026-07',
       fines,
       payments: paymentRows(a, FINE_RECEIPTS),
-      // Charged, not billed: nine from June 2025, because Have buys in.
       payingMembers: (month) =>
-        Object.values(CHARGED_FROM).filter((from) => from <= month).length,
+        Object.values(DUES_FROM).filter((from) => from <= month).length,
     })
     const last = ledger[ledger.length - 1]
     expect(last.actualBalance).toBe(14_880)
     // May 2025 charges no kontingent — the club's dues start in June, and the
     // payer count is asked per month rather than assumed from today's roster.
     expect(ledger[0].dues).toBe(0)
-    // Nine payers from June 2025: 11 × 900 + 900 + 2 × 1.800. The 1.100 above
-    // the 13.300 the bank had collected by July is Have's buy-in, charged and
-    // unpaid.
-    expect(ledger.reduce((n, m) => n + m.dues, 0)).toBe(14_400)
+    expect(ledger.reduce((n, m) => n + m.dues, 0)).toBe(13_300)
 
     // And the whole of the club's position in one figure, decomposed:
     //   200 kr  Anders's July 2026 — he has changed bank (Lukas, 2026-07-30)
     //   730 kr  fines a Lead noted and nobody ever billed (§15.1)
-    // 1.100 kr  Have's kontingent, June 2025 – April 2026 (Lukas, 2026-09-05)
     // Incurred and collected stay two different quantities: 2.510 was charged,
     // 1.780 came in, and the 730 between them is the club being owed money —
-    // not a reconciliation error to be tidied away. Neither is the 1.100.
-    expect(last.outstanding).toBe(2_030)
-    expect(last.outstanding - 730 - 1_100).toBe(200)
+    // not a reconciliation error to be tidied away. Have's 1.100 kr. buy-in is
+    // deliberately not in this figure: intended, not yet agreed with him, and
+    // therefore not charged (§17.5).
+    expect(last.outstanding).toBe(930)
+    expect(last.outstanding - 730).toBe(200)
   })
 })

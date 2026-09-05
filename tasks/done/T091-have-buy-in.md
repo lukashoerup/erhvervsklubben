@@ -1,4 +1,4 @@
-# Task: T091 — Have's buy-in, 1.100 kr., into the books
+# Task: T091 — Have's buy-in, 1.100 kr.: into the papers, not onto the site
 
 **Status:** done 2026-09-05. Branch `claude/ek-account-balance-update-kx7ffo`.
 
@@ -40,18 +40,29 @@ rate then in force, Mads's precedent for a twelve-month catch-up — and confirm
   finance-reconciliation.md §17.5, PROJECT.md decision, a dated correction appended
   to T076 — history left as written, corrected below it.
 
-## What the page says now
-`/oekonomi` charges nine members from June 2025 and reads the club as owed
-**2.195 kr.** = 1.100 kr. kontingent (Have) + 1.095 kr. fines. It reconciles to the
-krone: 18.000 charged + 2.875 fines − 18.680 received. Live at once — the page
-derives from `dues_from`; no deploy needed.
+## What the page said for an hour, and why it does not now
+With `dues_from` at 2025-06-01, `/oekonomi` charged nine members from June 2025 and
+read the club as owed 2.195 kr. = 1.100 kr. kontingent (Have) + 1.095 kr. fines,
+reconciling to the krone. Then Lukas: *"Du skal ikke skrive det nogen steder på
+hjemmesiden. Det er blot så vi har styr på det. Vi skal lige sikre at Have er med på
+den."* Have has not been asked, so the 1.100 kr. is an intention, not a charge —
+and `dues_from` is a charge. Reverted to 2026-05-01 by
+`supabase/migrations/20260905182331_have_buy_in_not_on_the_site.sql`, applied and
+read back. The page reads 1.095 kr. of fines outstanding and nothing else, as
+before. The figure is kept in `members.note` — a column no page selects — and in
+§17.5. `allocation.test.ts` is back to the bank's view, with the pending 1.100 in a
+comment.
 
 ## Verification
 - Read back: Have `dues_from = 2025-06-01`, note set; nine other rows unchanged.
 - Tests green after the split into billed/charged (counts in the commit).
 
 ## Left open
-- **Collecting it.** With the fines round after 30 September, or on its own —
-  Lukas's call. When it lands: allocate across June 2025 – April 2026 (§16.4).
+- **Lukas asks Have.** Yes: `dues_from` → 2025-06-01 (20260905181816 is the shape)
+  and the page carries it. No, or another figure: correct the note and §17.5.
+- **Collecting it**, once agreed: with the fines round after 30 September, or on its
+  own. When it lands: allocate across June 2025 – April 2026 (§16.4).
+- **The rule this set:** the site shows what the club has decided with its members,
+  not what the treasurer intends to put to them (PROJECT.md).
 - The general lesson is in PROJECT.md: a bank reconciliation confirms what was
   paid; it cannot cancel what was agreed.

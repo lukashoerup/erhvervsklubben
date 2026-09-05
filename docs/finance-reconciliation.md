@@ -1836,3 +1836,22 @@ month, into `payments` (§16.4), with the bank balance of the month it lands; th
 same treatment Mads had. Until then the 1.100 stays on the expected line, which is
 where a receivable belongs.
 
+**Reverted the same evening — the papers, not the site.** Lukas, an hour later:
+*"Du skal ikke skrive det nogen steder på hjemmesiden. Det er blot så vi har styr på
+det. Vi skal lige sikre at Have er med på den."* And again: *"Det skal ikke fremgå af
+hjemmesiden endnu. Blot vores dokumentation."* Have has not been asked, so the
+1.100 kr. is the treasurer's intention and not yet a charge the club makes. The
+whole of the section above stands as the arithmetic and the reasoning; what changed
+is where it lives. `dues_from` is back at **2026-05-01**
+(`supabase/migrations/20260905182331_have_buy_in_not_on_the_site.sql`, applied and
+read back), `/oekonomi` reads the club as owed **1.095 kr.** of fines and nothing
+else, and the 1.100 is recorded in `members.note` — a column nothing on the site
+selects — and here. `allocation.test.ts` charges nine from June 2025 only in a
+comment. The "what the page says now" block above describes the hour it was live
+and what it will say again once Have agrees; the migration to make it so is
+20260905181816's update, re-issued.
+
+**Open:** Lukas asks Have. Yes → `dues_from` = 2025-06-01 and the page carries it.
+No, or a different figure → the note and this section are corrected, and nothing
+on the site ever moved.
+

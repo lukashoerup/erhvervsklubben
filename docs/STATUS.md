@@ -228,19 +228,21 @@ cannot move**, only the monthly view, and the allocation is asserted against all
 between "allocated" and "moved to look nice" sits, is in PROJECT.md and
 `docs/finance-reconciliation.md` §16.4.
 
-**Nine payers from June 2025 — since 2026-09-05; the paragraph below is how it
-read from 2026-07-30 until then.** Have's `dues_from` is **2025-06-01** now, not
-2026-05-01: he buys the eleven months before his first transfer in retroactively,
-**1.100 kr.**, agreed with Lukas on 2026-07-29 and confirmed by him on 2026-09-05
-(*"Vi har talt tidligere om det."*). T076's "Have owes nothing" was the bank's view
-— he paid what he was billed — and the bank never saw the agreement. So `/oekonomi`
-now charges nine members across the whole history and reads the club as owed
-**2.195 kr.: 1.100 of kontingent and 1.095 of fines**, both real. When he pays, the
-transfer is allocated across June 2025 – April 2026 (§16.4), as Mads's was.
-Workings: `docs/finance-reconciliation.md` §17.5.
+**Have's buy-in — 1.100 kr., in the papers only, not on the site** (2026-09-05).
+Lukas intends Have to pay the eleven months before his first transfer, June 2025 –
+April 2026 at 100 kr., and has said so twice (2026-07-29, 2026-09-05: *"Vi har talt
+tidligere om det."*). T076's "Have owes nothing" was the bank's view — he paid what
+he was billed — and the bank never saw the intention. **But Have has not been asked
+yet**, and Lukas was explicit: *"Det skal ikke fremgå af hjemmesiden endnu. Blot
+vores dokumentation. Vi skal lige sikre at Have er med på den."* So `dues_from`
+stays **2026-05-01** (it was 2025-06-01 for about an hour that evening, reverted by
+`…_have_buy_in_not_on_the_site.sql`), `/oekonomi` reads the club as owed 1.095 kr.
+of fines and nothing else, and the 1.100 lives in `members.note` — which nothing on
+the site renders — and in `docs/finance-reconciliation.md` §17.5 and
+`tasks/done/T091`. **When Have agrees:** move `dues_from` to 2025-06-01 (the
+20260905181816 migration is the shape) and the page shows it.
 
-**Eight payers before May 2026, nine from May** *(as it stood 2026-07-30 to
-2026-09-05).* `members.dues_from` now holds the
+**Eight payers before May 2026, nine from May.** `members.dues_from` now holds the
 first month the club charges each member: 2025-06 for eight, 2026-05 for
 Christian Have, null for Oskar (§12 charges him nothing). This is the schema
 change §14.5 specified and refused to make without evidence, and it removes the
@@ -373,8 +375,8 @@ dated meetings, so that half is closed and the club should now read behind rathe
 than ahead. Nothing here is a code bug to fix — what is left is the payer count,
 and it needs a schema change Lukas has to approve first (T071 §14.5).
 §9 Q8 is **answered**: nine members since June 2026, eight before, and the ninth
-still owes a retroactive buy-in the app cannot model — **it can since 2026-09-05:
-`dues_from` = 2025-06-01 carries it, 1.100 kr.**
+still owes a retroactive buy-in the app cannot model — **it can, via `dues_from`;
+it does not yet, because Have has not been asked (2026-09-05, §17.5).**
 Full workings in `docs/finance-reconciliation.md` §13.
 The budget itself is `src/data/projection.ts`: *Klubbens finanser* had the
 `Forventede bøder` / `Forventet beholdning` structure and **no method** — those
@@ -719,9 +721,11 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    the bills, not the club's agreement, and Lukas set it straight on 2026-09-05:
    *"Jo men i de udestående Have har ift. at han startede senere i klubben. Vi har
    talt tidligere om det."* **1.100 kr.** — eleven months, June 2025 to April
-   2026, at 100 kr. — held by `members.dues_from = 2025-06-01` since that day, so
-   the ledger carries it without a new concept. Mads did owe a year and paid it on
-   01.05.2026; that part of T076's finding stands.
+   2026, at 100 kr. — **tracked in the papers and in `members.note`, not charged**:
+   Have has not been asked, and Lukas wants nothing on the site until he has.
+   When he agrees, `members.dues_from = 2025-06-01` carries it without a new
+   concept. Mads did owe a year and paid it on 01.05.2026; that part of T076's
+   finding stands.
 4. **Chase 200 kr. and decide about 730 kr.** — since T078 the 730 is on the page
    as its own figure rather than buried in a wrong total, stated once and with no
    badge or nag, because whether to bill it is his call and not the app's. Since
