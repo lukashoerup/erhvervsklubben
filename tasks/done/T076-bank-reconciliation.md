@@ -140,3 +140,12 @@ was applied a **second** time with a sentinel note and wrote **0 rows** — the
 once and never reasserts itself over a treasurer's later correction.
 
 Full workings: `docs/finance-reconciliation.md` §16.
+
+## Corrected 2026-09-05 — "Have owes nothing" was wrong
+The bank showed Have paying exactly what he was billed from May 2026, and this task
+read that as "there is no receivable". It confirmed the bills; it could not cancel
+the agreement Lukas had stated the day before, and he restated it on 2026-09-05:
+Have buys in for June 2025 – April 2026, **1.100 kr.** `members.dues_from` is
+2025-06-01 for him now. Everything else here stands — Mads's arrears were real and
+paid. See finance-reconciliation.md §17.5 and tasks/done/T091.
+

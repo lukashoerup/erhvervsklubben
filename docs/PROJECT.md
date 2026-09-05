@@ -907,6 +907,19 @@ without losing data and without taking the old site down until an approved cutov
   top, and the figures kept under the names so the number needs no axis. The one-axis
   rule stands for every other chart in the app.
 
+- **2026-09-05 — Have's buy-in is real: 1.100 kr., and the books carry it.** Lukas,
+  asked what Have owes: *"Jo men i de udestående Have har ift. at han startede senere
+  i klubben. Vi har talt tidligere om det."* They had — 2026-07-29, above — and the
+  next day's bank reconciliation (T076) overruled it with an inference: his transfers
+  matched his bills, so "he owes nothing". The bank never billed him for 2025; the
+  club charges him for it. The figure was never written down, so it was put to him
+  on the club's own arithmetic — eleven months, June 2025 to April 2026, at 100 kr.,
+  Mads's precedent — and he confirmed **1.100 kr.** Carried by `members.dues_from`
+  = 2025-06-01, which is what that column means; `payments` untouched; `/oekonomi`
+  now reads the club as owed 2.195 kr., kontingent and fines both. The lesson,
+  recorded because it will recur: **a reconciliation against the bank can confirm
+  what was paid; it cannot cancel what was agreed.** §17.5.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

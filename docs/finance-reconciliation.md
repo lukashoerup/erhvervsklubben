@@ -1767,3 +1767,72 @@ are right for the date each one carries.
 4. **`bank_balance_kr` means two things** — month-end close through July, day-of-check
    balance for August and September. Harmless to the page, which never reads it, and
    noted above so the next statement can make it one thing again.
+
+### 17.5 Have's buy-in: §16.11's "owes nothing" was the bank's view, not the club's
+
+**Lead first: Christian Have owes the club 1.100 kr. of kontingent, and since
+2026-09-05 the books say so.** Eleven months, June 2025 to April 2026, at the
+100 kr. rate then in force; plus 110 kr. of fines (§17.3), 1.210 kr. in all.
+
+**How it was lost.** Lukas, 2026-07-29 (§14.5): the ninth member *"must still buy
+in retroactively — he is treated as though he had paid kontingent all along, but he
+has not actually paid."* T076, the next day, read the bank statement: Have's three
+transfers (04.05, 02.06, 02.07.2026: 100 + 200 + 200) total exactly what he had been
+*billed* from May 2026, and concluded — §16.11, T076's task file, STATUS.md — that
+"there is no receivable; Have owes nothing; the arrears were Mads's." Mads's arrears
+were real and were paid. But a man's transfers matching his bills shows he paid what
+he was asked for; it says nothing about an agreement the bank never billed. The
+reconciliation overruled a stated fact with an inference, and it stood for five
+weeks until Lukas asked what Have owes: *"Jo men i de udestående Have har ift. at
+han startede senere i klubben. Vi har talt tidligere om det."*
+
+**The figure**, never written down before, on the club's own arithmetic and the
+precedent Mads set (§16.4: twelve months at 100 kr., 1.200 kr., 01.05.2026):
+
+```
+kontingent began        June 2025          (§16.3)
+Have first billed       May 2026           (first transfer 04.05.2026)
+months in between       11                 June 2025 – April 2026
+rate in those months    100 kr.            (§4 Stk. 3 as it then read; 200 from June 2026)
+------
+buy-in                  1.100 kr.          confirmed by Lukas, 2026-09-05
+```
+
+**Where it lives.** `members.dues_from` — "the first month the club charges him" —
+is now **2025-06-01** for Have, written by
+`supabase/migrations/20260905181816_have_dues_from_june_2025.sql` and read back.
+That is the column doing its own job: the club charges him from June 2025,
+retroactively but charged. Nothing else moved. In particular **`payments` did not**:
+his May–July 2026 transfers stay booked to May–July 2026, which is what they were
+sent for, so the eleven unpaid months sit where they belong, at the start.
+
+**What the page says now.** `/oekonomi` charges nine members across the whole
+history, and its position reconciles to the krone:
+
+```
+18.000  kontingent charged, June 2025 – September 2026, nine payers
++2.875  fines incurred (§17.3)
+------
+20.875  expected
+18.680  received (§17.2)
+------
+ 2.195  the club is owed = 1.100 (Have, kontingent) + 1.095 (fines unbilled)  ✓
+```
+
+Before this section the same figure read 1.095, the fines alone, and the kontingent
+half of the ledger looked whole. It was not.
+
+**Two views, kept apart on purpose.** `allocation.test.ts` models the bank statement
+as the bank saw it — `DUES_FROM` is the month each man was first *billed*, Have
+2026-05, and against that the only shortfall on 30.07 is Anders's 200 — and the
+ledger test at its end charges nine from June 2025 (`CHARGED_FROM`) and finds the
+club 2.030 behind at July: 200 + 730 + 1.100. Moving Have to 2025-06 in the
+allocator instead would have settled his 2026 transfers against 2025 and rewritten
+three reconciled `payments` rows to say so. Billed and charged are different
+questions, and the buy-in is exactly the gap between them.
+
+**When he pays.** Allocate the transfer across June 2025 – April 2026, 100 kr. per
+month, into `payments` (§16.4), with the bank balance of the month it lands; the
+same treatment Mads had. Until then the 1.100 stays on the expected line, which is
+where a receivable belongs.
+

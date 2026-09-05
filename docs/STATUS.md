@@ -228,7 +228,19 @@ cannot move**, only the monthly view, and the allocation is asserted against all
 between "allocated" and "moved to look nice" sits, is in PROJECT.md and
 `docs/finance-reconciliation.md` §16.4.
 
-**Eight payers before May 2026, nine from May.** `members.dues_from` now holds the
+**Nine payers from June 2025 — since 2026-09-05; the paragraph below is how it
+read from 2026-07-30 until then.** Have's `dues_from` is **2025-06-01** now, not
+2026-05-01: he buys the eleven months before his first transfer in retroactively,
+**1.100 kr.**, agreed with Lukas on 2026-07-29 and confirmed by him on 2026-09-05
+(*"Vi har talt tidligere om det."*). T076's "Have owes nothing" was the bank's view
+— he paid what he was billed — and the bank never saw the agreement. So `/oekonomi`
+now charges nine members across the whole history and reads the club as owed
+**2.195 kr.: 1.100 of kontingent and 1.095 of fines**, both real. When he pays, the
+transfer is allocated across June 2025 – April 2026 (§16.4), as Mads's was.
+Workings: `docs/finance-reconciliation.md` §17.5.
+
+**Eight payers before May 2026, nine from May** *(as it stood 2026-07-30 to
+2026-09-05).* `members.dues_from` now holds the
 first month the club charges each member: 2025-06 for eight, 2026-05 for
 Christian Have, null for Oskar (§12 charges him nothing). This is the schema
 change §14.5 specified and refused to make without evidence, and it removes the
@@ -361,7 +373,8 @@ dated meetings, so that half is closed and the club should now read behind rathe
 than ahead. Nothing here is a code bug to fix — what is left is the payer count,
 and it needs a schema change Lukas has to approve first (T071 §14.5).
 §9 Q8 is **answered**: nine members since June 2026, eight before, and the ninth
-still owes a retroactive buy-in the app cannot model.
+still owes a retroactive buy-in the app cannot model — **it can since 2026-09-05:
+`dues_from` = 2025-06-01 carries it, 1.100 kr.**
 Full workings in `docs/finance-reconciliation.md` §13.
 The budget itself is `src/data/projection.ts`: *Klubbens finanser* had the
 `Forventede bøder` / `Forventet beholdning` structure and **no method** — those
@@ -700,13 +713,15 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
    May's rate. `members.dues_from` now carries it for all nine payers, so
    `/oekonomi` charges eight members before May 2026 and nine after, and §13's
    1.200 kr. distortion is gone.
-   ~~**The ninth member's retroactive buy-in**~~ — **there is no receivable.**
-   §14.5 recorded that he "must still buy in retroactively" and that nothing in
-   the schema could hold it. The statement says otherwise: Have's three transfers
-   total exactly what the club charged him from May 2026, and he owes nothing.
-   What §14.5 was reaching for was **Mads**, who did owe a year of arrears and
-   **paid them in full on 01.05.2026** — 1.200 kr., twelve months, no remainder.
-   Nobody owes a buy-in, so no receivable concept is needed.
+   **The ninth member's retroactive buy-in — there is a receivable after all.**
+   T076 struck this out on 2026-07-30: Have's three transfers matched what he had
+   been billed from May 2026, so "he owes nothing". That was the bank's view of
+   the bills, not the club's agreement, and Lukas set it straight on 2026-09-05:
+   *"Jo men i de udestående Have har ift. at han startede senere i klubben. Vi har
+   talt tidligere om det."* **1.100 kr.** — eleven months, June 2025 to April
+   2026, at 100 kr. — held by `members.dues_from = 2025-06-01` since that day, so
+   the ledger carries it without a new concept. Mads did owe a year and paid it on
+   01.05.2026; that part of T076's finding stands.
 4. **Chase 200 kr. and decide about 730 kr.** — since T078 the 730 is on the page
    as its own figure rather than buried in a wrong total, stated once and with no
    badge or nag, because whether to bill it is his call and not the app's. Since
