@@ -36,19 +36,25 @@ and committed in the same hour as `supabase/migrations/20260905103847_september_
 filename version = the database's version, so check 1 above passes. Workings:
 `docs/finance-reconciliation.md` §17.
 
-**The anciennitet strip says how many times each man has been lead** (2026-09-05,
-T090). Lukas: *"Kan vi få ind på anciennitetsgrafen hvor mange gange folk har været
-lead? Tænker en linje."* It is a line of figures under the names, said once under the
-strip, not a line drawn across them: lead counts run 1–4 against attendances in the
-twenties on a 56 px plot, so a drawn line would lie flat on the baseline and read as
-nothing, and a line across ten *people* draws a trend between neighbours who have
-nothing between them. Counted from each record's own lead field against the roster,
-whole names only, so møde 18's *"Rasmus (Co-lead Oskar)"* credits both men and a guest
-lead credits nobody. **Not part of anciennitet** — §11 is attendance alone — so it
-neither orders the strip, colours a bar nor joins the eyebrow. Live: Anders, Esben and
-Mads on 4; Emil, Oskar, Rasmus and Saaby on 3; Lukas 2; Have and Kasper 1. Tests
-467 → 476. If Lukas wants it drawn after all, the honest drawing is a lead share at the
-foot of each bar, and the reason it was not done first is in `tasks/done/T090`.
+**The anciennitet strip says how many times each man has been lead — as a line on
+its own right-hand scale, and as a figure under his name** (2026-09-05, T090). Lukas:
+*"Kan vi få ind på anciennitetsgrafen hvor mange gange folk har været lead? Tænker en
+linje."* The first answer was the figure row alone, the line refused on scale (1–4
+against attendances in the twenties on a 56 px plot) and on meaning (a line across ten
+people). He came back: *"Tænkte en ny y akse. Til linjegrafen."* **A second y-axis is
+the one thing the chart rules forbid outright, it was said to him once, and it is his
+call** — recorded as such in PROJECT.md. Built as honestly as a dual axis can be: the
+line is ink, not the bars' blue; its scale is written at the right edge and nowhere
+else, with no gridline across the bars; the scale runs to one above the highest count
+so the line never sits level with a bar top; the figures stay under the names; and it
+grows from the baseline with the bars as one gesture. The strip became a grid with a
+subgrid per member so the plot row is one shared band, and the columns lost their gap
+(the bars wear 2 px side padding instead) so the dots land on the bars' centres
+exactly. Counted from each record's own lead field against the roster, whole names
+only, so møde 18's *"Rasmus (Co-lead Oskar)"* credits both men and a guest lead credits
+nobody. **Not part of anciennitet** — §11 is attendance alone — so it neither orders
+the strip nor colours a bar. Live: Anders, Esben and Mads on 4; Emil, Oskar, Rasmus and
+Saaby on 3; Lukas 2; Have and Kasper 1. Tests 467 → 480.
 
 **Three things this session found that the paragraphs below do not know:**
 

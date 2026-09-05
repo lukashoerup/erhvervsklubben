@@ -895,6 +895,18 @@ without losing data and without taking the old site down until an approved cutov
   bar. If he wants it drawn after all, the honest drawing is a lead share at the foot of
   each bar — part-to-whole in the same hue — and not a line.
 
+  **Later the same day, he did want it drawn, and as a line: *"Tænkte en ny y akse. Til
+  linjegrafen."*** A second y-axis is the one chart form the dataviz rules forbid
+  without exception, because it lets a reader compare two series that share no scale,
+  and the app said so once. Asked twice, it is his decision: this is the club's own
+  chart of ten men it knows by name, he is its treasurer and its reader, and the cost
+  falls on nobody else. So the rule is overridden here and only here, and the line is
+  drawn as honestly as a dual axis can be — its scale written at the right edge and
+  nowhere else, no gridline across the bars, the line in ink rather than the bars'
+  blue, the scale one above the highest count so the line never sits level with a bar
+  top, and the figures kept under the names so the number needs no axis. The one-axis
+  rule stands for every other chart in the app.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration

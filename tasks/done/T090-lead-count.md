@@ -57,7 +57,38 @@ Kasper 1 — 30 records; Oskar's third is the London co-lead.
   labels' own size; at 420 px the columns are ~30 px wide and a one- or two-digit
   figure fits. Worth a glance on Lukas's phone.
 
+## Second round, the same day: the line, on its own axis
+Lukas, on reading the above: *"Tænkte en ny y akse. Til linjegrafen."*
+
+A second y-axis is the one chart form the dataviz rules forbid without exception, and
+he had been told once why a line was refused. Asked twice, it is his call — recorded in
+PROJECT.md — and the job became drawing a dual axis as honestly as one can be drawn:
+
+- **The line is ink, not the bars' blue**, painted over a surface-coloured halo (the
+  2 px surface ring the rules ask for where marks cross), so it never reads as a bar's
+  outline and stays legible over blue and over the gaps in both themes.
+- **Its scale is written at the right edge and nowhere else**: a hairline axis with
+  `0` and the highest count on it, titled *lead*, and no gridline across the bars —
+  a gridline would invite reading the bars against the line's scale.
+- **The scale runs to one above the highest count**, so the line's peak never sits
+  level with the tallest bar.
+- **The figures under the names stay.** The number is readable without the axis.
+- **It grows from the baseline with the bars** — the same `data-bar` state and the
+  same 900 ms — so the strip is still one gesture rather than bars growing under a
+  finished line.
+
+Geometry: the strip is now a CSS grid of four rows (count, plot, label, lead figure)
+with a subgrid per member, so the plot row is one shared band; the line is an SVG laid
+over that band alone, with percent coordinates on each mark rather than a stretched
+viewBox. The columns lost their 4 px gap and the bars wear 2 px side padding instead,
+so column *i*'s centre is exactly (i + ½)/n and the dots land on their bars. Every cell
+is placed by hand on the grid, because auto-placement steps around cells an explicit
+item occupies rather than sharing them.
+
+Tests 476 → 480: the dots' positions on the scale and at the column centres, the halo
+and ink passes, the axis carrying the scale and nothing else ruled, the line riding
+the bars' animation state, and an empty roster drawing no line.
+
 ## Left open
-- If Lukas wants it *drawn*: a lead share at the foot of each bar (part-to-whole, same
-  hue, lighter step) is the honest form. Not done first because it puts a second
-  meaning on the bar the club reads most, and the ramp tokens flip between themes.
+- The figure row under the names is now the second statement of the same number. If
+  Lukas finds the strip busy, the row is the thing to drop, not the axis.

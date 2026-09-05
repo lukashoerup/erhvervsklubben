@@ -256,7 +256,47 @@ describe('the anciennitet strip', () => {
     const { container } = render(<AttendanceSummary roster={roster} />)
     const led = [...container.querySelectorAll('[data-led]')].map((el) => el.textContent)
     expect(led).toEqual(['4', '1', '0'])
-    expect(screen.getByText('Nederste tal: antal gange som lead.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Linjen (skala til højre) og nederste tal: antal gange som lead.'),
+    ).toBeInTheDocument()
+  })
+
+  it('draws the lead count as a line on its own scale, one dot on each man’s bar', () => {
+    // Lukas, later the same day: "Tænkte en ny y akse. Til linjegrafen." His call,
+    // against the one-axis rule, recorded in PROJECT.md. The scale runs to one
+    // above the highest count — 0 to 5 here — so 4 sits at 20 % from the top,
+    // never level with the tallest bar, and 0 sits on the baseline.
+    const { container } = render(<AttendanceSummary roster={roster} />)
+    const dots = [...container.querySelectorAll('[data-lead-dot]')]
+    expect(dots.map((d) => d.getAttribute('data-lead-dot'))).toEqual(['4', '1', '0'])
+    expect(dots.map((d) => d.getAttribute('cy'))).toEqual(['20%', '80%', '100%'])
+    // Three men, three columns: the dots sit at the column centres.
+    expect(dots.map((d) => d.getAttribute('cx'))).toEqual(['16.667%', '50%', '83.333%'])
+    // Two segments between three dots, drawn twice: a surface halo under the ink.
+    expect(container.querySelectorAll('.stroke-surface line')).toHaveLength(2)
+    expect(container.querySelectorAll('.stroke-ink line')).toHaveLength(2)
+  })
+
+  it('writes the line’s scale at the right edge and nowhere else', () => {
+    const { container } = render(<AttendanceSummary roster={roster} />)
+    const axis = container.querySelector('[data-lead-axis]')!
+    expect(axis.textContent).toBe('40')
+    expect(screen.getByText('lead')).toBeInTheDocument()
+    // No gridline across the bars: the only ruled line is the axis itself.
+    expect(container.querySelectorAll('.border-l')).toHaveLength(1)
+  })
+
+  it('grows the line from the baseline with the bars, as one gesture', () => {
+    const { container } = render(<AttendanceSummary roster={roster} />)
+    expect(container.querySelector('svg[data-lead-line]')).toHaveAttribute('data-bar')
+    // And says nothing to a screen reader: the count is in every man’s own label.
+    expect(container.querySelector('svg[data-lead-line]')!.closest('li')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('draws no line for an empty roster', () => {
+    const { container } = render(<AttendanceSummary roster={[]} />)
+    expect(container.querySelector('[data-lead-line]')).toBeNull()
+    expect(container.querySelector('[data-lead-axis]')).toBeNull()
   })
 
   it('says it in words for a screen reader, with the count still first', () => {

@@ -300,32 +300,66 @@ export function MeetingCard({
  * them are usually tied, and colouring one of a tie crowns a leader the data
  * does not have.
  *
- * **How many times each man has been lead sits under his name, as a figure**
- * (2026-09-05). Lukas: *"Kan vi få ind på anciennitetsgrafen hvor mange gange
- * folk har været lead? Tænker en linje."* A line was tried on paper first and
- * refused: the counts are 1–4 against attendances up to the high twenties, on a
- * plot 56 px tall, so a line through them lies flat along the baseline and reads
- * as nothing — and a line across ten *people* draws a trend between neighbours
- * who have nothing between them. What he can read is a row: the same figure
- * treatment the count above the bar already has, one line of numbers, labelled
- * once under the strip. It is not anciennitet — §11 is attendance alone — so
- * it does not order the strip, colour the bar or join the eyebrow; it rides
- * beside the count in the faint ink the labels use.
+ * **How many times each man has been lead is a line across the bars, on its own
+ * scale, and a figure under his name** (2026-09-05). Lukas: *"Kan vi få ind på
+ * anciennitetsgrafen hvor mange gange folk har været lead? Tænker en linje."*
+ * The first answer was the figure alone, with the line refused: the counts are
+ * 1–4 against attendances in the twenties on a plot 56 px tall, so a line on
+ * the bars' scale lies flat along the baseline. He came back: *"Tænkte en ny y
+ * akse. Til linjegrafen."* A second y-axis is the one thing the chart rules
+ * forbid outright, because it lets a reader compare two series that share no
+ * scale — and that was said to him once. This is the club's own chart of ten
+ * men it knows by name, he is the treasurer and the reader, and it is his call
+ * (PROJECT.md, 2026-09-05). So the line is drawn as honestly as a second axis
+ * can be: **its scale is written at the right edge and nowhere else**, it is
+ * ink rather than the bars' blue so it cannot be mistaken for a bar's
+ * outline, it never reaches the top of the plot (the scale is one above the
+ * highest count), and the figure under each name stays, so the number is
+ * readable without the axis. It is still not anciennitet — §11 is attendance
+ * alone — so it neither orders the strip nor colours a bar.
+ *
+ * **Geometry.** The strip is a grid of four rows — count, plot, label, lead
+ * figure — and each member is a subgrid down one column, so the plot row is
+ * one shared band across all ten. The line lives in that band alone, laid over
+ * the columns, and the axis is an eleventh column beside it. No column gap:
+ * the bars wear their own 2 px side padding instead, so the *i*-th column's
+ * centre is exactly (i + ½)/n of the band's width and the dots land on the
+ * bars they belong to. It grows from the baseline with the bars — same
+ * `data-bar`, same 900 ms, one gesture — because a finished line floating over
+ * bars still growing reads as a chart loading in pieces (design/README.md,
+ * "The chart").
  */
 export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
   const top = roster[0]?.attended ?? 0
   const total = roster[0]?.total ?? 0
+  const n = roster.length
   const gange = (n: number) => (n === 1 ? '1 gang' : `${n} gange`)
+  // The line's own scale: one above the highest count, so the line never
+  // touches the top of the plot and cannot read as level with the tallest bar.
+  const maxLed = Math.max(0, ...roster.map((r) => r.led))
+  const scale = maxLed + 1
+  const x = (i: number) => ((i + 0.5) / n) * 100
+  const y = (led: number) => (1 - led / scale) * 100
+  // Rounded, so 1 − 4/5 is 20 % and not 19.999999999999996 %.
+  const pct = (v: number) => `${Math.round(v * 1000) / 1000}%`
+  const columns = `repeat(${n}, minmax(0, 1fr)) 1.25rem`
   return (
     <section data-reveal className="rounded-2xl border border-line bg-surface p-4">
       <Eyebrow>Anciennitet · antal deltagelser{total ? ` af ${total}` : ''}</Eyebrow>
-      <ul className="mt-3 flex items-end gap-1">
-        {roster.map((r) => (
+      <ul
+        className="mt-3 grid gap-y-0.5"
+        style={{ gridTemplateColumns: columns, gridTemplateRows: 'auto 3.5rem auto auto' }}
+      >
+        {roster.map((r, i) => (
           <li
             key={r.name}
             aria-label={`${r.name}: ${r.attended} af ${r.total} · lead ${gange(r.led)}`}
             title={`${r.name}: ${r.attended} af ${r.total} · lead ${gange(r.led)}`}
-            className="flex flex-1 flex-col items-center gap-0.5"
+            className="grid grid-rows-subgrid justify-items-center"
+            // Placed by hand, every one: the line and the axis below are placed
+            // by hand into the same rows, and auto-placement would step around
+            // the cells they occupy rather than share them.
+            style={{ gridColumn: i + 1, gridRow: '1 / span 4' }}
           >
             {/* No count-up on these ten, and §04's own Anciennitet mock agrees:
                 it marks the bars as growing and leaves the figures above them
@@ -339,7 +373,7 @@ export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
             <span className="tabular text-[0.6rem] leading-none font-semibold text-ink">
               {r.attended}
             </span>
-            <span aria-hidden="true" className="flex h-14 w-full items-end">
+            <span aria-hidden="true" className="flex h-full w-full items-end px-0.5">
               {/* "Søjler vokser ved scroll" (§04), from the baseline (§01). The
                   height stays an inline style and the growth is a scaleY on top
                   of it, so the bar's real height is still the number it
@@ -364,10 +398,100 @@ export function AttendanceSummary({ roster }: { roster: RosterEntry[] }) {
             </span>
           </li>
         ))}
+
+        {/* The line, over the plot row and nothing else. Percent coordinates on
+            each mark rather than a viewBox: a viewBox stretched to the band
+            would stretch the strokes and the dots with it. Painted twice — a
+            surface-coloured halo under the ink — which is the 2 px surface ring
+            the chart rules ask for where a mark crosses another, and here every
+            segment crosses a bar. Decorative to a screen reader: the count is
+            in every member's own label. */}
+        {n > 0 && (
+          <li
+            role="presentation"
+            aria-hidden="true"
+            className="pointer-events-none relative"
+            style={{ gridColumn: `1 / ${n + 1}`, gridRow: 2 }}
+          >
+            <svg
+              data-bar
+              data-lead-line
+              className="absolute inset-0 h-full w-full overflow-visible"
+              fill="none"
+            >
+              {(['stroke-surface', 'stroke-ink'] as const).map((tone) => (
+                <g
+                  key={tone}
+                  className={tone}
+                  strokeWidth={tone === 'stroke-surface' ? 4 : 2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {roster.slice(1).map((r, i) => (
+                    <line
+                      key={r.name}
+                      x1={pct(x(i))}
+                      y1={pct(y(roster[i].led))}
+                      x2={pct(x(i + 1))}
+                      y2={pct(y(r.led))}
+                    />
+                  ))}
+                </g>
+              ))}
+              {roster.map((r, i) => (
+                <circle
+                  key={r.name}
+                  data-lead-dot={r.led}
+                  cx={pct(x(i))}
+                  cy={pct(y(r.led))}
+                  r={3.5}
+                  className="fill-ink stroke-surface"
+                  strokeWidth={2}
+                />
+              ))}
+            </svg>
+          </li>
+        )}
+
+        {/* The line's axis: a hairline at the right edge of the plot with the
+            scale's two ends written on it, and its name in the row above. The
+            only place the line's scale is stated, deliberately — a gridline
+            across the bars would invite reading the bars against it. */}
+        {n > 0 && (
+          <>
+            <li
+              role="presentation"
+              aria-hidden="true"
+              className="self-end pl-1 text-[0.5rem] leading-none text-faint"
+              style={{ gridColumn: n + 1, gridRow: 1 }}
+            >
+              lead
+            </li>
+            <li
+              role="presentation"
+              aria-hidden="true"
+              data-lead-axis
+              className="relative border-l border-line"
+              style={{ gridColumn: n + 1, gridRow: 2 }}
+            >
+              {maxLed > 0 && (
+                <span
+                  className="tabular absolute left-1 -translate-y-1/2 text-[0.5rem] leading-none text-faint"
+                  style={{ top: pct(y(maxLed)) }}
+                >
+                  {maxLed}
+                </span>
+              )}
+              <span className="tabular absolute bottom-0 left-1 text-[0.5rem] leading-none text-faint">
+                0
+              </span>
+            </li>
+          </>
+        )}
       </ul>
       {/* Said once under the strip rather than ten times inside it. */}
       <p className="mt-2 text-[0.6rem] leading-snug text-faint">
-        Nederste tal: antal gange som lead.
+        Linjen (skala til højre) og nederste tal: antal gange som lead.
       </p>
     </section>
   )
