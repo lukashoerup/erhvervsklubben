@@ -930,6 +930,25 @@ without losing data and without taking the old site down until an approved cutov
   the site shows what the club has decided with its members, not what the treasurer
   intends to put to them.** When Have agrees, the June-2025 charge goes back on.
 
+## 2026-09-08 — Shared review and a critical project partner
+Lukas requested Codex review of Claude's work as a standard Workbench workflow,
+including this project. The reviewer must challenge the core idea, benefit,
+architecture and way of working as well as correctness. Routine checks and
+scoped fixes should happen without him requesting each step. Occasional useful
+questions and next-step recommendations are welcome; repeated nagging is not.
+
+Adopt `docs/WORKBENCH.md` version `2026-09-08.1`, matching the canonical file
+in `lukashoerup/workbench`. Existing project permissions remain unchanged.
+Claude normally builds and Codex reviews; Codex-built work needs a reviewer
+from a different model family. Model agreement does not establish correctness.
+Missing independent review is recorded as pending rather than silently passed.
+
+This decision adopts standing instructions. Automatic review triggers,
+reciprocal reviewer access, review gates and scheduled partner check-ins still
+require configuration and verification; see Workbench's `docs/workflow-rollout.md`.
+T092 is the instruction change, authored by Codex without independent Claude
+review. Do not describe that policy change as independently approved.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
