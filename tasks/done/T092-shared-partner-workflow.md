@@ -35,3 +35,7 @@ Background automation must be configured and verified separately.
 - npm run lint and git diff --check: passed.
 - Local policy matches Workbench byte for byte; AGENTS.md resolves to CLAUDE.md.
 - No app or database code changed. The separate database integration job runs in CI.
+
+## Follow-up decision — 2026-09-09
+Lukas chose questioning whether a quiet project is still worth pursuing as the
+default. Policy version 2026-09-09.1 reflects that preference in both projects.

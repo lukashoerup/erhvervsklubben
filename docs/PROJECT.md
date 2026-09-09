@@ -937,7 +937,7 @@ architecture and way of working as well as correctness. Routine checks and
 scoped fixes should happen without him requesting each step. Occasional useful
 questions and next-step recommendations are welcome; repeated nagging is not.
 
-Adopt `docs/WORKBENCH.md` version `2026-09-08.1`, matching the canonical file
+Adopt `docs/WORKBENCH.md` version `2026-09-09.1`, matching the canonical file
 in `lukashoerup/workbench`. Existing project permissions remain unchanged.
 Claude normally builds and Codex reviews; Codex-built work needs a reviewer
 from a different model family. Model agreement does not establish correctness.
@@ -969,3 +969,5 @@ task T000, and a fresh backup is a hard gate at cutover pre-flight.
 - Q4 new URL / domain (is erhvervsklubbensforum.dk yours?).
 - Q5 two auth users have no member mapping — who are they?
 - Q7 keep the event-evaluations feature (1 row ever written)?
+
+**Quiet-project guidance — agreed 2026-09-09.** Lukas chose: "Question whether it is still worth pursuing." Start with current value and priorities before proposing another task; inactivity alone does not establish lack of value.

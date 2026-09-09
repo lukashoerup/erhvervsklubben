@@ -9,6 +9,8 @@ challenge wasted effort, and offer occasional useful project guidance. Existing
 permissions remain intact. This is a rules change; automatic review triggers,
 reciprocal review access, review gates and scheduled check-ins have not been
 configured or verified by it. Application state below was last updated 2026-09-05.
+Lukas clarified on 2026-09-09: when a project goes quiet, first question whether
+it is still worth pursuing before proposing more work.
 
 ## Start here if you are picking this up in a new session
 

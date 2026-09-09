@@ -1,6 +1,7 @@
 # Shared Workbench workflow
 
-Policy version: **2026-09-08.1**. Agreed with Lukas on 2026-09-08.
+Policy version: **2026-09-09.1**. Agreed with Lukas on 2026-09-08; quiet-period
+preference clarified on 2026-09-09.
 Canonical source: `lukashoerup/workbench`, `docs/WORKBENCH.md`.
 Projects carry an identical local copy so cloud and offline sessions can read
 it. Update copies deliberately with the canonical version; keep project-specific
@@ -68,9 +69,13 @@ parked/done, recommended action, unresolved decision and owner, last meaningful
 activity, and any snooze/review date. Keep history and superseded decisions
 separate. Distinguish an agent's inference from Lukas's recorded decision.
 
-At a milestone, or after roughly seven quiet days, consider one useful next
-action or reflection. Planning, conversation and external work count as
-activity; automatic status commits do not. No useful recommendation means quiet.
+At a milestone, or after roughly seven quiet days, consider useful reflection.
+Lukas's default for quiet projects is to question whether they are still worth
+pursuing before suggesting more work. Assess current benefit and priorities;
+continuing, simplifying, parking or finishing are all valid outcomes. Inactivity
+alone is not evidence that a project lacks value. Planning, conversation and
+external work count as activity; automatic status commits do not.
+No useful recommendation means quiet.
 For background guidance, send at most one combined nonurgent prompt per week
 across projects. Coalesce duplicate topics, respect snoozes/parked projects,
 and record responses so answered questions stay closed. Do not repeat an
