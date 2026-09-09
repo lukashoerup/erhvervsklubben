@@ -42,10 +42,17 @@ Read **docs/STATUS.md** — where we are, what's green, what's next. Then SETUP.
 to bring the local stack up. The repo is the memory: trust `git log` + a green
 test run, never a status summary.
 
+## Code Review Rules
+- Apply `docs/WORKBENCH.md` before substantial work; initiate independent review.
+- Check the idea's benefit and needless complexity as well as actual behavior.
+- Flag changes that violate data/access boundaries or fail on a fresh database.
+- Missing or stale independent review is pending, never approval.
+
 ## Document routing (read ONLY when needed)
 | Working on... | Read first |
 |---|---|
 | Current status / what to do next | docs/STATUS.md |
+| Shared review and critical project partner | docs/WORKBENCH.md |
 | Components, dataflow, interfaces | docs/ARCHITECTURE.md |
 | Running it, commands, gotchas | docs/SETUP.md |
 | Decisions + why + open questions | docs/PROJECT.md |

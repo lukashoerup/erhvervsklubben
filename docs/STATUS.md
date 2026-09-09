@@ -3,6 +3,15 @@
 _Updated 2026-09-05 (T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
+**Shared workflow adopted 2026-09-08 (T092).** Read `docs/WORKBENCH.md` before
+substantial work: initiate independent review of the idea and implementation,
+challenge wasted effort, and offer occasional useful project guidance. Existing
+permissions remain intact. This is a rules change; automatic review triggers,
+reciprocal review access, review gates and scheduled check-ins have not been
+configured or verified by it. Application state below was last updated 2026-09-05.
+Lukas clarified on 2026-09-09: when a project goes quiet, first question whether
+it is still worth pursuing before proposing more work.
+
 ## Start here if you are picking this up in a new session
 
 **Two checks before trusting anything below** (added 2026-08-08, after the repo and
@@ -689,9 +698,9 @@ Full task breakdown: [PLAN.md](PLAN.md) §4. Test spec: [PLAN-REVIEW.md](PLAN-RE
   prod at cutover.
 
 ## Immediate next tasks (resume here)
-1. **Decide whether Leads can record fines** — the one thing blocking the
-   finance flow from matching the regulation. See T050's "Capture is built"
-   note; it is an access-rule change, so it needs Lukas.
+1. **Fine recording stays with admins — resolved 2026-08-08.** Lukas declined
+   opening it to Leads (PROJECT.md, that date). Do not ask him to decide again
+   without new evidence or a new request. This is not an outstanding blocker.
 2. ~~**Fill in the missing meeting dates**~~ ✅ **mostly done 2026-07-29 (T071).**
    **17 of 28 dated from Lukas's Outlook calendar, 11 refused.** All 1.780 kr. of
    fines is now inside the monthly ledger. What is left needs Lukas himself, and
