@@ -1878,9 +1878,12 @@ fourteen historic amounts:
 calendar held `Erhvervsklub #30` on 2026-09-11 with an empty lead. Written by
 `20260911163428_moede_30_late_fines.sql` as **record 32** (31 went to the dry run —
 a sequence does not roll back), meeting 30, lead Lukas, venue carried from the
-calendar row. Five attendance rows, present: the lead and the four late. The other
-five members have no row — the message says nothing about them, and §11 counts
-absences, so none was invented. Still Lukas's to complete on /anciennitet.
+calendar row. Five attendance rows at first, present: the lead and the four late.
+Three hours later Lukas had ticked Saaby present on the card and asked for the rest
+to be listed as absent, which the card cannot write for him (T092, second round), so
+`20260911165315_moede_30_evening.sql` wrote the four: **six present, four absent
+(Have, Mads, Oskar, Rasmus), ten rows** — 281 / 206 across the table. The venues on
+the record are his own typing: Café Understellet, then Ma Cuisine.
 
 The Klubkassen card now computes **3.305 pålagt, 1.780 opkrævet, 1.525 udestående**.
 Per member, unsettled, after tonight: Kasper 305, Esben 285, Emil 280, Mads 130,

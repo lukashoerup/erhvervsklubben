@@ -29,7 +29,10 @@ tests, updating docs — and, since 2026-09-05, **the database**: reading
 production, adding rows, additive migrations. Lukas: *"Kan vi gøre sådan at jeg
 ikke skal acceptere alt du laver på databasen? Jeg tjekker alligevel ikke hvad
 du udfører."* The Supabase tools are pre-approved in `.claude/settings.json`;
-the safeguard moved from his thumb to the migration file (see Contract).
+the safeguard moved from his thumb to the migration file (see Contract). **That file is
+read only when this repository is the session's primary working directory** — a web
+session started on two repositories ignores it and prompts for every call (2026-09-11).
+Either way, batch database reads into one query: see the `moede` skill.
 **Always stop and ask first:** anything that deletes or overwrites the club's
 data, RLS changes (who can see what), new dependencies, deploys, cutover,
 anything that costs money, secrets.
@@ -54,6 +57,7 @@ test run, never a status summary.
 | The rebuild plan + phases | docs/PLAN.md |
 | Test spec + review findings | docs/PLAN-REVIEW.md |
 | Verbatim schema/RLS to reproduce | docs/schema-snapshot-2026-07-23.sql |
+| Recording a meeting from Lukas's message (bøder, fremmøde, sted) | `.claude/skills/moede/SKILL.md` — three database calls, not twenty |
 | Cross-project patterns | `workbench` repo → context/PATTERNS.md |
 
 ## Stack

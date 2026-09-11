@@ -70,16 +70,64 @@ next reader does not go looking for a deleted meeting.
   rows, the same shape as `absences_recorded` and the guarded `adhoc_fines`, so
   `supabase start` on a clean machine writes nothing.
 
-## Left open — for Lukas, on /anciennitet or in a message
-1. **Who else was there?** Have, Mads, Oskar, Rasmus and Saaby have no row on møde
-   #30. Ticking them on the meeting card writes the rows (the editor inserts a row for
-   any member it has none for). If any of them was absent, tick nothing for him — the
-   next absences pass (the shape of `absences_recorded`) can write the false rows once
-   the present ones are known.
-2. **The venue.** The card says `Lukas` under Sted because the calendar row did. If the
-   evening was somewhere else, correct it on the card.
-3. **Udeblivelse / sent afbud.** Nothing was said about anyone missing without notice,
-   so nothing was charged. If someone did, it is one more row — 200 kr. or 100 kr. —
-   and it belongs to the Lead to say.
-4. **1.525 kr. of fines noted and never billed** — §15.1's 730, the bowling 365 and
+## Second round, the same evening: venues, the club's words, the four absent
+
+Lukas, three hours later: *"Vi starter i øvrigt på Understellet og tager på Ms
+Cuisine bagefter. Opdater. Skriv gerne noget med at en formidabel lead har forberedt
+noget rigtig lækkert og godt i god tid (ironisk) samme jargon som nyheder og øvrige
+begivenheder. Skriv en skill eller et eller andet. Kan ikke passe at jeg skal
+acceptere 20 sql requests for at du kan opdatere det her. Der mangler at stå alle dem
+som ikke er til stede på mødet i dag."*
+
+**What one read found** (a single `json_build_object` query — the point of the skill):
+- He had already opened the card and written the venues himself: `Café Understellet`,
+  `Ma Cuisine` (his card spelling; the chat said "Ms"). Left exactly as typed.
+- He had ticked **Saaby** present — six rows, all present.
+- The calendar row `Erhvervsklub #30` was **gone**: recording a meeting from the card
+  retires its calendar row (`retireEvent` in Anciennitet.tsx). So the first
+  migration's `events` update had done its work and the second's touched nothing.
+- **Item 1 of the first round was wrong about the card.** The editor's `fresh` filter
+  inserts a row for a member it has none for **only when he is ticked present**; there
+  is no way to write an absence from the site for a member with no row. That is why
+  the four were "missing" rather than absent, and why the first round's rule could
+  not stand.
+
+**`20260911165315_moede_30_evening.sql`**, applied once (no dry run — the block's own
+assertions roll back, and the first dry run cost record id 31), read back:
+- `description` on record 32, in the club's Formandskabet register: *"Lukas er Lead.
+  En formidabel Lead har i særdeles god tid forberedt noget rigtig lækkert og godt: Vi
+  starter på Café Understellet og går derefter videre til Ma Cuisine. Formandskabet
+  noterer med tilfredshed, at programmet forelå længe før mødets start, og ser frem til
+  faglige diskussioner på højeste niveau."* Written only where the column was empty.
+- Venues only where still empty or still the calendar placeholder — a no-op tonight.
+- **Absent rows for every member without one**: Have, Mads, Oskar, Rasmus. The evening
+  holds **ten rows, six present**; the table 281 / 206.
+- Assertions: one row per member, a description, a real venue.
+
+**The skill: `.claude/skills/moede/SKILL.md`.** One read (the query to copy), one
+migration (the block to copy, guards in order), one read-back; the rules for late,
+bets, no-shows, Oskar, attendance-from-a-message (ten rows), venues, the calendar row,
+the club's voice for descriptions, the docs to touch, and the shape of the reply.
+`/moede` is user-invocable.
+
+**Why twenty prompts.** Two causes. The first round fanned reads out as a dozen
+queries — fixed by the recipe. And Claude Code on the web loads `.claude/settings.json`
+only from the session's primary working directory; a session on two repositories has
+`/home/user` as primary and never reads this repo's allow-list (docs: settings,
+"Settings in cloud sessions" — found by the claude-code-guide agent, not verified from
+inside a session). A session started on `erhvervsklubben` alone should not prompt.
+Also in `workbench/context/LEARNINGS.md`.
+
+## Left open — for Lukas
+1. **The four absent — Have, Mads, Oskar, Rasmus — on his word** ("alle dem som ikke
+   er til stede"). If one of them was there after all, tick him on the card; the row
+   exists now, so the card can flip it.
+2. **Udeblivelse / sent afbud.** Four absent, and nothing said about notice, so nothing
+   charged. Missing without notice is 200 kr., cancelling after the table was booked
+   100 kr. — the Lead's to say.
+3. **1.525 kr. of fines noted and never billed** — §15.1's 730, the bowling 365 and
    tonight's 430. Five evenings now. Still Lukas's decision.
+4. **The app cannot write an absence for a member with no row.** A meeting the app
+   creates gets ten rows, so it only bites on a meeting a migration created — which the
+   skill now prevents. Worth a small change in `useSaveMeeting` anyway (insert
+   `false` rows for un-ticked members with no row on a *dated* meeting) if it recurs.

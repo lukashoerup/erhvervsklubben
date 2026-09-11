@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-09-11 (T092 — møde #30 recorded, four late fines; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
+_Updated 2026-09-11 (T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -22,9 +22,9 @@ the club calls fremmøde is `count(*) filter (where attended)`. As of 2026-08-08
 **261 rows, 190 attendances.** Getting this wrong once told Lukas his database was
 broken when it was correct. As of 2026-09-05: **271 rows, 200 attendances** — møde #29
 (2026-08-08, record id 30) added ten of each, so all ten were there. As of 2026-09-11:
-**276 rows, 205 attendances** — møde #30 (2026-09-11, record id **32**) has rows for
-the five men Lukas's message proves were there and **no row yet for the other five**;
-see the paragraph below before reading any per-member count off that evening.
+**281 rows, 206 attendances** — møde #30 (2026-09-11, record id **32**) holds one row
+per member: six present (Lukas, Anders, Esben, Kasper, Emil, Saaby), four absent
+(Have, Mads, Oskar, Rasmus).
 
 **Møde #30 is in the books, with four late fines** (2026-09-11, T092). Lukas, lead
 that evening: *"Bøder til EK møde. Hvor jeg er lead. I dag. Anders: 2 min · Esben:
@@ -34,14 +34,40 @@ that evening: *"Bøder til EK møde. Hvor jeg er lead. I dag. Anders: 2 min · E
 Lukas was the lead or the venue was his house), so
 `supabase/migrations/20260911163428_moede_30_late_fines.sql` recorded it: meeting 30,
 lead Lukas, dated 11.09, venue carried from the calendar row (`Lukas`) as the app's
-own button would carry it, the calendar row's lead set too. **Attendance is only what
-the message proves** — the lead and the four who arrived late, marked present; the
-other five are not marked absent on no evidence, and are Lukas's to tick on
-/anciennitet. `fines` is now **40 rows / 3.305 kr.**, **1.525 kr. udestående**
-(730 + 365 + 430, five evenings never billed); 1.780 kr. opkrævet is unchanged. Dry-run
-first (rolled back — and it consumed record id 31, so ids now run 1–27, 29, 30, 32),
-then applied and read back; filename version = the database's version.
-`docs/finance-reconciliation.md` §17.6 and `tasks/done/T092`.
+own button would carry it, the calendar row's lead set too. `fines` is now **40 rows /
+3.305 kr.**, **1.525 kr. udestående** (730 + 365 + 430, five evenings never billed);
+1.780 kr. opkrævet is unchanged. Dry-run first (rolled back — and it consumed record
+id 31, so ids now run 1–27, 29, 30, 32), then applied and read back; filename version
+= the database's version. `docs/finance-reconciliation.md` §17.6 and `tasks/done/T092`.
+
+**The same evening, three hours later: the venues, the club's words, and the four who
+were not there** (T092, second round, `20260911165315_moede_30_evening.sql`). The
+first migration marked present only the five men the message proved were there and
+refused to write an absence on no evidence. Lukas then wrote the venues on the card
+himself (**Café Understellet**, then **Ma Cuisine**), ticked Saaby present, and asked:
+*"Der mangler at stå alle dem som ikke er til stede på mødet i dag."* **The card could
+not do it for him** — the meeting editor flips a stored row but inserts a row for a
+member it has none for only when he is ticked present, so an absent man with no row is
+missing from the card rather than absent on it. The one shape the club can correct on
+the card is ten rows, one per member; that is now the rule (PROJECT.md, 2026-09-11,
+reversed the same evening it was made) and the `/moede` skill carries it. The
+description is in the club's own register, as asked — *"En formidabel Lead har i
+særdeles god tid forberedt noget rigtig lækkert og godt …"* — and the calendar row for
+#30 was already gone by then (recorded from the card, the app removes it), so that
+update touched nothing.
+
+**There is a skill for this now: `.claude/skills/moede/SKILL.md`** (2026-09-11). Lukas,
+after approving every query by hand: *"Skriv en skill eller et eller andet. Kan ikke
+passe at jeg skal acceptere 20 sql requests for at du kan opdatere det her."* Two
+causes, two fixes. The count: the first round read the database with a dozen separate
+queries where one `json_build_object` would do; the skill fixes the recipe at **three
+calls** — one read, one migration, one read-back — with the query and the block to
+copy. The prompts themselves: the Supabase tools are allow-listed in
+`.claude/settings.json`, but **Claude Code on the web reads that file only from the
+session's primary working directory**, and a session started on two repositories has
+`/home/user` as its primary, so the repo's file is never loaded (docs: settings §
+"Settings in cloud sessions"). **Start a session on this repository alone and the
+allow-list applies.** Not verified from inside a session — it is what the docs say.
 
 
 **September 2026 is in the books** (2026-09-05, T089). Lukas sent a screenshot of the

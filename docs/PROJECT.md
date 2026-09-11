@@ -939,6 +939,16 @@ without losing data and without taking the old site down until an approved cutov
   rows are the club's to tick on /anciennitet. `absences_recorded` is the pass that
   fills gaps once the present are known, and it is never run on a guess. T092.
 
+  **Reversed three hours later, by Lukas and by the card.** He ticked Saaby present
+  and wrote: *"Der mangler at stå alle dem som ikke er til stede på mødet i dag."*
+  The meeting editor can flip a stored row but inserts one for a member it has none
+  for only when he is ticked present — so a man with no row is not "absent" on the
+  card, he is missing from it, and the club cannot fix that from the site. **The rule
+  now: a meeting recorded from a message gets one row per member — present for the
+  men the message names, absent for everyone else — and the reply says who was
+  written absent so Lukas can flip it.** Ten rows is the only shape the club can
+  correct on the card. `.claude/skills/moede/SKILL.md` carries it.
+
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
   is 15. Forcing local to 15 broke the bundled GoTrue's auth-schema migration
