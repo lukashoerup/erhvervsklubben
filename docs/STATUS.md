@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-09-05 (T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
+_Updated 2026-09-11 (T092 — møde #30 recorded, four late fines; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -21,7 +21,27 @@ absent.** So `count(*)` per member is ~28 for everyone and means nothing. The nu
 the club calls fremmøde is `count(*) filter (where attended)`. As of 2026-08-08:
 **261 rows, 190 attendances.** Getting this wrong once told Lukas his database was
 broken when it was correct. As of 2026-09-05: **271 rows, 200 attendances** — møde #29
-(2026-08-08, record id 30) added ten of each, so all ten were there.
+(2026-08-08, record id 30) added ten of each, so all ten were there. As of 2026-09-11:
+**276 rows, 205 attendances** — møde #30 (2026-09-11, record id **32**) has rows for
+the five men Lukas's message proves were there and **no row yet for the other five**;
+see the paragraph below before reading any per-member count off that evening.
+
+**Møde #30 is in the books, with four late fines** (2026-09-11, T092). Lukas, lead
+that evening: *"Bøder til EK møde. Hvor jeg er lead. I dag. Anders: 2 min · Esben:
+5 min · Kasper: 12 min · Emil: 27 min"* — 60, 75, 110 and 185 kr. under `for-sent`
+(50 + 5 kr./minut), **430 kr.** The evening existed only in the calendar
+(`Erhvervsklub #30`, lead empty since 08.08 because nothing then could say whether
+Lukas was the lead or the venue was his house), so
+`supabase/migrations/20260911163428_moede_30_late_fines.sql` recorded it: meeting 30,
+lead Lukas, dated 11.09, venue carried from the calendar row (`Lukas`) as the app's
+own button would carry it, the calendar row's lead set too. **Attendance is only what
+the message proves** — the lead and the four who arrived late, marked present; the
+other five are not marked absent on no evidence, and are Lukas's to tick on
+/anciennitet. `fines` is now **40 rows / 3.305 kr.**, **1.525 kr. udestående**
+(730 + 365 + 430, five evenings never billed); 1.780 kr. opkrævet is unchanged. Dry-run
+first (rolled back — and it consumed record id 31, so ids now run 1–27, 29, 30, 32),
+then applied and read back; filename version = the database's version.
+`docs/finance-reconciliation.md` §17.6 and `tasks/done/T092`.
 
 
 **September 2026 is in the books** (2026-09-05, T089). Lukas sent a screenshot of the
@@ -90,7 +110,7 @@ Saaby on 3; Lukas 2; Have and Kasper 1. Tests 467 → 480.
 (T078) and **`attendance_records.description`** (T080) — all additive, no
 existing row touched. **28** meetings and 235
 attendance rows intact — the junk duplicate of meeting #27 has since been
-removed, so record ids run 1–27 and 29. **17 of the 28 meetings now carry a
+removed, so record ids ran 1–27 and 29 (since then 30 and 32 — see T092). **17 of the 28 meetings now carry a
 date** (2026-07-29, T071) — see below.
 
 **There is one meetings page now, and it is `/anciennitet`** (2026-07-30, T080).

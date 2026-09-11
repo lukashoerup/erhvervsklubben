@@ -1855,3 +1855,34 @@ and what it will say again once Have agrees; the migration to make it so is
 No, or a different figure → the note and this section are corrected, and nothing
 on the site ever moved.
 
+### 17.6 Møde #30, 11.09.2026 — four late arrivals (T092)
+
+**Lead first: `fines` is 40 rows / 3.305 kr., and the club is owed 1.525 kr. of
+fines it has never billed.** The evening added 430 kr., none of it settled.
+
+Lukas, lead of møde #30, the evening itself: *"Bøder til EK møde. Hvor jeg er lead.
+I dag. Anders: 2 min · Esben: 5 min · Kasper: 12 min · Emil: 27 min"*. The regulativ
+prices late arrival at 50 kr. + 5 kr. pr. minut, and the rows are that and nothing
+else — the same arithmetic §15.2 used the other way round, to recover minutes from
+fourteen historic amounts:
+
+| Member | Rule | Minutes | kr. |
+|---|---|---:|---:|
+| Anders | for-sent | 2 | 60 |
+| Esben | for-sent | 5 | 75 |
+| Kasper | for-sent | 12 | 110 |
+| Emil | for-sent | 27 | 185 |
+| | | | **430** |
+
+**The evening had to be recorded first.** `attendance_records` ended at #29; the
+calendar held `Erhvervsklub #30` on 2026-09-11 with an empty lead. Written by
+`20260911163428_moede_30_late_fines.sql` as **record 32** (31 went to the dry run —
+a sequence does not roll back), meeting 30, lead Lukas, venue carried from the
+calendar row. Five attendance rows, present: the lead and the four late. The other
+five members have no row — the message says nothing about them, and §11 counts
+absences, so none was invented. Still Lukas's to complete on /anciennitet.
+
+The Klubkassen card now computes **3.305 pålagt, 1.780 opkrævet, 1.525 udestående**.
+Per member, unsettled, after tonight: Kasper 305, Esben 285, Emil 280, Mads 130,
+Saaby 130, Anders 125, Have 110, Rasmus 110, Lukas 50. §17.4's item 2 is now five
+evenings and 1.525 kr., and still Lukas's decision.

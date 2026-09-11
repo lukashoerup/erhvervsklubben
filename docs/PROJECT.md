@@ -929,6 +929,15 @@ without losing data and without taking the old site down until an approved cutov
   in `members.note` (never rendered) and in §17.5. **The rule that came out of it:
   the site shows what the club has decided with its members, not what the treasurer
   intends to put to them.** When Have agrees, the June-2025 charge goes back on.
+- **2026-09-11 — a meeting recorded from a message gets the attendance the message
+  proves, and no more.** Lukas sent the fines for møde #30 — four late arrivals,
+  himself as lead — before the evening had a record. The record was written so the
+  fines had somewhere to hang, with five men present (a late arrival is an arrival,
+  and the lead was there) and **no absent rows** for the other five: an absence on
+  no evidence counts against a man's §11 anciennitet, the number the club reckons
+  by, and a gap on the card is visible where a false `false` is not. The remaining
+  rows are the club's to tick on /anciennitet. `absences_recorded` is the pass that
+  fills gaps once the present are known, and it is never run on a guess. T092.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
