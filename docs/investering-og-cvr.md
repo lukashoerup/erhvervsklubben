@@ -126,6 +126,8 @@ valgt ledelse, og ingen formuekrav.
 
 ## 4. Fremgangsmåde
 
+Felt for felt, med det der mangler før der kan trykkes: `docs/cvr-registrering.md`.
+
 1. **CVR-nummer** på virk.dk under "Start frivillig forening". Der skal kun oplyses
    navn, adresse og e-mailadresse. Gratis. Skattestyrelsen godkender automatisk og
    sender beviset til foreningens digitale postkasse. **Skal fornys hvert 3. år** —
