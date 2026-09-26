@@ -21,8 +21,9 @@ Sporing og åbne spørgsmål: `tasks/T093-cvr-registrering.md`.
 | 3 | **Hvem registrerer** | Kræver privat MitID. Alle med MitID kan gøre det | Lukas |
 | 4 | **Foreningsrepræsentant** | Får adgang til foreningens Digital Post med privat MitID. **Navn og privatadresse offentliggøres på cvr.dk** | Samme person som adressen i punkt 1, så der kun står én privatperson offentligt |
 
-Repræsentanten er det eneste sted, fornyelsesvarslet hvert 3. år med sikkerhed
-lander. Er der ingen, eller læser vedkommende ikke posten, udløber CVR-nummeret.
+Fornyelsesvarslet hvert 3. år kommer på foreningens e-mail og i Digital Post. Læser
+ingen af delene, udløber CVR-nummeret — så e-mailen i punkt 2 og repræsentanten i
+punkt 4 skal være nogen, der faktisk ser deres post.
 
 ## 1. Registrering på virk.dk
 
