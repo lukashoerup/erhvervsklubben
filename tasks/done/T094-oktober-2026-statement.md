@@ -58,6 +58,7 @@ attendances 281 / 206, records 30 — unchanged.
 ## Left for Lukas
 * **When he sends tonight's fines:** late from 12.00, or from Have's 12.10? The Lead's
   call. And Southern Cross Pub goes on the record as where the evening ended.
-* **Merge to `main`** (deploys) — yes or no.
+* ~~**Merge to `main`** (deploys) — yes or no.~~ **Yes, 2026-10-24:** *"Udgiv hvis
+  det er."* Merged with T096.
 * **1.525 kr. of fines noted, never billed** — unchanged, still his decision.
 * Have's 1.100 kr. buy-in — still in the papers only until Have has agreed.

@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-10-24 (T096 — the app could not save a fine from 08.08 to today, fixed; "Diverse" fines with their own amount; T094 — October 2026 in the books from four screenshots, every transfer seen; møde #31's calendar row filled in from Have's announcement; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
+_Updated 2026-10-24 (merged to `main` and published: møde #30, T094, T096; T096 — the app could not save a fine from 08.08 to today, fixed; "Diverse" fines with their own amount; T094 — October 2026 in the books from four screenshots, every transfer seen; møde #31's calendar row filled in from Have's announcement; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -68,8 +68,8 @@ offence already there by id, and inserts the rest in one statement; the test moc
 has no `upsert`, so the old call fails a test. **"Diverse"** is the `aftalt` rule in
 the capture form: amount and what-for typed in place (no Tilføj to forget), several
 per man, save held shut until both are filled (PROJECT.md 2026-10-24). The form
-empties after a save. **Code only: live once merged to `main`.** Until then, fines go
-in through Claude by migration.
+empties after a save. **Merged to `main` and published 2026-10-24**, at Lukas's word:
+*"Udgiv hvis det er."*
 
 **"Registrér deltagelse" works** (2026-10-24). Lukas reported it broken at møde #31,
 then: *"Ah der passer ikke. Den virker."* The form opens at the top of /anciennitet,
@@ -81,8 +81,9 @@ in a new way.** Møde #30's two migrations (`20260911163428`, `20260911165315`),
 `moede` skill and the docs above were committed and pushed — to
 `claude/boeder-ek-moede-5wmii6`, CI green — and never merged. Production ran both, so
 the site was right all along; it is `main` that described a database without møde #30
-for six weeks. T094 is branched from that branch so one merge brings both. **Merging
-to `main` deploys (Vercel), so it waits for Lukas's yes.** Also unmerged:
+for six weeks. T094 is branched from that branch so one merge brings both. **Closed
+2026-10-24: merged to `main` with T094 and T096**, so check 1 passes on `main` again.
+Still unmerged:
 `task/T093-cvr-registrering` (docs only, CI green) and PR #1 (`task/T092-shared-partner-workflow`).
 Note the two T092s — the møde #30 task file and the partner-workflow branch share a number.
 

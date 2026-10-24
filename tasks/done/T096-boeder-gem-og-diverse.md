@@ -1,7 +1,7 @@
 # Task: T096 — fines would not save, and a "Diverse" fine
 
-**Status:** done 2026-10-24, code only — **not live until merged to `main`** (deploys,
-Lukas's call). Branch `task/T096-boeder-gem-og-diverse`, on top of T094 → the møde #30
+**Status:** done 2026-10-24, **merged to `main` and published the same day** — Lukas:
+*"Udgiv hvis det er."* Branch `task/T096-boeder-gem-og-diverse`, on top of T094 → the møde #30
 branch. Not on T095: that one is parked, and a yes to this must not carry it.
 
 ## The ask
@@ -48,5 +48,6 @@ bøde."*
   policy the upsert ran under.
 
 ## Left for Lukas
-* **Merge to `main`** so it goes live — and with it T094/T095 and møde #30.
+* ~~**Merge to `main`** so it goes live — and with it T094 and møde #30.~~ **Done
+  2026-10-24.** T095 stays parked and was not merged.
 * Tonight's fines: until it is live, send them to Claude and they go in by migration.
