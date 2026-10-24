@@ -124,8 +124,11 @@ export const VOLUNTARY_RULE_ID = 'frivillig'
  *
  * **Deliberately not a member of `FINE_RULES`**, the same as the two above and for
  * the same reason: it has no amount, because the amount is whatever was agreed. A
- * chip to tap in the capture UI would imply a price the club never set. It is
- * written by hand with its own amount and read back off history.
+ * chip to tap in the capture UI would imply a price the club never set.
+ * **Since 2026-10-24 it is in the capture UI as "Diverse"** — not as a priced chip
+ * but as an amount and a reason the Lead types (components/FineCapture.tsx), which
+ * is exactly what this id was for. Lukas: *"Så man kan skrive et beløb ned under
+ * diverse som bøde."*
  */
 export const AGREED_RULE_ID = 'aftalt'
 
@@ -147,7 +150,9 @@ export function describeRule(ruleId: string): string {
   if (known) return known.offence
   if (ruleId === HISTORIC_RULE_ID) return 'Historisk bøde — forseelse ikke registreret'
   if (ruleId === VOLUNTARY_RULE_ID) return 'Frivillige bøder/indbetalinger'
-  if (ruleId === AGREED_RULE_ID) return 'Aftalt bøde — uden for regulativet'
+  // "Diverse" since 2026-10-24: Lukas's word for it at møde #31, and the chip's
+  // label in the capture form, so the card says what the form said.
+  if (ruleId === AGREED_RULE_ID) return 'Diverse — aftalt uden for regulativet'
   return `Ukendt bøderegel (${ruleId})`
 }
 

@@ -929,6 +929,34 @@ without losing data and without taking the old site down until an approved cutov
   in `members.note` (never rendered) and in §17.5. **The rule that came out of it:
   the site shows what the club has decided with its members, not what the treasurer
   intends to put to them.** When Have agrees, the June-2025 charge goes back on.
+- **2026-09-11 — a meeting recorded from a message gets the attendance the message
+  proves, and no more.** Lukas sent the fines for møde #30 — four late arrivals,
+  himself as lead — before the evening had a record. The record was written so the
+  fines had somewhere to hang, with five men present (a late arrival is an arrival,
+  and the lead was there) and **no absent rows** for the other five: an absence on
+  no evidence counts against a man's §11 anciennitet, the number the club reckons
+  by, and a gap on the card is visible where a false `false` is not. The remaining
+  rows are the club's to tick on /anciennitet. `absences_recorded` is the pass that
+  fills gaps once the present are known, and it is never run on a guess. T092.
+
+  **Reversed three hours later, by Lukas and by the card.** He ticked Saaby present
+  and wrote: *"Der mangler at stå alle dem som ikke er til stede på mødet i dag."*
+  The meeting editor can flip a stored row but inserts one for a member it has none
+  for only when he is ticked present — so a man with no row is not "absent" on the
+  card, he is missing from it, and the club cannot fix that from the site. **The rule
+  now: a meeting recorded from a message gets one row per member — present for the
+  men the message names, absent for everyone else — and the reply says who was
+  written absent so Lukas can flip it.** Ten rows is the only shape the club can
+  correct on the card. `.claude/skills/moede/SKILL.md` carries it.
+- **2026-10-24 — "Diverse" is the club's word for the fine outside the regulativ, and
+  the Lead can write one in the app.** Lukas, at møde #31: *"Kan du ikke lave en diverse
+  bøde også. Så man kan skrive et beløb ned under diverse som bøde."* It is the
+  existing `aftalt` rule (2026-08-08, the bowling bets) under the name he used — a
+  second id meaning the same thing would split one bucket in two. The Lead types the
+  amount (1–1.000 kr., a typo guard, not a rule) **and what it was for**: the database
+  has refused an `aftalt` row without a note since 2026-08-08, and that is the reason
+  the category exists. Several per man per evening, as before. Cards and charts now
+  say *"Diverse — aftalt uden for regulativet"*.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod

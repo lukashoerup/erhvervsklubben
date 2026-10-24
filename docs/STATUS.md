@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-09-05 (T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
+_Updated 2026-10-24 (merged to `main` and published: møde #30, T094, T096; T096 — the app could not save a fine from 08.08 to today, fixed; "Diverse" fines with their own amount; T094 — October 2026 in the books from four screenshots, every transfer seen; møde #31's calendar row filled in from Have's announcement; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -21,7 +21,114 @@ absent.** So `count(*)` per member is ~28 for everyone and means nothing. The nu
 the club calls fremmøde is `count(*) filter (where attended)`. As of 2026-08-08:
 **261 rows, 190 attendances.** Getting this wrong once told Lukas his database was
 broken when it was correct. As of 2026-09-05: **271 rows, 200 attendances** — møde #29
-(2026-08-08, record id 30) added ten of each, so all ten were there.
+(2026-08-08, record id 30) added ten of each, so all ten were there. As of 2026-09-11:
+**281 rows, 206 attendances** — møde #30 (2026-09-11, record id **32**) holds one row
+per member: six present (Lukas, Anders, Esben, Kasper, Emil, Saaby), four absent
+(Have, Mads, Oskar, Rasmus).
+
+**October 2026 is in the books — and every transfer since 30.07 is now seen**
+(2026-10-24, T094, the morning of møde #31). Lukas sent four screenshots of the
+account: **saldo 20.480,00 kr.**, *Kommende betalinger 0,00*. `payments` is now
+**17 rows summing to 20.480 kr.** — for the third month running exactly what the bank
+holds. Nine of nine paid October: Rasmus 29.09 and Lukas 30.09 (they pay the coming
+month at month end, so those settle October), Have, Esben and Anders 01.10, Saaby,
+Emil, Kasper and Mads (`Overførsel`) 02.10. The screenshots scroll back into July and
+every row carries its running balance, so they are **an unbroken chain from 15.080,00
+on 30.07 (the T076 statement's close) to today** — which also turns September's three
+*inferred* transfers into seen ones (Rasmus 28.08, Lukas 31.08, Esben 01.09) and shows
+August name for name. One slip in the September row's note: Anders paid **01.09**, not
+02.09. That row was not rewritten; the correction lives in the October row's note.
+`supabase/migrations/20261024074128_oktober_2026_statement.sql`, version = production's.
+Workings: `docs/finance-reconciliation.md` §17.7.
+
+**Møde #31's calendar row says where and when** (2026-10-24, T094, the same
+morning). It had said `TBD`, no time, no description since 08.08. Lukas sent three
+screenshots of the club's Messenger group: Have, Lead, announced *"Mødetidspunkt:
+klokken 12 · Restaurant: Spix's ara (dette er blot et hint …) · Efterfølgende går vi
+til: Southern Cross Pub"*, confirmed Rasmus's guess of **Rio Bravo** two days later,
+and added on Friday *"ser jeg helst at folket ankommer 12.10"*. Written by
+`supabase/migrations/20261024074542_moede_31_calendar.sql`: location **Rio Bravo**
+alone (recording from the card carries it into `main_location`), time **12.00** (no
+end time was given, none invented), and a description in the club's register naming
+the pub. Each column only where it still said nothing, matched on title and date.
+**When the evening is recorded:** Southern Cross Pub is the `post_location`, and
+whether late counts from 12.00 or Have's 12.10 is the Lead's call — ask, don't pick.
+
+**No fine could be saved from the app between 2026-08-08 and 2026-10-24 — fixed,
+and "Diverse" added** (T096). Lukas, at møde #31: *"Jeg kan ikke registrere bøder. Den
+kan ikke gemme."* The database log has five refusals at 11:16–11:17 UTC, each
+*"there is no unique or exclusion constraint matching the ON CONFLICT specification"*.
+`/oekonomi` saved with `upsert(onConflict: 'record_id,member_name,rule_id')`; on
+08.08 `adhoc_fines` replaced that unique constraint with a **partial** index
+(`where rule_id <> 'aftalt'`, so bets can repeat), and Postgres will not take a
+partial index as an ON CONFLICT target unless the statement repeats its `where` —
+which PostgREST cannot. Unseen for two meetings because møde #29's bets and #30's
+fines went in by migration. The save now reads the evening's fines, updates a voted
+offence already there by id, and inserts the rest in one statement; the test mock
+has no `upsert`, so the old call fails a test. **"Diverse"** is the `aftalt` rule in
+the capture form: amount and what-for typed in place (no Tilføj to forget), several
+per man, save held shut until both are filled (PROJECT.md 2026-10-24). The form
+empties after a save. **Merged to `main` and published 2026-10-24**, at Lukas's word:
+*"Udgiv hvis det er."*
+
+**"Registrér deltagelse" works** (2026-10-24). Lukas reported it broken at møde #31,
+then: *"Ah der passer ikke. Den virker."* The form opens at the top of /anciennitet,
+well above the card on a phone; moving it to the card is on the unmerged branch
+`task/T095-registrer-deltagelse`, parked as optional.
+
+**`main` has been behind production since 2026-09-11 — STATUS check 1 failed again,
+in a new way.** Møde #30's two migrations (`20260911163428`, `20260911165315`), the
+`moede` skill and the docs above were committed and pushed — to
+`claude/boeder-ek-moede-5wmii6`, CI green — and never merged. Production ran both, so
+the site was right all along; it is `main` that described a database without møde #30
+for six weeks. T094 is branched from that branch so one merge brings both. **Closed
+2026-10-24: merged to `main` with T094 and T096**, so check 1 passes on `main` again.
+Still unmerged:
+`task/T093-cvr-registrering` (docs only, CI green) and PR #1 (`task/T092-shared-partner-workflow`).
+Note the two T092s — the møde #30 task file and the partner-workflow branch share a number.
+
+**Møde #30 is in the books, with four late fines** (2026-09-11, T092). Lukas, lead
+that evening: *"Bøder til EK møde. Hvor jeg er lead. I dag. Anders: 2 min · Esben:
+5 min · Kasper: 12 min · Emil: 27 min"* — 60, 75, 110 and 185 kr. under `for-sent`
+(50 + 5 kr./minut), **430 kr.** The evening existed only in the calendar
+(`Erhvervsklub #30`, lead empty since 08.08 because nothing then could say whether
+Lukas was the lead or the venue was his house), so
+`supabase/migrations/20260911163428_moede_30_late_fines.sql` recorded it: meeting 30,
+lead Lukas, dated 11.09, venue carried from the calendar row (`Lukas`) as the app's
+own button would carry it, the calendar row's lead set too. `fines` is now **40 rows /
+3.305 kr.**, **1.525 kr. udestående** (730 + 365 + 430, five evenings never billed);
+1.780 kr. opkrævet is unchanged. Dry-run first (rolled back — and it consumed record
+id 31, so ids now run 1–27, 29, 30, 32), then applied and read back; filename version
+= the database's version. `docs/finance-reconciliation.md` §17.6 and `tasks/done/T092`.
+
+**The same evening, three hours later: the venues, the club's words, and the four who
+were not there** (T092, second round, `20260911165315_moede_30_evening.sql`). The
+first migration marked present only the five men the message proved were there and
+refused to write an absence on no evidence. Lukas then wrote the venues on the card
+himself (**Café Understellet**, then **Ma Cuisine**), ticked Saaby present, and asked:
+*"Der mangler at stå alle dem som ikke er til stede på mødet i dag."* **The card could
+not do it for him** — the meeting editor flips a stored row but inserts a row for a
+member it has none for only when he is ticked present, so an absent man with no row is
+missing from the card rather than absent on it. The one shape the club can correct on
+the card is ten rows, one per member; that is now the rule (PROJECT.md, 2026-09-11,
+reversed the same evening it was made) and the `/moede` skill carries it. The
+description is in the club's own register, as asked — *"En formidabel Lead har i
+særdeles god tid forberedt noget rigtig lækkert og godt …"* — and the calendar row for
+#30 was already gone by then (recorded from the card, the app removes it), so that
+update touched nothing.
+
+**There is a skill for this now: `.claude/skills/moede/SKILL.md`** (2026-09-11). Lukas,
+after approving every query by hand: *"Skriv en skill eller et eller andet. Kan ikke
+passe at jeg skal acceptere 20 sql requests for at du kan opdatere det her."* Two
+causes, two fixes. The count: the first round read the database with a dozen separate
+queries where one `json_build_object` would do; the skill fixes the recipe at **three
+calls** — one read, one migration, one read-back — with the query and the block to
+copy. The prompts themselves: the Supabase tools are allow-listed in
+`.claude/settings.json`, but **Claude Code on the web reads that file only from the
+session's primary working directory**, and a session started on two repositories has
+`/home/user` as its primary, so the repo's file is never loaded (docs: settings §
+"Settings in cloud sessions"). **Start a session on this repository alone and the
+allow-list applies.** Not verified from inside a session — it is what the docs say.
 
 
 **September 2026 is in the books** (2026-09-05, T089). Lukas sent a screenshot of the
@@ -90,7 +197,7 @@ Saaby on 3; Lukas 2; Have and Kasper 1. Tests 467 → 480.
 (T078) and **`attendance_records.description`** (T080) — all additive, no
 existing row touched. **28** meetings and 235
 attendance rows intact — the junk duplicate of meeting #27 has since been
-removed, so record ids run 1–27 and 29. **17 of the 28 meetings now carry a
+removed, so record ids ran 1–27 and 29 (since then 30 and 32 — see T092). **17 of the 28 meetings now carry a
 date** (2026-07-29, T071) — see below.
 
 **There is one meetings page now, and it is `/anciennitet`** (2026-07-30, T080).

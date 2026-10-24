@@ -257,7 +257,7 @@ describe('the offences behind the club’s fines (T075)', () => {
     for (const id of ids) expect(FINE_RULES.map((r) => r.id)).not.toContain(id)
     for (const id of ids) expect(describeRule(id)).not.toMatch(/^Ukendt/)
 
-    expect(describeRule(AGREED_RULE_ID)).toBe('Aftalt bøde — uden for regulativet')
+    expect(describeRule(AGREED_RULE_ID)).toBe('Diverse — aftalt uden for regulativet')
   })
 
   test('the one fine still without an offence keeps saying so', () => {

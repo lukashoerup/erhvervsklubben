@@ -1,8 +1,38 @@
-import { useState } from 'react'
-import { FINE_RULES, fineAmount } from '../data/rules'
+import { useRef, useState } from 'react'
+import { AGREED_RULE_ID, FINE_RULES, fineAmount } from '../data/rules'
 import { kr } from './FinanceChart'
 
-export type DraftFine = { member: string; ruleId: string; minutes: number; kr: number }
+/**
+ * One fine on its way to the database.
+ *
+ * `note` and `key` belong to a *diverse* fine alone (rule `aftalt`): the amount is
+ * whatever was agreed, the note is what for — the database refuses one without it —
+ * and a member may have several on one evening, so each needs its own key where a
+ * voted rule is identified by member and rule.
+ */
+export type DraftFine = {
+  member: string
+  ruleId: string
+  minutes: number
+  kr: number
+  note?: string
+  key?: number
+}
+
+/**
+ * The most a diverse fine may be. Not a rule the club voted — a typo guard, the
+ * same job `MAX_MINUTES` does: a bet is 50 or 100 kr., and 5000 typed for 50 is the
+ * mistake this catches.
+ */
+export const MAX_DIVERSE_KR = 1000
+
+/** Whether a fine can be saved as it stands. Only a diverse fine can be unfinished. */
+export function isComplete(f: DraftFine): boolean {
+  if (f.ruleId !== AGREED_RULE_ID) return true
+  return (
+    Number.isInteger(f.kr) && f.kr > 0 && f.kr <= MAX_DIVERSE_KR && Boolean(f.note?.trim())
+  )
+}
 
 /**
  * The most minutes late that is still lateness.
@@ -43,6 +73,10 @@ export function FineCapture({
   // closes the panel, and a warning that goes with it would leave the Lead
   // exactly where the dropped-minutes bug did: believing a fine was recorded.
   const [refusedFor, setRefusedFor] = useState<string | null>(null)
+  // A diverse fine has no identity of its own until it is saved, and two on one
+  // man in one evening are normal (Esben, bowling, 2026-08-08). Counted, not
+  // derived from the amount or the note, which are still being typed.
+  const nextKey = useRef(1)
 
   const has = (member: string, ruleId: string) =>
     value.find((f) => f.member === member && f.ruleId === ruleId)
@@ -87,7 +121,28 @@ export function FineCapture({
     setMinutesFor(null)
   }
 
-  const total = value.reduce((n, f) => n + f.kr, 0)
+  /**
+   * Diverse — Lukas, 2026-10-24, at møde #31: *"Kan du ikke lave en diverse bøde
+   * også. Så man kan skrive et beløb ned under diverse som bøde."*
+   *
+   * **Edited in place, never "added".** Tapping Diverse puts an empty fine in the
+   * draft at once, and the two fields write straight into it. There is no Tilføj
+   * step to forget: the minutes field above used to need Enter, and a Lead who
+   * put the phone away without it believed a fine was recorded that was not. An
+   * unfinished diverse fine instead holds the save button shut and says why.
+   */
+  function addDiverse(member: string) {
+    const key = nextKey.current++
+    onChange([...value, { member, ruleId: AGREED_RULE_ID, minutes: 0, kr: 0, note: '', key }])
+  }
+  function editDiverse(key: number, patch: Partial<DraftFine>) {
+    onChange(value.map((f) => (f.key === key ? { ...f, ...patch } : f)))
+  }
+  function removeDiverse(key: number) {
+    onChange(value.filter((f) => f.key !== key))
+  }
+
+  const total = value.reduce((n, f) => n + (Number.isFinite(f.kr) ? f.kr : 0), 0)
 
   return (
     <div className="flex flex-col gap-2">
@@ -175,7 +230,72 @@ export function FineCapture({
                 </span>
               )
             })}
+            <button
+              type="button"
+              onClick={() => addDiverse(member)}
+              className="inline-flex min-h-12 items-center rounded-btn border border-line px-3 text-left text-[0.7rem] text-muted"
+            >
+              Diverse
+              <span className="ml-1 font-semibold whitespace-nowrap">eget beløb</span>
+            </button>
           </div>
+
+          {value
+            .filter((f) => f.member === member && f.ruleId === AGREED_RULE_ID)
+            .map((f) => {
+              const key = f.key!
+              const done = isComplete(f)
+              return (
+                <div
+                  key={key}
+                  className={`mt-2 rounded-btn border p-2 ${done ? 'border-accent bg-accent/15' : 'border-dashed border-line'}`}
+                >
+                  <div className="flex items-end gap-1.5">
+                    <label className="w-24 shrink-0 text-[0.7rem] text-muted">
+                      Beløb, kr.
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={MAX_DIVERSE_KR}
+                        autoFocus
+                        aria-label={`Beløb — diverse bøde til ${member}`}
+                        value={f.kr ? String(f.kr) : ''}
+                        onChange={(e) =>
+                          editDiverse(key, { kr: e.target.value === '' ? 0 : Number(e.target.value) })
+                        }
+                        className="tabular mt-1 block min-h-12 w-full rounded-btn border border-line bg-raised px-2 text-ink"
+                      />
+                    </label>
+                    <label className="min-w-0 flex-1 text-[0.7rem] text-muted">
+                      Hvad for
+                      <input
+                        type="text"
+                        maxLength={120}
+                        aria-label={`Hvad for — diverse bøde til ${member}`}
+                        placeholder="fx tabte væddemål"
+                        value={f.note ?? ''}
+                        onChange={(e) => editDiverse(key, { note: e.target.value })}
+                        className="mt-1 block min-h-12 w-full rounded-btn border border-line bg-raised px-2 text-sm text-ink"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => removeDiverse(key)}
+                      aria-label={`Fjern diverse bøde til ${member}`}
+                      className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-btn border border-line text-muted"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {!done && (
+                    <p className="mt-1 text-[0.65rem] text-absent">
+                      Skriv et beløb på 1–{kr(MAX_DIVERSE_KR)} og hvad bøden er for.
+                    </p>
+                  )}
+                </div>
+              )
+            })}
         </section>
       ))}
 
