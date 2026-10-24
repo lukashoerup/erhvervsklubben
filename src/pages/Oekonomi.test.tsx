@@ -13,18 +13,48 @@ import { minTapHeightPx, withQuery } from '../test/harness'
  */
 let rows: Record<string, unknown[]> = {}
 /** What the page actually tried to write. Money, so the payload is the test. */
-let upserted: Record<string, unknown>[] = []
+let inserted: Record<string, unknown>[] = []
+let updated: { id: string; values: Record<string, unknown> }[] = []
 
+/**
+ * **No `upsert` on purpose.** The page saved fines with
+ * `upsert(…, { onConflict: 'record_id,member_name,rule_id' })`, and production has
+ * refused that since 2026-08-08 — the unique key became a partial index, which an
+ * ON CONFLICT target cannot name. A mock that accepted it is how that went unseen,
+ * so calling it here is a TypeError and a red test.
+ *
+ * `.eq()` filters reads, so "what this evening already holds" is answered for that
+ * evening and not with every fine in the fixture.
+ */
 function builder(table: string) {
   const b: Record<string, unknown> = {}
-  for (const m of ['select', 'gte', 'lte', 'eq', 'order', 'limit', 'update']) b[m] = () => b
-  b.upsert = (written: Record<string, unknown>[]) => {
-    upserted = written
+  const where: Record<string, string> = {}
+  let write: 'insert' | 'update' | null = null
+  for (const m of ['select', 'gte', 'lte', 'order', 'limit']) b[m] = () => b
+  b.eq = (column: string, value: unknown) => {
+    where[column] = String(value)
+    if (write === 'update') updated[updated.length - 1].id = String(value)
+    return b
+  }
+  b.insert = (written: Record<string, unknown>[]) => {
+    write = 'insert'
+    inserted.push(...written)
+    return b
+  }
+  b.update = (values: Record<string, unknown>) => {
+    write = 'update'
+    updated.push({ id: '', values })
     return b
   }
   // oxlint-disable-next-line no-thenable
-  b.then = (resolve: (v: unknown) => unknown) =>
-    Promise.resolve({ data: rows[table] ?? [], error: null }).then(resolve)
+  b.then = (resolve: (v: unknown) => unknown) => {
+    const data = write
+      ? null
+      : ((rows[table] ?? []) as Record<string, unknown>[]).filter((r) =>
+          Object.entries(where).every(([c, v]) => String(r[c]) === v),
+        )
+    return Promise.resolve({ data, error: null }).then(resolve)
+  }
   return b
 }
 
@@ -140,7 +170,8 @@ function renderPage(role: AuthState['role']) {
 
 beforeEach(() => {
   rows = {}
-  upserted = []
+  inserted = []
+  updated = []
 })
 
 describe('who the finance graph is for', () => {
@@ -234,17 +265,121 @@ describe('recording a meeting’s fines', () => {
     await user.click(screen.getAllByRole('button', { name: /For sent fremmøde/ })[0])
     await user.type(screen.getByLabelText(/Minutter for sent/), '12')
 
-    // The first tap on Save only takes the focus off the field — Save is still
-    // disabled, because at that instant nothing is recorded. What matters is
-    // that the tap commits the fine rather than discarding it, so the second
-    // tap has something to save.
+    // The tap on Save takes the focus off the field, the field commits on blur,
+    // and the button is enabled by the time the click lands — so the one tap
+    // records the fine *and* saves it. What must never happen is the tap
+    // discarding what was typed. (This said "the first tap only blurs" until
+    // 2026-10-24; it never did, and it showed once the form began emptying
+    // itself after a save.)
     const save = screen.getByRole('button', { name: /^Gem / })
     await user.click(save)
-    expect(save).toHaveAccessibleName('Gem 1 bøde')
+    await waitFor(() => expect(inserted).toHaveLength(1))
+    expect(inserted[0]).toMatchObject({ rule_id: 'for-sent', minutes: 12, amount_kr: 110 })
+    expect(await screen.findByText('Gemt.')).toBeInTheDocument()
+  })
 
-    await user.click(save)
-    await waitFor(() => expect(upserted).toHaveLength(1))
-    expect(upserted[0]).toMatchObject({ rule_id: 'for-sent', minutes: 12, amount_kr: 110 })
+  it('saves a new fine as an insert — the call production has accepted all along', async () => {
+    // Lukas, møde #31: "Jeg kan ikke registrere bøder. Den kan ikke gemme."
+    const user = userEvent.setup()
+    aClubWithBooks()
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '2')
+    await user.click(screen.getAllByRole('button', { name: /Skål før/ })[0])
+    await user.click(screen.getByRole('button', { name: 'Gem 1 bøde' }))
+
+    expect(await screen.findByText('Gemt.')).toBeInTheDocument()
+    expect(inserted).toHaveLength(1)
+    expect(inserted[0]).toMatchObject({ record_id: 2, rule_id: 'skaal', amount_kr: 50, note: null })
+    expect(updated).toHaveLength(0)
+  })
+
+  it('corrects an offence the evening already holds instead of adding a second', async () => {
+    // Meeting 2 holds Mads for-sent 27 minutes (185 kr.). Recording him again at
+    // 30 minutes is a correction: the regulativ allows one per offence per meeting.
+    const user = userEvent.setup()
+    aClubWithBooks()
+    rows.fines = (rows.fines as Record<string, unknown>[]).map((f, i) => ({ id: i + 1, ...f }))
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '2')
+    const mads = screen.getByRole('heading', { name: 'Mads' }).closest('section')!
+    await user.click(within(mads).getByRole('button', { name: /For sent fremmøde/ }))
+    await user.type(within(mads).getByLabelText(/Minutter for sent/), '30{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Gem 1 bøde' }))
+
+    await waitFor(() => expect(updated).toHaveLength(1))
+    expect(updated[0]).toMatchObject({ id: '2', values: { minutes: 30, amount_kr: 200 } })
+    expect(inserted).toHaveLength(0)
+  })
+})
+
+describe('a diverse fine', () => {
+  it('takes an amount and what it was for, and saves it as its own row', async () => {
+    // Lukas, møde #31: "Kan du ikke lave en diverse bøde også. Så man kan skrive et
+    // beløb ned under diverse som bøde."
+    const user = userEvent.setup()
+    aClubWithBooks()
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '1')
+    await user.click(screen.getAllByRole('button', { name: /^Diverse/ })[0])
+
+    // Not saveable until both are there — and it says so, rather than greying out.
+    expect(screen.getByRole('button', { name: 'Gem 1 bøde' })).toBeDisabled()
+    expect(screen.getByText(/mangler beløb eller hvad den er for/)).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText(/^Beløb — diverse/), '75')
+    await user.type(screen.getByLabelText(/^Hvad for — diverse/), 'Tabte væddemål om regningen')
+    expect(screen.getByText('75 kr.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Gem 1 bøde' }))
+
+    expect(await screen.findByText('Gemt.')).toBeInTheDocument()
+    expect(inserted).toHaveLength(1)
+    expect(inserted[0]).toMatchObject({
+      record_id: 1,
+      rule_id: 'aftalt',
+      amount_kr: 75,
+      minutes: 0,
+      note: 'Tabte væddemål om regningen',
+    })
+    // Emptied once saved, so a second tap cannot write the same bet twice.
+    expect(screen.getByRole('button', { name: 'Gem 0 bøder' })).toBeDisabled()
+  })
+
+  it('allows two on one man in one evening, as two rows', async () => {
+    const user = userEvent.setup()
+    aClubWithBooks()
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '1')
+    const first = screen.getAllByRole('heading', { level: 3 })[0].closest('section')!
+    await user.click(within(first).getByRole('button', { name: /^Diverse/ }))
+    await user.click(within(first).getByRole('button', { name: /^Diverse/ }))
+    const amounts = within(first).getAllByLabelText(/^Beløb — diverse/)
+    const notes = within(first).getAllByLabelText(/^Hvad for — diverse/)
+    await user.type(amounts[0], '100')
+    await user.type(notes[0], '1. runde')
+    await user.type(amounts[1], '50')
+    await user.type(notes[1], '2. runde')
+    await user.click(screen.getByRole('button', { name: 'Gem 2 bøder' }))
+
+    await waitFor(() => expect(inserted).toHaveLength(2))
+    expect(inserted.map((f) => [f.amount_kr, f.note])).toEqual([
+      [100, '1. runde'],
+      [50, '2. runde'],
+    ])
+  })
+
+  it('refuses an amount past the typo guard, and can be removed', async () => {
+    const user = userEvent.setup()
+    aClubWithBooks()
+    renderPage('admin')
+    await user.selectOptions(await screen.findByLabelText('Møde'), '1')
+    await user.click(screen.getAllByRole('button', { name: /^Diverse/ })[0])
+    await user.type(screen.getByLabelText(/^Beløb — diverse/), '5000')
+    await user.type(screen.getByLabelText(/^Hvad for — diverse/), 'tastefejl')
+    expect(screen.getByRole('button', { name: 'Gem 1 bøde' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: /^Fjern diverse bøde/ }))
+    expect(screen.queryByLabelText(/^Beløb — diverse/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gem 0 bøder' })).toBeDisabled()
   })
 
   it('saves behind a button that can be hit, and read', async () => {

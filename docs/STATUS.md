@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-10-24 (T094 — October 2026 in the books from four screenshots, every transfer seen; møde #31's calendar row filled in from Have's announcement; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
+_Updated 2026-10-24 (T096 — the app could not save a fine from 08.08 to today, fixed; "Diverse" fines with their own amount; T094 — October 2026 in the books from four screenshots, every transfer seen; møde #31's calendar row filled in from Have's announcement; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -53,6 +53,28 @@ end time was given, none invented), and a description in the club's register nam
 the pub. Each column only where it still said nothing, matched on title and date.
 **When the evening is recorded:** Southern Cross Pub is the `post_location`, and
 whether late counts from 12.00 or Have's 12.10 is the Lead's call — ask, don't pick.
+
+**No fine could be saved from the app between 2026-08-08 and 2026-10-24 — fixed,
+and "Diverse" added** (T096). Lukas, at møde #31: *"Jeg kan ikke registrere bøder. Den
+kan ikke gemme."* The database log has five refusals at 11:16–11:17 UTC, each
+*"there is no unique or exclusion constraint matching the ON CONFLICT specification"*.
+`/oekonomi` saved with `upsert(onConflict: 'record_id,member_name,rule_id')`; on
+08.08 `adhoc_fines` replaced that unique constraint with a **partial** index
+(`where rule_id <> 'aftalt'`, so bets can repeat), and Postgres will not take a
+partial index as an ON CONFLICT target unless the statement repeats its `where` —
+which PostgREST cannot. Unseen for two meetings because møde #29's bets and #30's
+fines went in by migration. The save now reads the evening's fines, updates a voted
+offence already there by id, and inserts the rest in one statement; the test mock
+has no `upsert`, so the old call fails a test. **"Diverse"** is the `aftalt` rule in
+the capture form: amount and what-for typed in place (no Tilføj to forget), several
+per man, save held shut until both are filled (PROJECT.md 2026-10-24). The form
+empties after a save. **Code only: live once merged to `main`.** Until then, fines go
+in through Claude by migration.
+
+**"Registrér deltagelse" works** (2026-10-24). Lukas reported it broken at møde #31,
+then: *"Ah der passer ikke. Den virker."* The form opens at the top of /anciennitet,
+well above the card on a phone; moving it to the card is on the unmerged branch
+`task/T095-registrer-deltagelse`, parked as optional.
 
 **`main` has been behind production since 2026-09-11 — STATUS check 1 failed again,
 in a new way.** Møde #30's two migrations (`20260911163428`, `20260911165315`), the

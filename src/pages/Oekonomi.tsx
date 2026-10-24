@@ -7,8 +7,9 @@ import { FineInsights } from '../components/FineInsights'
 import { IncomeMix } from '../components/IncomeMix'
 import { budgetFines, budgetHorizon, budgetLimits, projectBudget } from '../data/projection'
 import { canBeFined, paysDues, payingMembersIn } from '../data/members'
+import { AGREED_RULE_ID } from '../data/rules'
 import { Loading, Problem } from '../components/State'
-import { FineCapture, type DraftFine } from '../components/FineCapture'
+import { FineCapture, isComplete, type DraftFine } from '../components/FineCapture'
 import { FinanceChart, kr } from '../components/FinanceChart'
 import { useAttendance, useFinance } from '../data/useClubData'
 import { useAuth } from '../auth/AuthContext'
@@ -50,29 +51,69 @@ import { Eyebrow, SectionTitle } from '../components/SectionTitle'
  */
 const boeder = (n: number) => `${n} ${n === 1 ? 'bøde' : 'bøder'}`
 
-/** Save a meeting's fines. One row per fine; the database enforces the cap. */
+/**
+ * Save a meeting's fines. One row per fine; the database enforces the cap.
+ *
+ * **Re-recording a voted offence corrects it rather than duplicating** — the
+ * regulation's one-per-offence-per-meeting — and a diverse fine is always a new
+ * row, because a man may lose two bets in one evening.
+ *
+ * **This was an `upsert(…, { onConflict: 'record_id,member_name,rule_id' })`, and
+ * from 2026-08-08 to 2026-10-24 it refused every save.** That day's
+ * `adhoc_fines` migration replaced the unique constraint on those three columns
+ * with a *partial* index — `where rule_id <> 'aftalt'` — so bets could repeat.
+ * Postgres will only use a partial index as an ON CONFLICT target when the
+ * statement repeats its `where`, and PostgREST's `on_conflict` cannot say it, so
+ * every request failed with *"there is no unique or exclusion constraint matching
+ * the ON CONFLICT specification"*. Nobody saw it for two meetings because møde #30's
+ * fines went in by migration; Lukas hit it at møde #31, five times in a minute
+ * (database log, 11:16–11:17 UTC). So the correction is done by hand: read what the
+ * evening already holds, update those rows by id, insert the rest in one statement.
+ */
 function useRecordFines() {
   const qc = useQueryClient()
   const { userId } = useAuth()
   return useMutation({
     mutationFn: async ({ recordId, fines }: { recordId: number; fines: DraftFine[] }) => {
       if (fines.length === 0) return
-      const { error } = await supabase()
-        .from('fines')
-        .upsert(
-          fines.map((f) => ({
+      const db = supabase()
+
+      const held = await db.from('fines').select('id, member_name, rule_id').eq('record_id', recordId)
+      if (held.error) throw held.error
+      const idOf = new Map(
+        ((held.data ?? []) as { id: number; member_name: string; rule_id: string }[])
+          .filter((r) => r.rule_id !== AGREED_RULE_ID)
+          .map((r) => [`${r.member_name}::${r.rule_id}`, r.id]),
+      )
+
+      const fresh = []
+      for (const f of fines) {
+        const id = f.ruleId === AGREED_RULE_ID ? undefined : idOf.get(`${f.member}::${f.ruleId}`)
+        if (id === undefined) {
+          fresh.push({
             record_id: recordId,
             member_name: f.member,
             rule_id: f.ruleId,
             minutes: f.minutes,
             amount_kr: f.kr,
+            note: f.note?.trim() || null,
             noted_by: userId,
-          })),
-          // Re-recording a meeting corrects it rather than duplicating: the
-          // unique key is exactly the regulation's one-per-offence-per-meeting.
-          { onConflict: 'record_id,member_name,rule_id' },
-        )
-      if (error) throw error
+          })
+          continue
+        }
+        const { error } = await db
+          .from('fines')
+          .update({ minutes: f.minutes, amount_kr: f.kr, noted_by: userId })
+          .eq('id', id)
+        if (error) throw error
+      }
+
+      // One statement, so a refused row refuses them all and a retry cannot
+      // leave half an evening behind it.
+      if (fresh.length > 0) {
+        const { error } = await db.from('fines').insert(fresh)
+        if (error) throw error
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['finance'] }),
   })
@@ -104,6 +145,7 @@ function RecordFines() {
   if (!attendance.data || attendance.data.meetings.length === 0) return null
   const meetings = attendance.data.meetings
   const meeting = meetings.find((m) => m.id === meetingId)
+  const complete = draft.every(isComplete)
   const statusOf = new Map(attendance.data.roster.map((r) => [r.name, r.status]))
 
   return (
@@ -144,10 +186,22 @@ function RecordFines() {
             value={draft}
             onChange={setDraft}
           />
+          {!complete && (
+            <p className="text-xs text-absent">
+              En diverse bøde mangler beløb eller hvad den er for.
+            </p>
+          )}
           <button
             type="button"
-            disabled={draft.length === 0 || record.isPending}
-            onClick={() => record.mutate({ recordId: meeting.id, fines: draft })}
+            disabled={draft.length === 0 || !complete || record.isPending}
+            // Emptied once it is saved. Kept, a second tap would write every
+            // diverse fine in it again — those are new rows by design.
+            onClick={() =>
+              record.mutate(
+                { recordId: meeting.id, fines: draft },
+                { onSuccess: () => setDraft([]) },
+              )
+            }
             /* bg-brand, not bg-accent: white on the accent measures 3.2:1 on
                the dark ground and fails AA, and this is the button the whole
                screen exists for. Same #2563eb the landing page's buttons use,

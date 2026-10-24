@@ -948,6 +948,15 @@ without losing data and without taking the old site down until an approved cutov
   men the message names, absent for everyone else — and the reply says who was
   written absent so Lukas can flip it.** Ten rows is the only shape the club can
   correct on the card. `.claude/skills/moede/SKILL.md` carries it.
+- **2026-10-24 — "Diverse" is the club's word for the fine outside the regulativ, and
+  the Lead can write one in the app.** Lukas, at møde #31: *"Kan du ikke lave en diverse
+  bøde også. Så man kan skrive et beløb ned under diverse som bøde."* It is the
+  existing `aftalt` rule (2026-08-08, the bowling bets) under the name he used — a
+  second id meaning the same thing would split one bucket in two. The Lead types the
+  amount (1–1.000 kr., a typo guard, not a rule) **and what it was for**: the database
+  has refused an `aftalt` row without a note since 2026-08-08, and that is the reason
+  the category exists. Several per man per evening, as before. Cards and charts now
+  say *"Diverse — aftalt uden for regulativet"*.
 
 ## Local stack note
 - **2026-07-23 — Local Supabase runs Postgres 17** (the CLI default), while prod
