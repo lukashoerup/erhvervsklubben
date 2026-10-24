@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-10-24 (T094 — October 2026 in the books from four screenshots, every transfer seen; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
+_Updated 2026-10-24 (T094 — October 2026 in the books from four screenshots, every transfer seen; møde #31's calendar row filled in from Have's announcement; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -40,6 +40,19 @@ August name for name. One slip in the September row's note: Anders paid **01.09*
 02.09. That row was not rewritten; the correction lives in the October row's note.
 `supabase/migrations/20261024074128_oktober_2026_statement.sql`, version = production's.
 Workings: `docs/finance-reconciliation.md` §17.7.
+
+**Møde #31's calendar row says where and when** (2026-10-24, T094, the same
+morning). It had said `TBD`, no time, no description since 08.08. Lukas sent three
+screenshots of the club's Messenger group: Have, Lead, announced *"Mødetidspunkt:
+klokken 12 · Restaurant: Spix's ara (dette er blot et hint …) · Efterfølgende går vi
+til: Southern Cross Pub"*, confirmed Rasmus's guess of **Rio Bravo** two days later,
+and added on Friday *"ser jeg helst at folket ankommer 12.10"*. Written by
+`supabase/migrations/20261024074542_moede_31_calendar.sql`: location **Rio Bravo**
+alone (recording from the card carries it into `main_location`), time **12.00** (no
+end time was given, none invented), and a description in the club's register naming
+the pub. Each column only where it still said nothing, matched on title and date.
+**When the evening is recorded:** Southern Cross Pub is the `post_location`, and
+whether late counts from 12.00 or Have's 12.10 is the Lead's call — ask, don't pick.
 
 **`main` has been behind production since 2026-09-11 — STATUS check 1 failed again,
 in a new way.** Møde #30's two migrations (`20260911163428`, `20260911165315`), the

@@ -1,4 +1,4 @@
-# Task: T094 — October 2026 into the books, the morning of møde #31
+# Task: T094 — October 2026 into the books, and møde #31 on the calendar, the morning of the meeting
 
 **Status:** done 2026-10-24. Branch `task/T094-oktober-2026`, branched from
 `claude/boeder-ek-moede-5wmii6` (møde #30, never merged — see below).
@@ -40,10 +40,24 @@ oktober_2026_statement` = newest file in `supabase/migrations/` on this branch.
 * `task/T093-cvr-registrering` (CVR prep, docs only, CI green) is also unmerged, as is
   PR #1. Two tasks are numbered T092.
 
+## Second round: tonight's calendar row
+Asked where møde #31 was, Lukas sent three screenshots of the club's Messenger group:
+*"Her skriver Christian Have om det."* Have's announcement (19.10): meet directly at
+the restaurant, *"klokken 12"*, restaurant given as a hint (*"Spix's ara"*), then
+*"Southern Cross Pub"*, *"Dresscode - kom som du er"*. On 21.10 Rasmus guessed *"Rio
+Bravo?"* and Have answered *"Hvordan gættede du det? 🎉"*. On 23.10: *"ser jeg helst
+at folket ankommer 12.10"*.
+
+`supabase/migrations/20261024074542_moede_31_calendar.sql` filled the row where it
+still said nothing: location `Rio Bravo` (it becomes the record's `main_location`),
+time `12.00`, and a description in the club's voice that names the pub. Matched on
+title and date, each column only while `''`/`TBD`, read back inside the block. Read
+back after: the row as written; events 11, payments 17 / 20.480, fines 40 / 3.305,
+attendances 281 / 206, records 30 — unchanged.
+
 ## Left for Lukas
-* **Tonight's calendar row, `Erhvervsklub #31`**, says `TBD` for the venue and has no
-  time or description. Lead is Have. Nothing in the mail or calendar says where — it
-  needs the invitation, or Have.
+* **When he sends tonight's fines:** late from 12.00, or from Have's 12.10? The Lead's
+  call. And Southern Cross Pub goes on the record as where the evening ended.
 * **Merge to `main`** (deploys) — yes or no.
 * **1.525 kr. of fines noted, never billed** — unchanged, still his decision.
 * Have's 1.100 kr. buy-in — still in the papers only until Have has agreed.
