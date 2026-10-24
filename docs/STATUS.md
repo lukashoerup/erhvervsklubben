@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-09-11 (T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
+_Updated 2026-10-24 (T094 — October 2026 in the books from four screenshots, every transfer seen; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -25,6 +25,31 @@ broken when it was correct. As of 2026-09-05: **271 rows, 200 attendances** — 
 **281 rows, 206 attendances** — møde #30 (2026-09-11, record id **32**) holds one row
 per member: six present (Lukas, Anders, Esben, Kasper, Emil, Saaby), four absent
 (Have, Mads, Oskar, Rasmus).
+
+**October 2026 is in the books — and every transfer since 30.07 is now seen**
+(2026-10-24, T094, the morning of møde #31). Lukas sent four screenshots of the
+account: **saldo 20.480,00 kr.**, *Kommende betalinger 0,00*. `payments` is now
+**17 rows summing to 20.480 kr.** — for the third month running exactly what the bank
+holds. Nine of nine paid October: Rasmus 29.09 and Lukas 30.09 (they pay the coming
+month at month end, so those settle October), Have, Esben and Anders 01.10, Saaby,
+Emil, Kasper and Mads (`Overførsel`) 02.10. The screenshots scroll back into July and
+every row carries its running balance, so they are **an unbroken chain from 15.080,00
+on 30.07 (the T076 statement's close) to today** — which also turns September's three
+*inferred* transfers into seen ones (Rasmus 28.08, Lukas 31.08, Esben 01.09) and shows
+August name for name. One slip in the September row's note: Anders paid **01.09**, not
+02.09. That row was not rewritten; the correction lives in the October row's note.
+`supabase/migrations/20261024074128_oktober_2026_statement.sql`, version = production's.
+Workings: `docs/finance-reconciliation.md` §17.7.
+
+**`main` has been behind production since 2026-09-11 — STATUS check 1 failed again,
+in a new way.** Møde #30's two migrations (`20260911163428`, `20260911165315`), the
+`moede` skill and the docs above were committed and pushed — to
+`claude/boeder-ek-moede-5wmii6`, CI green — and never merged. Production ran both, so
+the site was right all along; it is `main` that described a database without møde #30
+for six weeks. T094 is branched from that branch so one merge brings both. **Merging
+to `main` deploys (Vercel), so it waits for Lukas's yes.** Also unmerged:
+`task/T093-cvr-registrering` (docs only, CI green) and PR #1 (`task/T092-shared-partner-workflow`).
+Note the two T092s — the møde #30 task file and the partner-workflow branch share a number.
 
 **Møde #30 is in the books, with four late fines** (2026-09-11, T092). Lukas, lead
 that evening: *"Bøder til EK møde. Hvor jeg er lead. I dag. Anders: 2 min · Esben:
