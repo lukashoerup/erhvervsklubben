@@ -151,15 +151,38 @@ export default function Anciennitet() {
   // through the screen. The form decides from the date it is given: ahead goes in
   // the calendar, today or behind is recorded with its attendance. See
   // `useSaveMeeting`.
+  //
+  // **Recorded from the calendar, the form opens on the calendar card instead** —
+  // see `recording` in components/Moedekalender.tsx for why. "Nyt møde" drops any
+  // calendar seed, so the form it opens starts blank.
+  const fromCalendar = open === 'ny' && fromEventId !== null
   const newMeeting =
     mayEdit &&
-    (open === 'ny' ? editor(null) : <NewButton label="Nyt møde" onClick={() => setOpen('ny')} />)
+    (open === 'ny' && !fromCalendar ? (
+      editor(null)
+    ) : (
+      <NewButton
+        label="Nyt møde"
+        onClick={() => {
+          setFromEvent(undefined)
+          setFromEventId(null)
+          setOpen('ny')
+        }}
+      />
+    ))
+  const kalender = (
+    <Moedekalender
+      onRecord={mayEdit ? recordFrom : undefined}
+      recording={fromCalendar ? fromEventId : null}
+      recordForm={fromCalendar ? editor(null) : undefined}
+    />
+  )
 
   if (data.meetings.length === 0) {
     return (
       <div className="flex flex-col gap-3">
         {newMeeting}
-        <Moedekalender onRecord={mayEdit ? recordFrom : undefined} />
+        {kalender}
         <p className="text-sm text-muted">Ingen møder registreret endnu.</p>
       </div>
     )
@@ -182,7 +205,7 @@ export default function Anciennitet() {
           som de gamle møder … Det er jo alt sammen møder." Nothing past is drawn
           here, so no meeting is on this page twice and nothing needs deduplicating
           — see components/Moedekalender.tsx. */}
-      <Moedekalender onRecord={mayEdit ? recordFrom : undefined} />
+      {kalender}
 
       {data.meetings.map((m) =>
         mayEdit && open === m.id ? (

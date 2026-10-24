@@ -617,6 +617,66 @@ describe('the calendar and the fines, now that /moeder is gone', () => {
     expect(screen.getByLabelText(/^Lead/)).toHaveValue('Kasper')
   })
 
+  it('opens the form where the calendar card was, not at the top of the page', async () => {
+    // Lukas, 2026-10-24, at the meeting itself: "Registrer deltagelse knappen …
+    // virker ikke." The form opened above the anciennitet chart, ~1.400 px above
+    // the card he had tapped, and on a phone nothing on screen changed.
+    const today = new Date().toISOString().slice(0, 10)
+    reset({
+      attendance_records: RECORDS,
+      attendances: ATTENDANCES,
+      events: [{ ...PLANNED[0], date: today }],
+      fines: FINES,
+      payments: [],
+    })
+
+    const user = userEvent.setup()
+    renderPage('admin')
+    const card = (await screen.findByText('Frk. Barners')).closest('article')!
+    await user.click(within(card).getByRole('button', { name: 'Registrér deltagelse' }))
+
+    // The card has made way for the form, the form sits under "Planlagte møder"
+    // and above the history, and the top of the page still offers "Nyt møde".
+    expect(card).not.toBeInTheDocument()
+    const heading = screen.getByText('Planlagte møder')
+    const firstHeld = cardFor('Esben')
+    expect(heading.compareDocumentPosition(form()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(form().compareDocumentPosition(firstHeld) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(document.querySelectorAll('form')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Nyt møde' })).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Sted/)).toHaveValue('Frk. Barners')
+
+    // "Annullér" puts the card back, still able to be recorded.
+    await user.click(within(form()).getByRole('button', { name: /Annull/ }))
+    expect(
+      within((await screen.findByText('Frk. Barners')).closest('article')!).getByRole('button', {
+        name: 'Registrér deltagelse',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('gives "Nyt møde" a blank form even after recording from the calendar was opened', async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    reset({
+      attendance_records: RECORDS,
+      attendances: ATTENDANCES,
+      events: [{ ...PLANNED[0], date: today }],
+      fines: FINES,
+      payments: [],
+    })
+
+    const user = userEvent.setup()
+    renderPage('admin')
+    const card = (await screen.findByText('Frk. Barners')).closest('article')!
+    await user.click(within(card).getByRole('button', { name: 'Registrér deltagelse' }))
+    await user.click(screen.getByRole('button', { name: 'Nyt møde' }))
+
+    // One form, at the top, seeded with nothing from the calendar row.
+    expect(document.querySelectorAll('form')).toHaveLength(1)
+    expect(screen.getByLabelText(/^Lead/)).toHaveValue('')
+    expect(screen.getByText('Frk. Barners').closest('article')).toBeInTheDocument()
+  })
+
   it('does not move a held meeting into the calendar when its date is mistyped', async () => {
     const user = userEvent.setup()
     renderPage('admin')

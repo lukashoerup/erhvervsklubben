@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { useEvents, type EventItem } from '../data/useClubData'
 import { READONLY } from '../lib/supabase'
@@ -129,7 +130,25 @@ export function calendarHead(e: EventItem): { figure: string; heading: string } 
  * meeting to a past date — makes the card leave this list, so the form says so
  * before it is saved rather than after.
  */
-export function Moedekalender({ onRecord }: { onRecord?: (e: EventItem) => void }) {
+export function Moedekalender({
+  onRecord,
+  recording,
+  recordForm,
+}: {
+  onRecord?: (e: EventItem) => void
+  /**
+   * The calendar row whose attendance is being recorded, and the form doing it.
+   * The form takes that card's place, as a held meeting's form takes its card's.
+   *
+   * Lukas, 2026-10-24, at Have's meeting: *"Registrer deltagelse knappen på haves
+   * møde i dag virker ikke."* It did work — the form opened at the top of the page,
+   * above the anciennitet chart, about 1.400 px above the card he had tapped on a
+   * phone. The screen did not change, so the button read as dead. A form belongs
+   * where the tap was.
+   */
+  recording?: string | null
+  recordForm?: ReactNode
+}) {
   const { data, isPending, error } = useEvents()
   const { role } = useAuth()
   const editor = useEditor('events')
@@ -281,7 +300,15 @@ export function Moedekalender({ onRecord }: { onRecord?: (e: EventItem) => void 
           so these fall into the single stream of meetings on /anciennitet rather
           than sitting in a box above it. */}
       <SectionTitle>Planlagte møder</SectionTitle>
-      {planned.map((e) => (mayEdit && editor.editing(e.id) ? form(e.id) : card(e, e.id === nextId)))}
+      {planned.map((e) =>
+        mayEdit && editor.editing(e.id) ? (
+          form(e.id)
+        ) : mayEdit && recording === e.id && recordForm ? (
+          <Fragment key={e.id}>{recordForm}</Fragment>
+        ) : (
+          card(e, e.id === nextId)
+        ),
+      )}
     </>
   )
 }
