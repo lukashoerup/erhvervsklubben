@@ -1,6 +1,6 @@
 # Status — Erhvervsklubben rebuild
 
-_Updated 2026-10-24 (T095 — "Registrér deltagelse" opens its form on the card, not 1.400 px above it; T094 — October 2026 in the books from four screenshots, every transfer seen; møde #31's calendar row filled in from Have's announcement; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
+_Updated 2026-10-24 (T095 — parked: "Registrér deltagelse" works, Lukas says; the form-at-the-card change is optional; T094 — October 2026 in the books from four screenshots, every transfer seen; møde #31's calendar row filled in from Have's announcement; `main` found behind production since 11.09; 2026-09-11: T092 — møde #30 recorded, four late fines, ten attendance rows, the `/moede` skill; 2026-09-05: T089/T090 — September 2026 in the books; the migration that kept CI red since 08.08 guarded; lead counts on the anciennitet strip). Single source of truth for "where are we". Update this at the
 end of every working session._
 
 ## Start here if you are picking this up in a new session
@@ -59,8 +59,9 @@ Lukas, at møde #31: *"Registrer deltagelse knappen på haves møde i dag virker
 It worked — and opened the form at the top of /anciennitet, above the chart, about
 1.400 px above the card he tapped, so on a phone nothing on screen changed. The form
 now takes the calendar card's place, as "Rediger" does on a held meeting, and "Nyt
-møde" always opens blank. Two tests, red on the old code. **Code only: live once
-merged to `main`**; until then the form is at the top of the page.
+møde" always opens blank. Two tests, red on the old code. **Then withdrawn by Lukas
+minutes later — *"Ah der passer ikke. Den virker."*** So the branch is parked, not
+merged: an optional improvement, not a fix anyone is waiting for.
 
 **`main` has been behind production since 2026-09-11 — STATUS check 1 failed again,
 in a new way.** Møde #30's two migrations (`20260911163428`, `20260911165315`), the

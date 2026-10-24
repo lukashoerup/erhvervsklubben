@@ -1,7 +1,8 @@
 # Task: T095 — "Registrér deltagelse" did nothing on a phone
 
-**Status:** done 2026-10-24, code only — **not live until merged to `main`**, which
-deploys and so waits for Lukas. Branch `task/T095-registrer-deltagelse`, on top of
+**Status:** parked 2026-10-24 — **Lukas withdrew the report**: *"Ah der passer ikke.
+Den virker."* Not merged, not live, and not needed to record a meeting. The change
+below is an optional improvement; merge it only if he asks for the form at the card. Branch `task/T095-registrer-deltagelse`, on top of
 `task/T094-oktober-2026`.
 
 ## The ask
